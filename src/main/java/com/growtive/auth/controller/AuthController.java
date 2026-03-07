@@ -1,8 +1,10 @@
 package com.growtive.auth.controller;
 
 import com.growtive.auth.dto.LoginRequestDto;
+import com.growtive.auth.dto.UserResponseDto;
 import com.growtive.auth.service.AuthService;
 
+import com.growtive.user.model.User;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +38,7 @@ public class AuthController {
     /**
      * 작성자: 최성환
      * 세션에 LOGIN_USER 저장
-     * @param body
+     * @param LoginRequestDto
      * @param session
      */
     @PostMapping("/login")
@@ -45,12 +47,14 @@ public class AuthController {
             HttpSession session
     ) {
 
-        Long userId = authService.login(
+        User user = authService.login(
                 request.getUsername(),
                 request.getPassword()
         );
 
-        session.setAttribute("userId", userId);
+        session.setAttribute("userId", user.getId());
+        session.setAttribute("username", user.getUsername());
+        session.setAttribute("displayName", user.getDisplayName());
     }
 
     /**
@@ -60,15 +64,21 @@ public class AuthController {
      * @return
      */
     @GetMapping("/me")
-    public Map<String, Long> me(HttpSession session) {
+    public UserResponseDto me(HttpSession session) {
 
-        Long userId = (Long) session.getAttribute("userId");  // ✅
+        Long userId = (Long) session.getAttribute("userId");
+        String username = (String) session.getAttribute("username");
+        String displayName = (String) session.getAttribute("displayName");
 
         if (userId == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
-        return Map.of("userId", userId);
+        return new UserResponseDto(
+                userId,
+                username,
+                displayName
+        );
     }
     @PostMapping("/logout")
     public void logout(HttpSession session) {

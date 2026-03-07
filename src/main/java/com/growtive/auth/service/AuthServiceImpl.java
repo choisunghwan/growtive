@@ -34,18 +34,18 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public Long login(String username, String password) {
+    public User login(String username, String password) {
 
         User user = authMapper.findByUsername(username);
 
         if (user == null) {
-            throw new RuntimeException("아이디가 존재하지 않습니다.");
+            throw new RuntimeException("사용자가 없습니다.");
         }
 
         if (!user.getPassword().equals(password)) {
-            throw new RuntimeException("비밀번호가 틀렸습니다.");
+            throw new RuntimeException("비밀번호가 틀립니다.");
         }
 
-        return user.getId();
+        return user;
     }
 }

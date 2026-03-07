@@ -13,19 +13,19 @@
     </resultMap>
 
     <insert id="insert" parameterType="com.growtive.user.UserAccount" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO user_account (email, display_name, password, created_at)
+        INSERT INTO users (email, display_name, password, created_at)
         VALUES (#{email}, #{displayName}, #{passwordHash}, NOW())
     </insert>
 
     <select id="findAll" resultMap="UserMap">
         SELECT id, email, display_name, password, created_at
-        FROM user_account
+        FROM users
         ORDER BY id DESC
     </select>
 
     <select id="findByEmail" parameterType="string" resultMap="UserMap">
         SELECT id, email, display_name, password, created_at
-        FROM user_account
+        FROM users
         WHERE email = #{email}
         LIMIT 1
     </select>
