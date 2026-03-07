@@ -4,5 +4,5 @@ import com.growtive.money.dto.FlowResponseDto;
 
 public interface FinancialFlowService {
 
-    FlowResponseDto getMonthlyFlow(String userId, int year, int month);
+    FlowResponseDto getMonthlyFlow(Long userId, int year, int month);
 }

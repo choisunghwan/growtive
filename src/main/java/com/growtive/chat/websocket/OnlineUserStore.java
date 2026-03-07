@@ -11,18 +11,18 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OnlineUserStore {
 
     // thread-safe Set
-    private static final Set<String> ONLINE_USERS =
+    private static final Set<Long> ONLINE_USERS =
             ConcurrentHashMap.newKeySet();
 
-    public static void add(String userId) {
+    public static void add(Long userId) {
         ONLINE_USERS.add(userId);
     }
 
-    public static void remove(String userId) {
+    public static void remove(Long userId) {
         ONLINE_USERS.remove(userId);
     }
 
-    public static Set<String> getAll() {
+    public static Set<Long> getAll() {
         return ONLINE_USERS;
     }
 }

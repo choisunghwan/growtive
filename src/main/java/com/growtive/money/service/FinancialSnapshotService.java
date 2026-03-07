@@ -10,18 +10,18 @@ public interface FinancialSnapshotService {
     /**
      * 현재 월 snapshot이 없으면 생성
      */
-    void createMonthlySnapshotIfNotExists(String userId);
+    void createMonthlySnapshotIfNotExists(Long userId);
 
     /**
      * 특정 년/월 snapshot이 없으면 생성
      */
-    void createMonthlySnapshotIfNotExists(String userId, int year, int month);
+    void createMonthlySnapshotIfNotExists(Long userId, int year, int month);
 
     /**
      * snapshot 생성 보장 + monthly_amount 업데이트
      */
     void ensureAndUpdateMonthlySnapshot(
-            String userId,
+            Long userId,
             MonthlySnapshotUpdateRequestDto request
     );
 
@@ -29,7 +29,7 @@ public interface FinancialSnapshotService {
      * 특정 월 snapshot 노드 조회
      */
     List<SnapshotNodeDto> getMonthlySnapshotNodes(
-            String userId,
+            Long userId,
             int year,
             int month
     );

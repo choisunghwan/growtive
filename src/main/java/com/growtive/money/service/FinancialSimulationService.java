@@ -4,23 +4,23 @@ import com.growtive.money.dto.*;
 
 public interface FinancialSimulationService {
 
-    SimulationResponseDto simulate(String userId,
+    SimulationResponseDto simulate(Long userId,
                                    int startYear,
                                    int startMonth,
                                    int months);
 
-    GoalSimulationResponseDto simulateUntilGoal(String userId,
+    GoalSimulationResponseDto simulateUntilGoal(Long userId,
                                                 int startYear,
                                                 int startMonth,
                                                 long target);
 
-    GoalCompareResponseDto compareGoalWithExtraInvestment(String userId,
+    GoalCompareResponseDto compareGoalWithExtraInvestment(Long userId,
                                                           int startYear,
                                                           int startMonth,
                                                           long target,
                                                           long monthlyIncrease);
 
-    ChartResponseDto buildChart(String userId,
+    ChartResponseDto buildChart(Long userId,
                                 int startYear,
                                 int startMonth,
                                 int months,

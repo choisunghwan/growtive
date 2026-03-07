@@ -6,11 +6,11 @@ import java.util.List;
 
 public interface FinancialTemplateService {
 
-    List<FinancialNodeTemplateDto> getTemplates(String userId);
+    List<FinancialNodeTemplateDto> getTemplates(Long userId);
 
-    FinancialNodeTemplateDto createTemplate(String userId, FinancialNodeTemplateDto dto);
+    FinancialNodeTemplateDto createTemplate(Long userId, FinancialNodeTemplateDto dto);
 
-    FinancialNodeTemplateDto updateTemplate(String userId, Long id, FinancialNodeTemplateDto dto);
+    FinancialNodeTemplateDto updateTemplate(Long userId, Long id, FinancialNodeTemplateDto dto);
 
-    void deleteTemplate(String userId, Long id);
+    void deleteTemplate(Long userId, Long id);
 }

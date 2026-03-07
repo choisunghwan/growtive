@@ -10,25 +10,25 @@ import java.util.List;
 public interface FinancialSnapshotMapper {
 
     int countSnapshot(
-            @Param("userId") String userId,
+            @Param("userId") Long userId,
             @Param("year") int year,
             @Param("month") int month
     );
 
     int insertSnapshotFromTemplate(
-            @Param("userId") String userId,
+            @Param("userId") Long userId,
             @Param("year") int year,
             @Param("month") int month
     );
 
     int insertMissingSnapshotNodesFromTemplate(
-            @Param("userId") String userId,
+            @Param("userId") Long userId,
             @Param("year") int year,
             @Param("month") int month
     );
 
     int copyPreviousAssetBalance(
-            @Param("userId") String userId,
+            @Param("userId") Long userId,
             @Param("year") int year,
             @Param("month") int month,
             @Param("prevYear") int prevYear,
@@ -36,25 +36,25 @@ public interface FinancialSnapshotMapper {
     );
 
     int insertFlowSnapshot(
-            @Param("userId") String userId,
+            @Param("userId") Long userId,
             @Param("year") int year,
             @Param("month") int month
     );
 
     int insertMissingFlowSnapshot(
-            @Param("userId") String userId,
+            @Param("userId") Long userId,
             @Param("year") int year,
             @Param("month") int month
     );
 
     int updateMonthlyAmountBySnapshotId(
-            @Param("userId") String userId,
+            @Param("userId") Long userId,
             @Param("snapshotId") Long snapshotId,
             @Param("amount") Long amount
     );
 
     int updateMonthlyAmountByName(
-            @Param("userId") String userId,
+            @Param("userId") Long userId,
             @Param("year") int year,
             @Param("month") int month,
             @Param("name") String name,
@@ -62,7 +62,7 @@ public interface FinancialSnapshotMapper {
     );
 
     List<SnapshotNodeDto> findSnapshotNodes(
-            @Param("userId") String userId,
+            @Param("userId") Long userId,
             @Param("year") int year,
             @Param("month") int month
     );

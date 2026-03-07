@@ -1,9 +1,10 @@
-/* src/main/resources/static/assets/css/login.css */
+
+    /* src/main/resources/static/assets/css/login.css */
 
 
-/* ============================= */
-/* 📌 로그인 페이지 전체 영역 */
-/* ============================= */
+    /* ============================= */
+    /* 📌 로그인 페이지 전체 영역 */
+    /* ============================= */
 
 .login-container {
     min-height: calc(100vh - 70px);
@@ -133,9 +134,22 @@
     margin-top: 14px;
 
     font-size: 13px;
-    color: rgba(0,0,0,0.55);
+    color: rgba(255,255,255,0.75);
 
     text-align: center;
+}
+
+/* 회원가입 링크 스타일 */
+
+.login-desc a {
+    color: #60a5fa;;
+    font-weight: 600;
+    text-decoration: none;
+    margin-left: 4px;
+}
+
+.login-desc a:hover {
+    text-decoration: underline;
 }
 
 
@@ -154,3 +168,4 @@
     }
 
 }
+

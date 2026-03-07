@@ -17,13 +17,13 @@ public class FinancialTemplateServiceImpl implements FinancialTemplateService {
     private final FinancialTemplateMapper mapper;
 
     @Override
-    public List<FinancialNodeTemplateDto> getTemplates(String userId) {
+    public List<FinancialNodeTemplateDto> getTemplates(Long userId) {
         return mapper.findTemplatesByUser(userId);
     }
 
     @Override
     @Transactional
-    public FinancialNodeTemplateDto createTemplate(String userId, FinancialNodeTemplateDto dto) {
+    public FinancialNodeTemplateDto createTemplate(Long userId, FinancialNodeTemplateDto dto) {
 
         dto.setId(null);
         dto.setUserId(userId);
@@ -57,7 +57,7 @@ public class FinancialTemplateServiceImpl implements FinancialTemplateService {
 
     @Override
     @Transactional
-    public FinancialNodeTemplateDto updateTemplate(String userId, Long id, FinancialNodeTemplateDto dto) {
+    public FinancialNodeTemplateDto updateTemplate(Long userId, Long id, FinancialNodeTemplateDto dto) {
 
         dto.setId(id);
         dto.setUserId(userId);
@@ -90,7 +90,7 @@ public class FinancialTemplateServiceImpl implements FinancialTemplateService {
 
     @Override
     @Transactional
-    public void deleteTemplate(String userId, Long id) {
+    public void deleteTemplate(Long userId, Long id) {
 
         mapper.deleteTemplate(id, userId);
 
@@ -102,7 +102,7 @@ public class FinancialTemplateServiceImpl implements FinancialTemplateService {
     // 🔥 자동 flow_template 생성
     // =====================================================
 
-    private void autoGenerateFlows(String userId) {
+    private void autoGenerateFlows(Long userId) {
 
         List<FinancialNodeTemplateDto> templates =
                 mapper.findTemplatesByUser(userId);
@@ -138,7 +138,7 @@ public class FinancialTemplateServiceImpl implements FinancialTemplateService {
     // 🔥 snapshot flow 재생성
     // =====================================================
 
-    private void regenerateCurrentMonthFlows(String userId) {
+    private void regenerateCurrentMonthFlows(Long userId) {
 
         YearMonth now = YearMonth.now();
 

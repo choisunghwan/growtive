@@ -16,7 +16,7 @@ public class FinancialFlowServiceImpl implements FinancialFlowService {
     private final FinancialFlowMapper mapper;
 
     @Override
-    public FlowResponseDto getMonthlyFlow(String userId, int year, int month) {
+    public FlowResponseDto getMonthlyFlow(Long userId, int year, int month) {
 
         // 🔥 Mapper 호출 시 userId = String 일치
         List<FlowNodeDto> nodes = mapper.findNodes(userId, year, month);

@@ -10,11 +10,11 @@ import java.util.List;
 @Mapper
 public interface FinancialFlowMapper {
 
-    List<FlowNodeDto> findNodes(@Param("userId") String userId,
+    List<FlowNodeDto> findNodes(@Param("userId") Long userId,
                                 @Param("year") int year,
                                 @Param("month") int month);
 
-    List<FlowLinkDto> findLinks(@Param("userId") String userId,
+    List<FlowLinkDto> findLinks(@Param("userId") Long userId,
                                 @Param("year") int year,
                                 @Param("month") int month);
 }

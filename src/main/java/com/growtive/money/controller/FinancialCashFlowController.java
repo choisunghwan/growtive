@@ -13,10 +13,10 @@ public class FinancialCashFlowController {
 
     private final FinancialCashFlowService cashFlowService;
 
-    private String getUserId(HttpSession session) {
+    private Long getUserId(HttpSession session) {
         Object v = session.getAttribute("userId");
         if (v == null) throw new IllegalStateException("로그인이 필요합니다.");
-        return String.valueOf(v);
+        return (Long) v;
     }
 
     /**
@@ -30,7 +30,7 @@ public class FinancialCashFlowController {
             @RequestParam int startMonth,
             @RequestParam(defaultValue = "12") int months
     ) {
-        String userId = getUserId(session);
+        Long userId = getUserId(session);
         return cashFlowService.getCashFlowChart(userId, startYear, startMonth, months);
     }
 }

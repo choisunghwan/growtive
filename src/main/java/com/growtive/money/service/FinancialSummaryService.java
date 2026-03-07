@@ -4,5 +4,5 @@ import com.growtive.money.dto.MoneySummaryDto;
 
 public interface FinancialSummaryService {
 
-    MoneySummaryDto getMonthlySummary(String userId, int year, int month);
+    MoneySummaryDto getMonthlySummary(Long userId, int year, int month);
 }

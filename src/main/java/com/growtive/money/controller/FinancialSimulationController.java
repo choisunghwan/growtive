@@ -16,8 +16,8 @@ public class FinancialSimulationController {
 
     private final FinancialSimulationService service;
 
-    private String getUserId(HttpSession session) {
-        String userId = (String) session.getAttribute("userId");
+    private Long getUserId(HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
         if (userId == null) {
             throw new RuntimeException("로그인이 필요합니다.");
         }
@@ -30,7 +30,7 @@ public class FinancialSimulationController {
                                           @RequestParam int months,
                                           HttpSession session) {
 
-        String userId = getUserId(session);
+        Long userId = getUserId(session);
         return service.simulate(userId, year, month, months);
     }
 
@@ -40,7 +40,7 @@ public class FinancialSimulationController {
                                           @RequestParam long target,
                                           HttpSession session) {
 
-        String userId = getUserId(session);
+        Long userId = getUserId(session);
         return service.simulateUntilGoal(userId, year, month, target);
     }
 
@@ -51,7 +51,7 @@ public class FinancialSimulationController {
                                               @RequestParam long monthlyIncrease,
                                               HttpSession session) {
 
-        String userId = getUserId(session);
+        Long userId = getUserId(session);
         return service.compareGoalWithExtraInvestment(
                 userId, year, month, target, monthlyIncrease
         );
@@ -64,7 +64,7 @@ public class FinancialSimulationController {
                                   @RequestParam long target,
                                   HttpSession session) {
 
-        String userId = getUserId(session);
+        Long userId = getUserId(session);
         return service.buildChart(userId, year, month, months, target);
     }
 }

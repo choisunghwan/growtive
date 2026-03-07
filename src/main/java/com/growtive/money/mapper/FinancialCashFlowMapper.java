@@ -10,7 +10,7 @@ import java.util.List;
 public interface FinancialCashFlowMapper {
 
     List<CashFlowPointDto> findCashFlowSeries(
-            @Param("userId") String userId,
+            @Param("userId") Long userId,
             @Param("startYear") int startYear,
             @Param("startMonth") int startMonth,
             @Param("months") int months

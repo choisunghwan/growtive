@@ -15,8 +15,8 @@ public class FinancialTemplateController {
 
     private final FinancialTemplateService service;
 
-    private String getUserId(HttpSession session) {
-        String userId = (String) session.getAttribute("userId");
+    private Long getUserId(HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
         if (userId == null) {
             throw new RuntimeException("로그인이 필요합니다.");
         }
@@ -28,7 +28,7 @@ public class FinancialTemplateController {
      */
     @GetMapping("/templates")
     public List<FinancialNodeTemplateDto> getTemplates(HttpSession session) {
-        String userId = getUserId(session);
+        Long userId = getUserId(session);
         return service.getTemplates(userId);
     }
 
@@ -40,7 +40,7 @@ public class FinancialTemplateController {
             @RequestBody FinancialNodeTemplateDto dto,
             HttpSession session
     ) {
-        String userId = getUserId(session);
+        Long userId = getUserId(session);
         return service.createTemplate(userId, dto);
     }
 
@@ -53,7 +53,7 @@ public class FinancialTemplateController {
             @RequestBody FinancialNodeTemplateDto dto,
             HttpSession session
     ) {
-        String userId = getUserId(session);
+        Long userId = getUserId(session);
         return service.updateTemplate(userId, id, dto);
     }
 
@@ -65,7 +65,7 @@ public class FinancialTemplateController {
             @PathVariable Long id,
             HttpSession session
     ) {
-        String userId = getUserId(session);
+        Long userId = getUserId(session);
         service.deleteTemplate(userId, id);
     }
 }

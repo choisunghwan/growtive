@@ -12,7 +12,7 @@ public class FinancialSummaryServiceImpl implements FinancialSummaryService {
     private final FinancialSummaryMapper mapper;
 
     @Override
-    public MoneySummaryDto getMonthlySummary(String userId, int year, int month) {
+    public MoneySummaryDto getMonthlySummary(Long userId, int year, int month) {
 
         Long income = mapper.sumIncome(userId, year, month);
         Long expense = mapper.sumExpense(userId, year, month);

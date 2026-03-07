@@ -9,11 +9,11 @@ import java.util.List;
 @Mapper
 public interface FinancialCloseMapper {
 
-    List<Long> findAssetSnapshotIds(@Param("userId") String userId,
+    List<Long> findAssetSnapshotIds(@Param("userId") Long userId,
                                     @Param("year") int year,
                                     @Param("month") int month);
 
-    Long sumInflowToAsset(@Param("userId") String userId,
+    Long sumInflowToAsset(@Param("userId") Long userId,
                           @Param("year") int year,
                           @Param("month") int month,
                           @Param("assetSnapshotId") Long assetSnapshotId);

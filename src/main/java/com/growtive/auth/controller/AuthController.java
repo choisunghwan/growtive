@@ -1,11 +1,14 @@
 package com.growtive.auth.controller;
 
+import com.growtive.auth.dto.LoginRequestDto;
 import com.growtive.auth.service.AuthService;
 
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import com.growtive.auth.dto.RegisterRequestDto;
+
 
 import java.util.Map;
 
@@ -24,10 +27,10 @@ public class AuthController {
      * @param token
      * @return
      */
-    @GetMapping("/verify")
-    public AuthService.VerifyResult verify(@RequestParam String token) {
-        return authService.verifyMagicLink(token);
-    }
+//    @GetMapping("/verify")
+//    public AuthService.VerifyResult verify(@RequestParam String token) {
+//        return authService.verifyMagicLink(token);
+//    }
 
 
     /**
@@ -38,16 +41,15 @@ public class AuthController {
      */
     @PostMapping("/login")
     public void login(
-            @RequestBody Map<String, String> body,
+            @RequestBody LoginRequestDto request,
             HttpSession session
     ) {
-        String userId = body.get("userId");
 
-        if (userId == null || userId.isBlank()) {
-            throw new IllegalArgumentException("userId required");
-        }
+        Long userId = authService.login(
+                request.getUsername(),
+                request.getPassword()
+        );
 
-        // TODO: 나중에 DB 사용자 존재 여부 체크
         session.setAttribute("userId", userId);
     }
 
@@ -58,16 +60,30 @@ public class AuthController {
      * @return
      */
     @GetMapping("/me")
-    public Map<String, String> me(HttpSession session) {
-        String userId = (String) session.getAttribute("userId");
+    public Map<String, Long> me(HttpSession session) {
+
+        Long userId = (Long) session.getAttribute("userId");  // ✅
+
         if (userId == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
+
         return Map.of("userId", userId);
     }
-
     @PostMapping("/logout")
     public void logout(HttpSession session) {
         session.invalidate(); // 🔥 세션 완전 삭제
+    }
+
+    @PostMapping("/register")
+    public void register(@RequestBody RegisterRequestDto request) {
+
+        authService.register(
+                request.getUsername(),
+                request.getPassword(),
+                request.getDisplayName(),
+                request.getEmail()
+        );
+
     }
 }

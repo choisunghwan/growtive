@@ -16,8 +16,8 @@ public class FinancialTestController {
 
     private final FinancialSnapshotService financialSnapshotService;
 
-    private String getUserId(HttpSession session) {
-        String userId = (String) session.getAttribute("userId");
+    private Long getUserId(HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
         if (userId == null) {
             throw new RuntimeException("로그인이 필요합니다.");
         }
@@ -27,7 +27,7 @@ public class FinancialTestController {
     @GetMapping("/create-snapshot")
     public String createSnapshot(HttpSession session) {
 
-        String userId = (String) session.getAttribute("userId");
+        Long userId = (Long) session.getAttribute("userId");
         if (userId == null) {
             throw new RuntimeException("로그인이 필요합니다.");
         }

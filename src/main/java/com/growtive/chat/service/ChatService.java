@@ -19,7 +19,7 @@ public class ChatService {
         return chatMessageMapper.selectMessagesByRoom(roomId);
     }
 
-    public ChatMessage sendMessage(Long roomId, String userId, String content) {
+    public ChatMessage sendMessage(Long roomId, Long userId, String content) {
         ChatMessage message = new ChatMessage();
         message.setRoomId(roomId);
         message.setSenderId(userId);

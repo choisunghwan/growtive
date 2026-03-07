@@ -50,6 +50,12 @@ export default function LoginPage() {
                     <p class="login-desc">
                         계정 아이디와 비밀번호를 입력하세요
                     </p>
+                    
+                    <!-- 회원가입 이동 --> 
+                    <p class="login-desc"> 계정이 없으신가요? 
+                        <a href="#/register">회원가입</a> 
+                    </p>
+                    
                 </div>
             `;
         },
@@ -86,7 +92,7 @@ export default function LoginPage() {
                      * - 로그인 성공 시 HttpSession 생성
                      */
                     await axios.post('/api/auth/login', {
-                        userId: userId,
+                        username: userId,
                         password: password
                     });
 

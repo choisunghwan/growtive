@@ -27,7 +27,8 @@ import ChatPage from '../pages/chat/chat.page.js';
 /*서비스 관리*/
 import ProvidersPage from "../pages/providers/providers.page.js";
 
-/*로그인 페이지*/
+/*회원가입,로그인 페이지*/
+import RegisterPage from '../pages/auth/register.page.js';
 import LoginPage from '../pages/auth/login.page.js';
 
 const routes = {
@@ -40,6 +41,7 @@ const routes = {
     '#/users/new': UsersNewPage,
     /*로그인*/
     '#/login': LoginPage,
+    '#/register': RegisterPage,
     /*주식관리*/
     '#/stocks': StockListPage, //목록
     '#/stocks/detail': StockDetailPage, //상세+메모 CRUD

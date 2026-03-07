@@ -16,8 +16,8 @@ public class FinancialSnapshotController {
 
     private final FinancialSnapshotService snapshotService;
 
-    private String getUserId(HttpSession session) {
-        String userId = (String) session.getAttribute("userId");
+    private Long getUserId(HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
         if (userId == null) throw new RuntimeException("로그인이 필요합니다.");
         return userId;
     }
@@ -29,7 +29,7 @@ public class FinancialSnapshotController {
             @RequestParam int month,
             HttpSession session) {
 
-        String userId = getUserId(session);
+        Long  userId = getUserId(session);
 
         snapshotService.createMonthlySnapshotIfNotExists(userId, year, month);
         return snapshotService.getMonthlySnapshotNodes(userId, year, month);
@@ -40,7 +40,7 @@ public class FinancialSnapshotController {
             @RequestBody MonthlySnapshotUpdateRequestDto request,
             HttpSession session
     ) {
-        String userId = getUserId(session);
+        Long  userId = getUserId(session);
         snapshotService.ensureAndUpdateMonthlySnapshot(userId, request);
         return "ok";
     }

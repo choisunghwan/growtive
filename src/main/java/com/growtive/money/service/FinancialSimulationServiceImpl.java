@@ -18,7 +18,7 @@ public class FinancialSimulationServiceImpl implements FinancialSimulationServic
     /**
      * 내부 목표 도달 시뮬레이션 (추가 투자 옵션 포함) - ✅ 스냅샷 기반
      */
-    private int simulateGoalInternal(String userId,
+    private int simulateGoalInternal(Long userId,
                                      int startYear,
                                      int startMonth,
                                      long target,
@@ -99,7 +99,7 @@ public class FinancialSimulationServiceImpl implements FinancialSimulationServic
      * 기본 월별 시뮬레이션 - ✅ 스냅샷 기반
      */
     @Override
-    public SimulationResponseDto simulate(String userId,
+    public SimulationResponseDto simulate(Long userId,
                                           int startYear,
                                           int startMonth,
                                           int months) {
@@ -176,7 +176,7 @@ public class FinancialSimulationServiceImpl implements FinancialSimulationServic
      * 목표 도달 시점 계산 - ✅ 스냅샷 기반
      */
     @Override
-    public GoalSimulationResponseDto simulateUntilGoal(String userId,
+    public GoalSimulationResponseDto simulateUntilGoal(Long userId,
                                                        int startYear,
                                                        int startMonth,
                                                        long target) {
@@ -206,7 +206,7 @@ public class FinancialSimulationServiceImpl implements FinancialSimulationServic
      * 추가 투자 비교 - ✅ 스냅샷 기반
      */
     @Override
-    public GoalCompareResponseDto compareGoalWithExtraInvestment(String userId,
+    public GoalCompareResponseDto compareGoalWithExtraInvestment(Long userId,
                                                                  int startYear,
                                                                  int startMonth,
                                                                  long target,
@@ -242,7 +242,7 @@ public class FinancialSimulationServiceImpl implements FinancialSimulationServic
      * 📈 차트용 (기본 + 추가 투자 비교선 포함) - ✅ 스냅샷 기반
      */
     @Override
-    public ChartResponseDto buildChart(String userId,
+    public ChartResponseDto buildChart(Long userId,
                                        int startYear,
                                        int startMonth,
                                        int months,

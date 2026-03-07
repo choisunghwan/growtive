@@ -20,7 +20,7 @@ public class FinancialSnapshotServiceImpl implements FinancialSnapshotService {
      * 현재 월 snapshot 생성 보장
      */
     @Override
-    public void createMonthlySnapshotIfNotExists(String userId) {
+    public void createMonthlySnapshotIfNotExists(Long userId) {
 
         YearMonth now = YearMonth.now();
 
@@ -39,7 +39,7 @@ public class FinancialSnapshotServiceImpl implements FinancialSnapshotService {
      */
     @Override
     @Transactional
-    public void createMonthlySnapshotIfNotExists(String userId, int year, int month) {
+    public void createMonthlySnapshotIfNotExists(Long userId, int year, int month) {
 
         int count = mapper.countSnapshot(userId, year, month);
 
@@ -79,7 +79,7 @@ public class FinancialSnapshotServiceImpl implements FinancialSnapshotService {
     @Override
     @Transactional
     public void ensureAndUpdateMonthlySnapshot(
-            String userId,
+            Long userId,
             MonthlySnapshotUpdateRequestDto request
     ) {
 
@@ -122,7 +122,7 @@ public class FinancialSnapshotServiceImpl implements FinancialSnapshotService {
     @Override
     @Transactional(readOnly = true)
     public List<SnapshotNodeDto> getMonthlySnapshotNodes(
-            String userId,
+            Long userId,
             int year,
             int month
     ) {

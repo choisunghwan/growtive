@@ -16,7 +16,7 @@ public class FinancialCloseServiceImpl implements FinancialCloseService {
     private final FinancialCloseMapper mapper;
 
     @Override
-    public void closeMonth(String userId, int year, int month) {
+    public void closeMonth(Long userId, int year, int month) {
 
         // 🔥 userId 타입이 String 기반
         List<Long> assetIds = mapper.findAssetSnapshotIds(userId, year, month);

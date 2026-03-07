@@ -13,8 +13,8 @@ public class FinancialSummaryController {
 
     private final FinancialSummaryService service;
 
-    private String getUserId(HttpSession session) {
-        String userId = (String) session.getAttribute("userId");
+    private Long getUserId(HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
         if (userId == null) {
             throw new RuntimeException("로그인이 필요합니다.");
         }
@@ -27,7 +27,7 @@ public class FinancialSummaryController {
             @RequestParam int month,
             HttpSession session) {
 
-        String userId = getUserId(session);
+        Long userId = getUserId(session);
 
         return service.getMonthlySummary(userId, year, month);
     }

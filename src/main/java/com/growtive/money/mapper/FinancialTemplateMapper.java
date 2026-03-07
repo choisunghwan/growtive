@@ -11,17 +11,17 @@ import java.util.List;
 public interface FinancialTemplateMapper {
 
     List<FinancialNodeTemplateDto> findTemplatesByUser(
-            @Param("userId") String userId);
+            @Param("userId") Long userId);
 
     void insertTemplate(FinancialNodeTemplateDto template);
 
     void updateTemplate(FinancialNodeTemplateDto template);
 
     void deleteTemplate(@Param("id") Long id,
-                        @Param("userId") String userId);
+                        @Param("userId") Long userId);
 
     void updateCurrentMonthSnapshotFromTemplate(
-            @Param("userId") String userId,
+            @Param("userId") Long userId,
             @Param("templateId") Long templateId,
             @Param("year") int year,
             @Param("month") int month,
@@ -30,35 +30,35 @@ public interface FinancialTemplateMapper {
     );
 
     void insertSnapshotFromTemplateIfNotExists(
-            @Param("userId") String userId,
+            @Param("userId") Long userId,
             @Param("templateId") Long templateId,
             @Param("year") int year,
             @Param("month") int month
     );
 
     void deleteCurrentMonthSnapshot(
-            @Param("userId") String userId,
+            @Param("userId") Long userId,
             @Param("templateId") Long templateId,
             @Param("year") int year,
             @Param("month") int month
     );
 
     void deleteCurrentMonthFlows(
-            @Param("userId") String userId,
+            @Param("userId") Long userId,
             @Param("year") int year,
             @Param("month") int month
     );
 
     void insertCurrentMonthFlowsFromTemplate(
-            @Param("userId") String userId,
+            @Param("userId") Long userId,
             @Param("year") int year,
             @Param("month") int month
     );
 
     // 🔥 자동 flow 생성용
-    void deleteAllFlowTemplates(@Param("userId") String userId);
+    void deleteAllFlowTemplates(@Param("userId") Long userId);
 
-    void insertFlowTemplate(@Param("userId") String userId,
+    void insertFlowTemplate(@Param("userId") Long userId,
                             @Param("fromId") Long fromId,
                             @Param("toId") Long toId,
                             @Param("amount") Long amount);

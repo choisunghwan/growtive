@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 public class ChatMessage {
     private Long msgId;
     private Long roomId;
-    private String senderId;
+    private Long senderId;
     private String content;
     private LocalDateTime createdAt;
 }

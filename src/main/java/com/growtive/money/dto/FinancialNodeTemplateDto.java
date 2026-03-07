@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 public class FinancialNodeTemplateDto {
 
     private Long id;
-    private String userId;
+    private Long userId;
 
     /**
      * 항목 이름 (예: 월급, 식비, 적금)

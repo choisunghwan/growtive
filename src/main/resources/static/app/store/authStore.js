@@ -11,6 +11,17 @@
  * ❗ 주의
  * - localStorage에 userId 저장 ❌
  * - 실제 인증/보안은 서버(HttpSession)가 담당
+ *
+ *
+ * authStore 역할 정리
+ *
+ * user           → 로그인 유저 상태
+ * load()         → 서버 세션 동기화
+ * isLoggedIn()   → 로그인 여부
+ * getUserId()    → 현재 userId 반환
+ * clear()        → 로그아웃 처리
+ *
+ *
  */
 
 // import axios from 'axios';
@@ -18,12 +29,12 @@
 const authStore = {
     /**
      * 현재 로그인한 사용자 정보
-     * 예시: { userId: 'choi.sunghwan' }
+     * 예시: { userId: 1 }
      * 로그인 안 된 경우: null
      */
     user: null,
 
-    /**
+    /** → 서버 세션 동기화
      * 앱 최초 로드 시 1회 호출
      * 서버 세션에 로그인 정보가 있는지 확인
      *
