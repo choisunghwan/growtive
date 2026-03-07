@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+ 📘 StockMapper.xml
+ 주식(Stock) 관련 CRUD SQL을 정의한 MyBatis 매퍼 파일.
+ Service → Mapper → DB 로직의 중심 역할을 한다.
+-->
+
+<mapper namespace="com.growtive.stock.StockMapper">
+    <!-- ========================================================= -->
+    <!-- ✅ ResultMap: DB 컬럼명 ↔ Java 객체 필드 매핑 정의 -->
+    <!-- ========================================================= -->
+    <!-- DB 컬럼명(id, symbol, market, name)을
+        Stock.java (com.growtive.stock.model.Stock) 의
+        필드명(id, symbol, market, name)에 매핑 -->
+    <resultMap id="StockMap" type="com.growtive.stock.model.Stock">
+        <id     column="id"     property="id"/>          <!-- PK (기본키) -->
+        <result column="symbol" property="symbol"/>      <!-- 주식 심볼 -->
+        <result column="market" property="market"/>      <!-- 시장 (KR/US 등) -->
+        <result column="name"   property="name"/>        <!-- 종목명 -->
+    </resultMap>
+
+    <!-- ========================================================= -->
+    <!-- 🔍 findAll : 주식 전체 목록 조회 (검색어 q가 있을 경우 LIKE 검색) -->
+    <!-- ========================================================= -->
+    <!-- parameterType="map" : 파라미터로 여러 값(q 등)을 전달 가능 -->
+    <!-- resultMap="StockMap" : 위에 정의한 매핑 규칙 사용 -->
+    <select id="findAll" parameterType="map" resultMap="StockMap">
+        SELECT id
+            , symbol
+            , market
+            , name
+        FROM stock_master
+        <where>
+            <if test="q != null and q != ''">
+                AND (symbol LIKE CONCAT('%', #{q}, '%')
+                OR  name   LIKE CONCAT('%', #{q}, '%'))
+            </if>
+        </where>
+        ORDER BY id DESC <!-- 🔥 최신 등록 순으로 정렬 -->
+    </select>
+
+    <!-- ========================================================= -->
+    <!-- 📄 findById : 단일 종목 상세 조회 -->
+    <!-- ========================================================= -->
+    <!-- parameterType="long" : Long id 파라미터 하나만 전달 -->
+    <select id="findById" parameterType="long" resultMap="StockMap">
+        SELECT id ,
+               symbol,
+               market,
+               name
+        FROM stock_master
+        WHERE id = #{id}
+    </select>
+
+    <!-- ========================================================= -->
+    <!-- ➕ insert : 새 종목 등록 -->
+    <!-- ========================================================= -->
+    <!-- useGeneratedKeys="true" : AUTO_INCREMENT 된 id를 자동으로 채워줌 -->
+    <!-- keyProperty="id" : Stock 객체의 id 필드에 생성된 키를 매핑 -->
+    <insert id="insert" parameterType="com.growtive.stock.model.Stock" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO stock_master (symbol, market, name)
+        VALUES (#{symbol}, #{market}, #{name})
+    </insert>
+
+    <!-- ========================================================= -->
+    <!-- ✏️ update : 종목명 수정 -->
+    <!-- ========================================================= -->
+    <!-- 주식의 ID 기준으로 name 컬럼만 업데이트 -->
+    <update id="update" parameterType="com.growtive.stock.model.Stock">
+        UPDATE stock_master
+        SET name = #{name}
+        WHERE id = #{id}
+    </update>
+
+    <!-- ========================================================= -->
+    <!-- ❌ delete : 종목 삭제 -->
+    <!-- ========================================================= -->
+    <!-- 특정 ID에 해당하는 주식 데이터를 완전히 삭제 -->
+    <delete id="delete" parameterType="long">
+        DELETE FROM stock_master WHERE id = #{id}
+    </delete>
+
+</mapper>

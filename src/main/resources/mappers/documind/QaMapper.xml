@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.growtive.documind.mapper.QaMapper">
+    <resultMap id="QaMap" type="com.growtive.documind.model.QaLog">
+        <id column="id" property="id"/>
+        <result column="document_id" property="documentId"/>
+        <result column="question" property="question"/>
+        <result column="answer" property="answer"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.growtive.documind.model.QaLog"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO qa_log(document_id, question, answer)
+        VALUES(#{documentId}, #{question}, #{answer})
+    </insert>
+
+    <select id="findByDocumentId" parameterType="long" resultMap="QaMap">
+        SELECT id, document_id, question, answer, created_at
+        FROM qa_log WHERE document_id = #{docId}
+        ORDER BY id DESC
+    </select>
+
+    <!-- 특정 문서에 속한 Q&A 전체 삭제 -->
+    <delete id="deleteByDocumentId" parameterType="long">
+        DELETE FROM qa_log
+        WHERE document_id = #{documentId}
+    </delete>
+</mapper>

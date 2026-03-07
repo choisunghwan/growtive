@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8"/>
+    <title>GROWTIVE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+
+    <!-- favicon -->
+    <link rel="icon" href="/assets/img/favicon.ico?v=1" type="image/x-icon">
+    <link rel="shortcut icon" href="/assets/img/favicon.ico?v=1" type="image/x-icon">
+    <!-- CSS -->
+    <link rel="stylesheet" href="/assets/css/base.css">
+    <link rel="stylesheet" href="/assets/css/layout.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+    <!--로그인-->
+    <link rel="stylesheet" href="/assets/css/login.css">
+    <!--money (대시보드 css)-->
+    <link rel="stylesheet" href="/assets/css/money.css">
+
+    <!-- 💬 GrowTalk 전용 CSS -->
+    <link rel="stylesheet" href="/assets/css/chat.css">
+
+    <!-- axios 전역 로드: main.js보다 위에 있어야 함 -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <!-- ✅ SPA 부트스트랩 (ESM) -->
+    <script type="module" src="/app/core/main.js"></script>
+</head>
+<body>
+<header class="topbar">
+    <a href="#" class="brand">GROWTIVE</a>
+
+    <!-- ⭐ 사이드바 토글 버튼 위치 -->
+    <button id="sidebar-toggle" class="sidebar-toggle-btn">📂</button>
+
+    <!-- 기존 상단 메뉴 -->
+    <nav class="topnav">
+        <!-- 대시보드 -->
+        <a href="#/dashboard">대시보드</a>
+        <!-- 회원 -->
+        <a href="#/users">회원목록</a>
+        <a href="#/users/new">회원등록</a>
+        <!-- 주식 -->
+        <a href="#/stocks">주식목록</a>
+        <a href="#/stocks/search">주식등록</a>
+        <!-- DocuMind -->
+        <a href="#/documind">DocuMind</a>
+    </nav>
+
+    <!-- ✅ 로그인 유저 영역 -->
+    <div class="topbar-user" id="topbar-user"></div>
+        <!-- JS로 채움 -->
+
+    <!-- 🌙/☀️ 테마 토글 버튼 -->
+    <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark mode">
+        🌙
+    </button>
+</header>
+
+
+<!--좌측 사이드 바 메뉴-->
+<div class="container">
+    <aside class="sidebar" id="sidebar">
+        <!--대시보드-->
+        <div class="menu-title">대시보드</div>
+        <ul>
+            <li><a href="#/dashboard">🏠 Overview</a></li>
+            <li><a href="#/money/templates">💳 재무 템플릿 관리</a></li>
+        </ul>
+        <!--회원관리-->
+        <div class="menu-title">회원관리</div>
+        <ul>
+            <li><a href="#/login">🔐 로그인</a></li>
+            <li><a href="#/users">👥 목록</a></li>
+            <li><a href="#/users/new">➕ 등록</a></li>
+        </ul>
+        <!--주식관리-->
+        <div class="menu-title">주식관리</div>
+        <ul>
+            <li><a href="#/stocks">📊 내 종목</a></li>
+            <li><a href="#/stocks/search">🔍 종목 등록</a></li>
+        </ul>
+        <!--문서요약-->
+        <div class="menu-title">문서관리</div>
+        <ul>
+            <li><a href="#/documind">📝 문서 요약/Q&A</a></li>
+        </ul>
+
+        <!--메신저-->
+        <div class="menu-title">메신저</div>
+        <ul>
+            <li><a href="#/chat"> 💬GrowTalk</a></li>
+        </ul>
+
+        <!--서비스 제공-->
+        <div class="menu-title">서비스 관리</div>
+        <ul>
+            <li><a href="#/providers"> ✈️서비스 설정</a></li>
+        </ul>
+    </aside>
+
+    <!-- ✅ 라우터가 이곳에 렌더링 -->
+    <main id="app" class="content"></main>
+</div>
+<!-- 🌙 다크모드 토글 스크립트 -->
+<script src="/app/ui/theme-toggle.js"></script>
+<!-- 사이드바 - 모바일 script-->
+<script src="/app/ui/sidebar-toggle.js"></script>
+
+<script src="/app/ui/topbar-user.js"></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.7'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.growtive'
+version = '0.0.1-SNAPSHOT'
+description = 'GROWTIVE is AI Service corp'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// --- Web (MVC) & Validation & Security
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+//	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+	// --- MyBatis + JDBC
+	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3'
+	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+
+	// === DB 드라이버: MariaDB 사용 ===
+	// runtimeOnly 'com.mysql:mysql-connector-j'     // ❌ 제거
+	runtimeOnly 'org.mariadb.jdbc:mariadb-java-client:3.4.1' // ✅ 추가
+
+	// --- (선택) 운영 관측
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+	// --- (선택) OpenAPI(Swagger)
+	// implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+
+	// --- (선택) 외부 API 연동
+	// implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+	// --- Lombok / DevTools
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	// --- (선택) JWT
+	// implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	// runtimeOnly   'io.jsonwebtoken:jjwt-impl:0.12.6'
+	// runtimeOnly   'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+	// ✅ WebSocket (필수)
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+	// --- Test
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+//	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	//Apache Tika 사용: tika-core + tika-parsers-standard-package 라이브러리
+	implementation 'org.apache.tika:tika-core:2.9.2'
+	implementation 'org.apache.tika:tika-parsers-standard-package:2.9.2'
+
+
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

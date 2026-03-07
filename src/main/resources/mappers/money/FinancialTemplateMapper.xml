@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.growtive.money.mapper.FinancialTemplateMapper">
+
+    <!-- 사용자별 템플릿 목록 -->
+    <select id="findTemplatesByUser"
+            resultType="com.growtive.money.dto.FinancialNodeTemplateDto">
+        SELECT
+            id,
+            user_id        AS userId,
+            name,
+            type,
+            default_monthly_amount AS defaultMonthlyAmount,
+            default_expected_return AS defaultExpectedReturn
+        FROM financial_node_template
+        WHERE user_id = #{userId}
+        ORDER BY
+            CASE type
+                WHEN 'INCOME'  THEN 1
+                WHEN 'EXPENSE' THEN 2
+                WHEN 'ASSET'   THEN 3
+                ELSE 4
+                END,
+            id
+    </select>
+
+    <!-- 템플릿 추가 -->
+    <insert id="insertTemplate" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO financial_node_template (
+            user_id,
+            name,
+            type,
+            default_monthly_amount,
+            default_expected_return
+        ) VALUES (
+                     #{userId},
+                     #{name},
+                     #{type},
+                     #{defaultMonthlyAmount},
+                     #{defaultExpectedReturn}
+                 )
+    </insert>
+
+    <!-- 템플릿 수정 -->
+    <update id="updateTemplate">
+        UPDATE financial_node_template
+        SET
+            name = #{name},
+            type = #{type},
+            default_monthly_amount = #{defaultMonthlyAmount},
+            default_expected_return = #{defaultExpectedReturn}
+        WHERE id = #{id}
+          AND user_id = #{userId}
+    </update>
+
+    <!-- 템플릿 삭제 -->
+    <delete id="deleteTemplate">
+        DELETE FROM financial_node_template
+        WHERE id = #{id}
+          AND user_id = #{userId}
+    </delete>
+
+
+    <!-- ====================================================== -->
+    <!-- 🔥 1️⃣ 현재 월 월별기록 동기화 (템플릿 수정 시) -->
+    <!-- ====================================================== -->
+    <update id="updateCurrentMonthSnapshotFromTemplate">
+        UPDATE financial_node_snapshot
+        SET monthly_amount = #{monthlyAmount},
+            expected_annual_return = #{expectedReturn}
+        WHERE user_id = #{userId}
+                  AND template_id = #{templateId}
+                  AND year = #{year}
+                  AND month = #{month}
+    </update>
+
+
+    <!-- ====================================================== -->
+    <!-- 🔥 2️⃣ 템플릿 생성 시 현재월 월별기록 자동 생성 -->
+    <!-- ====================================================== -->
+    <insert id="insertSnapshotFromTemplateIfNotExists">
+        INSERT INTO financial_node_snapshot
+        (user_id, template_id, year, month, name, type, current_balance, monthly_amount, expected_annual_return)
+        SELECT t.user_id,
+               t.id,
+               #{year},
+               #{month},
+               t.name,
+               t.type,
+               0,
+               t.default_monthly_amount,
+               t.default_expected_return
+        FROM financial_node_template t
+        WHERE t.user_id = #{userId}
+          AND t.id = #{templateId}
+          AND NOT EXISTS (
+                SELECT 1
+                FROM financial_node_snapshot s
+                WHERE s.user_id = t.user_id
+                  AND s.template_id = t.id
+                  AND s.year = #{year}
+                  AND s.month = #{month}
+            )
+    </insert>
+
+
+    <!-- ====================================================== -->
+    <!-- 🔥 3️⃣ 템플릿 삭제 시 현재월 월별기록도 삭제 -->
+    <!-- ====================================================== -->
+    <delete id="deleteCurrentMonthSnapshot">
+        DELETE FROM financial_node_snapshot
+        WHERE user_id = #{userId}
+                  AND template_id = #{templateId}
+                  AND year = #{year}
+                  AND month = #{month}
+    </delete>
+    <!-- 🔥 현재월 flow 전부 삭제 -->
+    <delete id="deleteCurrentMonthFlows">
+        DELETE FROM flow_snapshot
+        WHERE user_id = #{userId}
+                  AND year = #{year}
+                  AND month = #{month}
+    </delete>
+
+
+    <!-- 🔥 flow_template 기준으로 현재월 flow 재생성 -->
+    <insert id="insertCurrentMonthFlowsFromTemplate">
+        INSERT INTO flow_snapshot
+            (user_id, from_snapshot_id, to_snapshot_id, year, month, amount)
+
+        SELECT
+            ft.user_id,
+            fs_from.id,
+            fs_to.id,
+            #{year},
+            #{month},
+            ft.amount
+        FROM flow_template ft
+
+                 JOIN financial_node_snapshot fs_from
+                      ON fs_from.template_id = ft.from_template_id
+                          AND fs_from.user_id = ft.user_id
+                          AND fs_from.year = #{year}
+                          AND fs_from.month = #{month}
+
+                 JOIN financial_node_snapshot fs_to
+                      ON fs_to.template_id = ft.to_template_id
+                          AND fs_to.user_id = ft.user_id
+                          AND fs_to.year = #{year}
+                          AND fs_to.month = #{month}
+
+        WHERE ft.user_id = #{userId}
+    </insert>
+
+    <!-- 🔥 flow_template 전체 삭제 -->
+    <delete id="deleteAllFlowTemplates">
+        DELETE FROM flow_template
+        WHERE user_id = #{userId}
+    </delete>
+
+    <!-- 🔥 자동 flow 생성 -->
+    <insert id="insertFlowTemplate">
+        INSERT INTO flow_template
+            (user_id, from_template_id, to_template_id, amount)
+        VALUES
+            (#{userId}, #{fromId}, #{toId}, #{amount})
+    </insert>
+
+</mapper>

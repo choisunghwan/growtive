@@ -1,0 +1,351 @@
+label{display:block;margin:8px 0 4px}
+input{width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;}
+button{padding:8px 12px; border:0; border-radius:6px; cursor:pointer;}
+
+/* === Table (정렬/간격 고정) === */
+.tbl {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;         /* 🔥 열 너비 고정 */
+}
+
+.tbl th, .tbl td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;     /* 길면 … 처리 */
+}
+
+.tbl th {
+    font-weight: 600;
+    color: #333;
+}
+
+.tbl td.action {
+    text-align: center;          /* 버튼 중앙 정렬 */
+}
+
+.tbl thead th { background: #fafafa; }
+
+/* 버튼 높이/여백 균일화 */
+.btn {
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    background: #f7f7f7;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.btn:hover { background: #f0f4ff; }
+
+
+/* 공통 테이블 */
+.tbl{
+    width:100%;
+    border-collapse:collapse;      /* collapse 로 통일 */
+    table-layout:fixed;            /* 열 너비 고정 */
+}
+.tbl th,.tbl td{
+    padding:12px 14px;
+    border-bottom:1px solid #eee;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    vertical-align:middle;
+    font-feature-settings: "tnum"; /* 숫자폭 고정(정렬 더 깔끔) */
+}
+
+/* ── 주식 리스트 전용 정렬 규칙 ── */
+.tbl--stocks th,.tbl--stocks td{ text-align:center; }         /* 기본: 모두 중앙 */
+.tbl--stocks th:nth-child(4),
+.tbl--stocks td:nth-child(4){ text-align:left; }              /* 4열(이름)만 왼쪽 */
+.tbl--stocks td.action{ text-align:center; }                  /* 버튼 열 중앙 */
+
+
+/* ===== Form ===== */
+.form { display: grid; gap: 12px; }
+.form label { display:block; margin:6px 0 4px; color:#333; font-weight:600; }
+.form input, .form textarea, .form select {
+    width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px;
+    background:#fff; outline:none;
+}
+.form input:focus, .form textarea:focus, .form select:focus { border-color:#8cb9ff; box-shadow:0 0 0 3px #e9f2ff; }
+.form .hint { color:#7a7a7a; font-size:.9rem; }
+
+/* ===== Buttons ===== */
+.btn { display:inline-flex; align-items:center; gap:6px;
+    height:36px; padding:0 14px; border-radius:8px; border:1px solid #dcdcdc;
+    background:#f7f7f7; color:#222; cursor:pointer; user-select:none;
+}
+.btn:hover { background:#f0f4ff; border-color:#cbd7ff; }
+.btn:active { transform:translateY(1px); }
+
+.btn-primary { background:#2563eb; border-color:#1e40af; color:#fff; }
+.btn-primary:hover { background:#1d4ed8; }
+.btn-danger  { background:#fee2e2; border-color:#fecaca; color:#b91c1c; }
+.btn-danger:hover { background:#fecaca; }
+
+.btn-ghost  { background:#fff; border-color:#e5e7eb; color:#374151; }
+.btn-ghost:hover { background:#f9fafb; }
+
+.btn-sm { height:32px; padding:0 12px; border-radius:7px; }
+
+/* 버튼 묶음 정렬 */
+.btn-row { display:flex; gap:10px; margin-top:8px; }
+.btn-row.right { justify-content:flex-end; }
+.btn-row.center { justify-content:center; }
+
+/* 섹션 카드 */
+.card { background:#fff; border:1px solid #eee; border-radius:12px; padding:18px; box-shadow:0 1px 0 #f2f2f2; }
+.card h2 { margin:6px 0 14px; }
+
+/* 소제목/구분선 */
+.hr { height:1px; background:#efefef; border:0; margin:10px 0 6px; }
+
+
+
+/* ===== Modal ===== */
+.modal-wrap{ position:fixed; inset:0; display:grid; place-items:center; z-index:1000; }
+.modal-dim{ position:absolute; inset:0; background:rgba(0,0,0,.35); }
+.modal{ position:relative; width:min(420px, 92vw); background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.15);}
+.modal-title{ font-weight:700; margin-bottom:8px;}
+.modal-body{ color:#374151; margin:6px 0 12px; }
+.modal-actions{ display:flex; justify-content:flex-end; gap:8px; }
+
+/*
+* 메인화면(Dash board) CSS
+*/
+.dashboard {
+    padding: 24px;
+}
+
+.card {
+    padding: 24px;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    text-align: center;
+}
+
+.card .title {
+    margin: 0 0 12px;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.card .subtitle {
+    color: #666;
+    font-size: 16px;
+}
+
+
+/* =======================================
+   🧩 Provider 리스트 + 토글 스위치 컴포넌트
+   ======================================= */
+
+.providers-page {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.provider-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.provider-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.provider-header-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.provider-count-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 22px;
+    padding: 0 8px;
+    font-size: 12px;
+    border-radius: 999px;
+    background: #f0f0f0;
+    color: #666;
+}
+
+/* Provider 행 */
+
+.provider-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.provider-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.provider-divider {
+    height: 1px;
+    background: #eee;
+}
+
+.provider-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.provider-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    background: #f3f4f6;
+    color: #111827;
+}
+
+/* 필요시 Provider별 색상 */
+.provider-logo-comfy {
+    background: #fef9c3;
+    color: #854d0e;
+}
+
+.provider-logo-fal {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.provider-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.provider-name {
+    font-weight: 600;
+}
+
+.provider-desc {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* 🔘 토글 스위치 */
+
+.provider-switch {
+    position: relative;
+    width: 34px;
+    height: 18px;
+    border-radius: 999px;
+    border: none;
+    background: #d4d4d8;
+    cursor: pointer;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    transition: background 0.2s ease;
+}
+
+.provider-switch:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+.provider-switch-handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    background: #ffffff;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+
+/* ON 상태 */
+.provider-switch.is-on {
+    background: #1677ff;
+}
+
+.provider-switch.is-on .provider-switch-handle {
+    transform: translateX(16px);
+}
+
+/* 🌙 다크모드 보정 */
+html.dark .provider-count-tag {
+    background: #1f2933;
+    color: #9ca3af;
+}
+
+html.dark .provider-divider {
+    background: #1f2933;
+}
+
+html.dark .provider-desc {
+    color: #9ca3af;
+}
+
+html.dark .provider-logo {
+    background: #111827;
+    color: #e5e7eb;
+}
+
+html.dark .provider-logo-comfy {
+    background: #3f3a13;
+    color: #f9f871;
+}
+
+html.dark .provider-logo-fal {
+    background: #082f49;
+    color: #e0f2fe;
+}
+
+html.dark .provider-switch {
+    background: #4b5563;
+}
+
+html.dark .provider-switch.is-on {
+    background: #4c8df6;
+}
+
+/* =========================
+   📱 Mobile Components
+   ========================= */
+@media (max-width: 768px) {
+
+    /* 테이블은 가로 스크롤 허용 */
+    .tbl-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tbl {
+        min-width: 640px;  /* 👈 PC 기준 최소 폭 유지 */
+    }
+
+    /* 모바일에서는 텍스트 줄바꿈 허용 */
+    .tbl th,
+    .tbl td {
+        white-space: normal;
+    }
+}

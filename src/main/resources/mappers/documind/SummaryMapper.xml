@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.growtive.documind.mapper.SummaryMapper">
+    <resultMap id="SummaryMap" type="com.growtive.documind.model.Summary">
+        <id column="id" property="id"/>
+        <result column="document_id" property="documentId"/>
+        <result column="summary_text" property="summaryText"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.growtive.documind.model.Summary"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO summary(document_id, summary_text)
+        VALUES(#{documentId}, #{summaryText})
+    </insert>
+
+    <select id="findByDocumentId" parameterType="long" resultMap="SummaryMap">
+        SELECT id, document_id, summary_text, created_at
+        FROM summary WHERE document_id = #{docId}
+        ORDER BY id DESC
+    </select>
+
+
+    <!-- 특정 문서에 속한 요약 전체 삭제 -->
+    <delete id="deleteByDocumentId" parameterType="long">
+        DELETE FROM summary
+        WHERE document_id = #{documentId}
+    </delete>
+</mapper>

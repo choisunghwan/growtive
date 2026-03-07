@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.growtive.money.mapper.FinancialCloseMapper">
+
+    <!-- 이번 달 ASSET snapshot id 목록 -->
+    <select id="findAssetSnapshotIds" resultType="java.lang.Long">
+        SELECT id
+        FROM financial_node_snapshot
+        WHERE user_id = #{userId, jdbcType=VARCHAR}
+                  AND year = #{year}
+                  AND month = #{month}
+          AND type = 'ASSET'
+    </select>
+
+    <!-- 해당 ASSET으로 들어오는 inflow 합 -->
+    <select id="sumInflowToAsset" resultType="java.lang.Long">
+        SELECT COALESCE(SUM(amount),0)
+        FROM flow_snapshot
+        WHERE user_id = #{userId, jdbcType=VARCHAR}
+                  AND year = #{year}
+                  AND month = #{month}
+          AND to_snapshot_id = #{assetSnapshotId}
+    </select>
+
+    <!-- 현재잔액 + 수익률 조회 -->
+    <select id="findAssetForClose"
+            resultType="com.growtive.money.dto.AssetForCloseDto">
+        SELECT id,
+               current_balance AS currentBalance,
+               expected_annual_return AS expectedAnnualReturn
+        FROM financial_node_snapshot
+        WHERE id = #{assetSnapshotId}
+    </select>
+
+    <!-- 잔액 업데이트 -->
+    <update id="updateAssetBalance">
+        UPDATE financial_node_snapshot
+        SET current_balance = #{newBalance}
+        WHERE id = #{assetSnapshotId}
+    </update>
+
+</mapper>

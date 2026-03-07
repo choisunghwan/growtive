@@ -1,0 +1,336 @@
+.topbar {
+    height: 56px;
+    background: #fff;
+    border-bottom: 1px solid #e5e5e5;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.topbar .brand {
+    font-weight: 700;
+}
+
+.topnav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.topnav a {
+    margin-right: 12px;
+    color: #444;
+    padding: 6px 8px;
+    border-radius: 6px;
+}
+
+.topnav a.active {
+    background: #0078ff;
+    color: #fff;
+}
+
+/* 🌙 테마 토글 버튼 (우측 상단) */
+.theme-toggle {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 999px;
+    color: #444;
+}
+
+.theme-toggle:hover {
+    background: #f1f5f9;
+}
+
+/* 레이아웃 */
+.container {
+    display: flex;
+    min-height: calc(100vh - 56px);
+}
+
+.sidebar {
+    width: 220px;
+    padding: 16px;
+    border-right: 1px solid #eee;
+    background: #fff;
+}
+
+.sidebar .menu-title {
+    margin: 12px 0 6px;
+    font-weight: 600;
+    color: #666;
+}
+
+.sidebar a {
+    display: block;
+    padding: 6px 8px;
+    border-radius: 6px;
+    color: #333;
+}
+
+.sidebar a.active {
+    background: #eef4ff;
+    color: #0a58ca;
+}
+
+.content {
+    flex: 1;
+    padding: 24px;
+}
+
+/* -----------------------------
+   🔔 Growtive 상단 움직이는 공지 배너
+-------------------------------- */
+
+.notice-banner {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: #eef6ff;
+    border: 1px solid #bcd8ff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    gap: 12px;
+}
+
+/* 텍스트 영역 - 이 박스 안에서만 움직임 */
+.notice-text-wrap {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/* 실제 움직이는 텍스트 */
+.notice-text-wrap .marquee {
+    display: inline-block;
+    white-space: nowrap;
+    animation: growtive-scroll 16s linear infinite;
+}
+
+.notice-banner:hover .marquee {
+    animation-play-state: paused;
+}
+
+/* 오른쪽 버튼 */
+.notice-btn {
+    flex-shrink: 0;
+    background: #1677ff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.notice-btn:hover {
+    filter: brightness(1.08);
+}
+
+/* 움직임 Animation */
+@keyframes growtive-scroll {
+    0% {
+        transform: translateX(100%);
+    }
+
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
+/* =============================
+   🌙 Layout Dark Mode (Topbar, Sidebar, Content, Banner, Toggle)
+   ============================= */
+
+html.dark .topbar {
+    background: #020617;
+    border-bottom-color: #1f2937;
+}
+
+html.dark .topbar .brand {
+    color: #e5e7eb;
+}
+
+html.dark .topnav a {
+    color: #e5e7eb;
+}
+
+html.dark .topnav a.active {
+    background: #2563eb;
+    color: #f9fafb;
+}
+
+/* 토글 버튼 다크 모드 */
+html.dark .theme-toggle {
+    color: #e5e7eb;
+}
+
+html.dark .theme-toggle:hover {
+    background: #111827;
+}
+
+html.dark .container {
+    background: #111827;
+}
+
+html.dark .sidebar {
+    background: #020617;
+    border-right-color: #1f2937;
+}
+
+html.dark .sidebar .menu-title {
+    color: #9ca3af;
+}
+
+html.dark .sidebar a {
+    color: #e5e7eb;
+}
+
+html.dark .sidebar a.active {
+    background: #1d283a;
+    color: #93c5fd;
+}
+
+html.dark .content {
+    color: #e5e7eb;
+}
+
+/* 🔔 공지 배너 다크 버전 */
+html.dark .notice-banner {
+    background: #1e1f23;
+    border-color: #333;
+}
+
+html.dark .notice-text-wrap .marquee {
+    color: #e2e2e2;
+}
+
+html.dark .notice-btn {
+    background: #4c8df6;
+    color: #fff;
+}
+
+html.dark .notice-btn:hover {
+    filter: brightness(1.15);
+}
+
+
+/* =========================
+   📌 GrowTive Sidebar Toggle
+========================= */
+
+/* 닫혔을 때: 완전 숨김처럼 */
+.sidebar.collapsed {
+    width: 0;
+    padding: 0;
+    border: none;
+    overflow: hidden;
+}
+
+/* 기본: 열려 있을 때 */
+.sidebar {
+    width: 220px;
+    padding: 16px;
+    border-right: 1px solid #eee;
+    background: #fff;
+    flex-shrink: 0;
+    transition: width 0.25s ease, padding 0.25s ease, border 0.25s ease;
+}
+/* 내용 영역도 같이 이동 */
+.content {
+    flex: 1;
+    padding: 24px;
+    transition: padding 0.25s ease;
+}
+
+
+
+
+/* =========================
+   📱 Mobile Responsive (GrowTive)
+   ========================= */
+@media (max-width: 768px) {
+
+    /* =====================
+       Topbar
+       ===================== */
+    .topbar {
+        padding: 0 12px;
+        gap: 8px;
+    }
+
+    /* 모바일에서는 상단 메뉴 숨김 */
+    .topnav {
+        display: none;
+    }
+
+    /* =====================
+       Layout
+       ===================== */
+    .container {
+        display: block;
+        min-height: auto;
+    }
+
+    /* =====================
+       Sidebar (모바일 전용)
+       ===================== */
+
+    /* ⚠️ PC용 collapsed 무력화 */
+    .sidebar.collapsed {
+        width: 220px;
+        padding: 16px;
+        border-right: 1px solid #eee;
+    }
+
+    /* 모바일 기본 상태: 숨김 */
+    .sidebar {
+        position: fixed;
+        top: 56px; /* topbar 높이 */
+        left: 0;
+        height: calc(100vh - 56px);
+        width: 220px;
+        padding: 16px;
+        background: #fff;
+        z-index: 1000;
+
+        /* 슬라이드 방식 */
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+    }
+
+    /* 📱 모바일에서 열렸을 때 */
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    /* =====================
+       Content
+       ===================== */
+    .content {
+        padding: 16px;
+    }
+
+    /* =====================
+       Notice Banner
+       ===================== */
+    .notice-banner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .notice-text-wrap {
+        white-space: normal;
+    }
+}

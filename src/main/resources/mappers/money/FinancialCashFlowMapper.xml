@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.growtive.money.mapper.FinancialCashFlowMapper">
+
+    <!--
+      월별 기록(financial_node_snapshot) 기준 현금흐름 시리즈
+      - INCOME 합계
+      - EXPENSE 합계
+      - net = income - expense
+    -->
+    <select id="findCashFlowSeries" resultType="com.growtive.money.dto.CashFlowPointDto">
+
+        WITH RECURSIVE months AS (
+            SELECT
+                #{startYear} AS y,
+                #{startMonth} AS m,
+                0 AS idx
+            UNION ALL
+            SELECT
+                CASE WHEN m = 12 THEN y + 1 ELSE y END AS y,
+                CASE WHEN m = 12 THEN 1 ELSE m + 1 END AS m,
+                idx + 1 AS idx
+            FROM months
+            WHERE idx + 1 &lt; #{months}
+        )
+        SELECT
+            CONCAT(LPAD(y, 4, '0'), '-', LPAD(m, 2, '0')) AS ym,
+            COALESCE((
+                         SELECT SUM(s.monthly_amount)
+                         FROM financial_node_snapshot s
+                         WHERE s.user_id = #{userId, jdbcType=VARCHAR}
+                           AND s.year = months.y
+                           AND s.month = months.m
+                           AND s.type = 'INCOME'
+                     ), 0) AS income,
+            COALESCE((
+                         SELECT SUM(s.monthly_amount)
+                         FROM financial_node_snapshot s
+                         WHERE s.user_id = #{userId, jdbcType=VARCHAR}
+                           AND s.year = months.y
+                           AND s.month = months.m
+                           AND s.type = 'EXPENSE'
+                     ), 0) AS expense,
+            (
+                    COALESCE((
+                                 SELECT SUM(s.monthly_amount)
+                                 FROM financial_node_snapshot s
+                                 WHERE s.user_id = #{userId, jdbcType=VARCHAR}
+                                   AND s.year = months.y
+                                   AND s.month = months.m
+                                   AND s.type = 'INCOME'
+                             ), 0)
+                    -
+                    COALESCE((
+                                 SELECT SUM(s.monthly_amount)
+                                 FROM financial_node_snapshot s
+                                 WHERE s.user_id = #{userId, jdbcType=VARCHAR}
+                                   AND s.year = months.y
+                                   AND s.month = months.m
+                                   AND s.type = 'EXPENSE'
+                             ), 0)
+                ) AS net
+        FROM months
+        ORDER BY months.y, months.m;
+
+    </select>
+
+</mapper>

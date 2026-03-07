@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.growtive.stock.NoteMapper">
+
+    <resultMap id="NoteMap" type="com.growtive.stock.model.StockNote">
+        <id     column="id"          property="id"/>
+        <result column="stock_id"    property="stockId"/>
+        <result column="buy_price"   property="buyPrice"/>
+        <result column="sell_price"  property="sellPrice"/>
+        <result column="target_price" property="targetPrice"/>
+        <result column="memo"        property="memo"/>
+        <result column="created_at"  property="createdAt"/>
+        <result column="updated_at"  property="updatedAt"/>
+    </resultMap>
+
+    <select id="findLatestByStockId" parameterType="long" resultMap="NoteMap">
+        SELECT id, stock_id, buy_price, sell_price, target_price, memo, created_at, updated_at
+        FROM stock_note
+        WHERE stock_id = #{stockId}
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.growtive.stock.model.StockNote" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO stock_note (stock_id, buy_price, sell_price, target_price, memo)
+        VALUES (#{stockId}, #{buyPrice}, #{sellPrice}, #{targetPrice}, #{memo})
+    </insert>
+
+    <update id="update" parameterType="com.growtive.stock.model.StockNote">
+        UPDATE stock_note
+        SET buy_price = #{buyPrice},
+        sell_price = #{sellPrice},
+        target_price = #{targetPrice},
+        memo = #{memo}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="long">
+        DELETE FROM stock_note WHERE id = #{id}
+    </delete>
+
+</mapper>

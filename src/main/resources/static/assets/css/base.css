@@ -1,0 +1,105 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    color: #222;
+    background: #fafafa;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.btn {
+    display: inline-block;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #eee;
+}
+
+.primary {
+    background: #0078ff;
+    color: #fff;
+}
+
+.muted {
+    color: #666;
+}
+
+.ok {
+    color: #2e7d32;
+}
+
+.error {
+    color: #d32f2f;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    border-bottom: 1px solid #eee;
+    padding: 6px 8px;
+    text-align: left;
+}
+
+.card {
+    background: #fff;
+    padding: 16px;
+    border: 1px solid #e5e5e5;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .03);
+}
+
+/* =============================
+   🌙 Global Dark Mode (기본 토닝)
+   html에 .dark 클래스가 붙었을 때 적용
+   ============================= */
+
+html.dark body {
+    background: #111827;
+    color: #e5e7eb;
+}
+
+/* 공통 카드 다크 모드 */
+html.dark .card {
+    background: #1f2933;
+    border-color: #374151;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+/* 버튼 계열 */
+html.dark .btn {
+    background: #374151;
+    color: #e5e7eb;
+}
+
+html.dark .primary {
+    background: #2563eb;
+    color: #f9fafb;
+}
+
+html.dark .muted {
+    color: #9ca3af;
+}
+
+html.dark .ok {
+    color: #6ee7b7;
+}
+
+html.dark .error {
+    color: #fca5a5;
+}
+
+/* 테이블 라인톤 */
+html.dark .table th,
+html.dark .table td {
+    border-bottom: 1px solid #374151;
+}

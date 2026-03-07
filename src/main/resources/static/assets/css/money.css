@@ -1,0 +1,47 @@
+/* 카드 공통 */
+.dashboard .card {
+    padding: 20px;
+}
+
+/* Sankey 반응형 */
+#sankeyChart {
+    width: 100% !important;
+    height: 280px !important;
+}
+
+/* Chart 반응형 */
+#moneyChart {
+    width: 100%;
+}
+
+.card canvas {
+    display: block;
+    width: 100% !important;
+    height: 320px;
+}
+
+@media (max-width: 768px) {
+    .card canvas {
+        height: 220px;
+    }
+}
+/* 모바일 대응 */
+@media (max-width: 768px) {
+
+    .dashboard .card {
+        padding: 14px;
+    }
+
+    #sankeyChart,
+    #moneyChart {
+        height: 220px !important;
+    }
+
+    #moneySummary {
+        flex-direction: column;
+    }
+
+    #moneySummary > div {
+        margin-bottom: 10px;
+    }
+}

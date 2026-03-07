@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.growtive.money.mapper.FinancialSimulationMapper">
+
+    <!-- ========================================================= -->
+    <!-- ✅ 1️⃣ 스냅샷 기반 ASSET 조회 (시뮬레이션용 핵심) -->
+    <!-- ========================================================= -->
+    <select id="findAssetSnapshots"
+            resultType="com.growtive.money.dto.AssetForCloseDto">
+
+        SELECT
+            id,
+            current_balance AS currentBalance,
+            expected_annual_return AS expectedAnnualReturn
+        FROM financial_node_snapshot
+        WHERE user_id = #{userId, jdbcType=VARCHAR}
+                  AND year = #{year}
+                  AND month = #{month}
+          AND type = 'ASSET'
+        ORDER BY id
+
+    </select>
+
+
+    <!-- ========================================================= -->
+    <!-- ✅ 2️⃣ 스냅샷 기반: 해당 자산으로 들어오는 월 유입 합 -->
+    <!-- ========================================================= -->
+    <select id="sumMonthlyInflowToAssetSnapshot"
+            resultType="java.lang.Long">
+
+        SELECT COALESCE(SUM(amount), 0)
+        FROM flow_snapshot
+        WHERE user_id = #{userId, jdbcType=VARCHAR}
+                  AND year = #{year}
+                  AND month = #{month}
+          AND to_snapshot_id = #{assetSnapshotId}
+
+    </select>
+
+
+    <!-- ========================================================= -->
+    <!-- 🔽 기존 템플릿 기반 (유지해도 됨) -->
+    <!-- ========================================================= -->
+
+    <!-- 자산 템플릿 조회 -->
+    <select id="findAssetTemplates"
+            resultType="com.growtive.money.dto.AssetForCloseDto">
+
+        SELECT id,
+               0 AS currentBalance,
+               default_expected_return AS expectedAnnualReturn
+        FROM financial_node_template
+        WHERE user_id = #{userId, jdbcType=VARCHAR}
+          AND type = 'ASSET'
+
+    </select>
+
+    <!-- 해당 템플릿으로 들어오는 월 inflow 합 -->
+    <select id="sumMonthlyInflowToAssetTemplate"
+            resultType="java.lang.Long">
+
+        SELECT COALESCE(SUM(amount),0)
+        FROM flow_template
+        WHERE user_id = #{userId, jdbcType=VARCHAR}
+          AND to_template_id = #{templateId}
+
+    </select>
+
+</mapper>

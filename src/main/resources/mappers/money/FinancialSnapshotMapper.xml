@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.growtive.money.mapper.FinancialSnapshotMapper">
+
+    <!-- 1️⃣ 스냅샷 존재 확인 -->
+    <select id="countSnapshot" resultType="int">
+        SELECT COUNT(*)
+        FROM financial_node_snapshot
+        WHERE user_id = #{userId, jdbcType=VARCHAR}
+                  AND year = #{year}
+                  AND month = #{month}
+    </select>
+
+    <!-- 2️⃣ Template → Snapshot 복사 -->
+    <insert id="insertSnapshotFromTemplate">
+        INSERT INTO financial_node_snapshot (
+            user_id,
+            template_id,
+            year,
+            month,
+            name,
+            type,
+            current_balance,
+            monthly_amount,
+            expected_annual_return
+        )
+        SELECT
+            t.user_id,
+            t.id,
+            #{year},
+            #{month},
+            t.name,
+            t.type,
+            0,
+            t.default_monthly_amount,
+            t.default_expected_return
+        FROM financial_node_template t
+        WHERE t.user_id = #{userId, jdbcType=VARCHAR}
+    </insert>
+
+    <!-- 3️⃣ 이전 달 ASSET 잔액 복사 -->
+    <update id="copyPreviousAssetBalance">
+        UPDATE financial_node_snapshot cur
+            JOIN financial_node_snapshot prev
+        ON cur.template_id = prev.template_id
+            AND prev.year = #{prevYear}
+            AND prev.month = #{prevMonth}
+            AND prev.user_id = #{userId, jdbcType=VARCHAR}
+            SET cur.current_balance = prev.current_balance
+        WHERE cur.user_id = #{userId, jdbcType=VARCHAR}
+          AND cur.year = #{year}
+          AND cur.month = #{month}
+          AND cur.type = 'ASSET'
+    </update>
+
+    <!-- 4️⃣ flow_template → flow_snapshot 복사 -->
+    <insert id="insertFlowSnapshot">
+        INSERT INTO flow_snapshot (
+            user_id,
+            from_snapshot_id,
+            to_snapshot_id,
+            amount,
+            year,
+            month
+        )
+        SELECT
+            ft.user_id,
+            fs_from.id,
+            fs_to.id,
+            ft.amount,
+            #{year},
+            #{month}
+        FROM flow_template ft
+                 JOIN financial_node_snapshot fs_from
+                      ON ft.from_template_id = fs_from.template_id
+                          AND fs_from.year = #{year}
+                          AND fs_from.month = #{month}
+                 JOIN financial_node_snapshot fs_to
+                      ON ft.to_template_id = fs_to.template_id
+                          AND fs_to.year = #{year}
+                          AND fs_to.month = #{month}
+        WHERE ft.user_id = #{userId, jdbcType=VARCHAR}
+    </insert>
+
+    <!-- 5️⃣ 스냅샷 노드 조회 -->
+    <select id="findSnapshotNodes"
+            resultType="com.growtive.money.dto.SnapshotNodeDto">
+        SELECT id,
+               name,
+               type,
+               monthly_amount AS monthlyAmount
+        FROM financial_node_snapshot
+        WHERE user_id = #{userId, jdbcType=VARCHAR}
+                  AND year = #{year}
+                  AND month = #{month}
+        ORDER BY id
+    </select>
+
+    <!-- 6️⃣ monthly_amount 업데이트 (id 기반) -->
+    <update id="updateMonthlyAmountBySnapshotId">
+        UPDATE financial_node_snapshot
+        SET monthly_amount = #{amount}
+        WHERE user_id = #{userId, jdbcType=VARCHAR}
+          AND id = #{snapshotId}
+    </update>
+
+    <!-- 7️⃣ monthly_amount 업데이트 (name 기반 fallback) -->
+    <update id="updateMonthlyAmountByName">
+        UPDATE financial_node_snapshot
+        SET monthly_amount = #{amount}
+        WHERE user_id = #{userId, jdbcType=VARCHAR}
+                  AND year = #{year}
+                  AND month = #{month}
+          AND name = #{name}
+    </update>
+
+    <!-- 8️⃣ snapshot 이미 있을 때, 템플릿 누락 항목만 추가 -->
+    <insert id="insertMissingSnapshotNodesFromTemplate">
+        INSERT INTO financial_node_snapshot (
+            user_id,
+            template_id,
+            year,
+            month,
+            name,
+            type,
+            current_balance,
+            monthly_amount,
+            expected_annual_return
+        )
+        SELECT
+            t.user_id,
+            t.id,
+            #{year},
+            #{month},
+            t.name,
+            t.type,
+            0,
+            t.default_monthly_amount,
+            t.default_expected_return
+        FROM financial_node_template t
+        WHERE t.user_id = #{userId, jdbcType=VARCHAR}
+          AND NOT EXISTS (
+                SELECT 1
+                FROM financial_node_snapshot s
+                WHERE s.user_id = t.user_id
+                  AND s.template_id = t.id
+                  AND s.year = #{year}
+                  AND s.month = #{month}
+            )
+    </insert>
+
+    <!-- 9️⃣ snapshot 이미 있을 때, flow 누락만 추가 -->
+    <insert id="insertMissingFlowSnapshot">
+        INSERT INTO flow_snapshot (
+            user_id,
+            from_snapshot_id,
+            to_snapshot_id,
+            amount,
+            year,
+            month
+        )
+        SELECT
+            ft.user_id,
+            fs_from.id,
+            fs_to.id,
+            ft.amount,
+            #{year},
+            #{month}
+        FROM flow_template ft
+                 JOIN financial_node_snapshot fs_from
+                      ON ft.from_template_id = fs_from.template_id
+                          AND fs_from.year = #{year}
+                          AND fs_from.month = #{month}
+                 JOIN financial_node_snapshot fs_to
+                      ON ft.to_template_id = fs_to.template_id
+                          AND fs_to.year = #{year}
+                          AND fs_to.month = #{month}
+        WHERE ft.user_id = #{userId, jdbcType=VARCHAR}
+          AND NOT EXISTS (
+                SELECT 1
+                FROM flow_snapshot s
+                WHERE s.user_id = ft.user_id
+                  AND s.year = #{year}
+                  AND s.month = #{month}
+                  AND s.from_snapshot_id = fs_from.id
+                  AND s.to_snapshot_id = fs_to.id
+            )
+    </insert>
+</mapper>
