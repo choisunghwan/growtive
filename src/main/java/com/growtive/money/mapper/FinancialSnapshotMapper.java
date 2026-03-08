@@ -66,4 +66,10 @@ public interface FinancialSnapshotMapper {
             @Param("year") int year,
             @Param("month") int month
     );
+
+    void syncFlowSnapshotAmount(
+            @Param("userId") Long userId,
+            @Param("year") int year,
+            @Param("month") int month
+    );
 }

@@ -1,10 +1,12 @@
 export default function DashboardPage() {
+    const now = new Date();
+
     return {
         title: "대시보드",
 
         state: {
-            startYear: 2026,
-            startMonth: 2,
+            year: now.getFullYear(),
+            month: now.getMonth() + 1,
             months: 72,
             target: 100000000,
             monthlyIncrease: 200000
@@ -17,12 +19,22 @@ export default function DashboardPage() {
           <div class="card">
             <h1 class="title">GrowTive</h1>
             <p class="subtitle">재무 실험실</p>
+
+            <div style="display:flex; align-items:center; gap:10px; margin-top:16px; flex-wrap:wrap;">
+              <button id="prevMonthBtn" type="button">◀ 이전 달</button>
+              <div id="currentMonthLabel" style="font-weight:700; font-size:16px;"></div>
+              <button id="nextMonthBtn" type="button">다음 달 ▶</button>
+              <button id="goCurrentMonthBtn" type="button">현재 월로</button>
+            </div>
           </div>
 
           <!-- 🔥 월급 흐름 -->
           <div class="card" style="margin-top:20px;">
             <h3>월급 흐름</h3>
-            <div class="chart-wrapper">
+            <div style="font-size:13px; opacity:0.75; margin-top:6px;">
+              선택한 월 기준 Sankey 흐름입니다.
+            </div>
+            <div class="chart-wrapper" style="margin-top:12px;">
               <canvas id="sankeyChart"></canvas>
             </div>
             <div id="remainingInfo" style="margin-top:10px;"></div>
@@ -32,7 +44,7 @@ export default function DashboardPage() {
           <div class="card" style="margin-top:20px;">
             <h3>월별 재무 입력</h3>
             <div style="font-size:13px; opacity:0.75; margin-top:6px;">
-              해당 월의 월급/지출/투자 등 월별 금액을 입력하고 저장하세요.
+              선택한 월의 월급/지출/투자 등 월별 금액을 입력하고 저장하세요.
             </div>
 
             <div id="snapshotInputs" style="margin-top:15px;"></div>
@@ -67,13 +79,19 @@ export default function DashboardPage() {
           <!-- 💰 요약 -->
           <div class="card" style="margin-top:20px;">
             <h3>재무 요약</h3>
-            <div id="moneySummary" style="display:flex; gap:12px; flex-wrap:wrap;"></div>
+            <div style="font-size:13px; opacity:0.75; margin-top:6px;">
+              선택한 월을 시작점으로 계산됩니다.
+            </div>
+            <div id="moneySummary" style="display:flex; gap:12px; flex-wrap:wrap; margin-top:12px;"></div>
           </div>
 
           <!-- 📈 자산 성장 -->
           <div class="card" style="margin-top:20px;">
             <h3>자산 성장 예측</h3>
-            <div class="chart-wrapper">
+            <div style="font-size:13px; opacity:0.75; margin-top:6px;">
+              선택한 월 기준으로 목표 도달 시점을 계산합니다.
+            </div>
+            <div class="chart-wrapper" style="margin-top:12px;">
               <canvas id="moneyChart"></canvas>
             </div>
           </div>
@@ -83,8 +101,6 @@ export default function DashboardPage() {
         },
 
         async onMounted() {
-
-            // Chart.js 로드
             if (!window.Chart) {
                 const script = document.createElement("script");
                 script.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.1";
@@ -92,7 +108,6 @@ export default function DashboardPage() {
                 await new Promise(resolve => script.onload = resolve);
             }
 
-            // Sankey 플러그인 로드
             if (!window.SankeyController) {
                 const sankeyScript = document.createElement("script");
                 sankeyScript.src = "https://cdn.jsdelivr.net/npm/chartjs-chart-sankey@0.12.0/dist/chartjs-chart-sankey.min.js";
@@ -101,19 +116,84 @@ export default function DashboardPage() {
             }
 
             this.initSliders();
-
-            // 최초 로드: 입력 → 대시보드/차트 → Sankey
-            await this.loadSnapshotInputs();
+            this.bindMonthButtons();
             this.bindSnapshotButtons();
+            this.renderMonthLabel();
 
+            await this.refreshAll();
+        },
+
+        /* ---------------- 공통 ---------------- */
+
+        getYearMonthText() {
+            return `${this.state.year}년 ${String(this.state.month).padStart(2, "0")}월`;
+        },
+
+        renderMonthLabel() {
+            const labelEl = document.getElementById("currentMonthLabel");
+            if (labelEl) {
+                labelEl.innerText = this.getYearMonthText();
+            }
+        },
+
+        moveMonth(diff) {
+            let { year, month } = this.state;
+
+            month += diff;
+
+            if (month <= 0) {
+                month = 12;
+                year -= 1;
+            } else if (month >= 13) {
+                month = 1;
+                year += 1;
+            }
+
+            this.state.year = year;
+            this.state.month = month;
+            this.renderMonthLabel();
+        },
+
+        async refreshAll() {
+            await this.loadSnapshotInputs();
             await this.updateDashboard();
             await this.renderSankey();
+        },
+
+        bindMonthButtons() {
+            const prevBtn = document.getElementById("prevMonthBtn");
+            const nextBtn = document.getElementById("nextMonthBtn");
+            const currentBtn = document.getElementById("goCurrentMonthBtn");
+
+            if (prevBtn) {
+                prevBtn.onclick = async () => {
+                    this.moveMonth(-1);
+                    await this.refreshAll();
+                };
+            }
+
+            if (nextBtn) {
+                nextBtn.onclick = async () => {
+                    this.moveMonth(1);
+                    await this.refreshAll();
+                };
+            }
+
+            if (currentBtn) {
+                currentBtn.onclick = async () => {
+                    const now = new Date();
+                    this.state.year = now.getFullYear();
+                    this.state.month = now.getMonth() + 1;
+                    this.renderMonthLabel();
+                    await this.refreshAll();
+                };
+            }
         },
 
         /* ---------------- Snapshot 입력 UI ---------------- */
 
         async loadSnapshotInputs() {
-            const { startYear, startMonth } = this.state;
+            const { year, month } = this.state;
 
             const statusEl = document.getElementById("snapshotStatus");
             const container = document.getElementById("snapshotInputs");
@@ -121,9 +201,9 @@ export default function DashboardPage() {
             if (!container) return;
 
             try {
-                statusEl && (statusEl.innerText = "불러오는 중...");
+                if (statusEl) statusEl.innerText = `${this.getYearMonthText()} 불러오는 중...`;
 
-                const res = await fetch(`/api/money/snapshot?year=${startYear}&month=${startMonth}`);
+                const res = await fetch(`/api/money/snapshot?year=${year}&month=${month}`);
                 if (!res.ok) {
                     throw new Error(`snapshot 조회 실패: ${res.status}`);
                 }
@@ -138,7 +218,7 @@ export default function DashboardPage() {
                         입력 가능한 항목이 없습니다. (template/snapshot 생성 상태를 확인하세요)
                       </div>
                     `;
-                    statusEl && (statusEl.innerText = "");
+                    if (statusEl) statusEl.innerText = "";
                     return;
                 }
 
@@ -158,7 +238,7 @@ export default function DashboardPage() {
                     `;
                 });
 
-                statusEl && (statusEl.innerText = `${startYear}-${String(startMonth).padStart(2, "0")} 입력 항목 로드 완료`);
+                if (statusEl) statusEl.innerText = `${this.getYearMonthText()} 입력 항목 로드 완료`;
             } catch (e) {
                 console.error(e);
                 container.innerHTML = `
@@ -166,7 +246,7 @@ export default function DashboardPage() {
                     스냅샷 입력 항목 로드 실패: ${e.message}
                   </div>
                 `;
-                statusEl && (statusEl.innerText = "");
+                if (statusEl) statusEl.innerText = "";
             }
         },
 
@@ -188,7 +268,7 @@ export default function DashboardPage() {
         },
 
         async saveSnapshotInputs() {
-            const { startYear, startMonth } = this.state;
+            const { year, month } = this.state;
 
             const statusEl = document.getElementById("snapshotStatus");
             const inputs = document.querySelectorAll("#snapshotInputs input[data-id]");
@@ -204,14 +284,14 @@ export default function DashboardPage() {
             }));
 
             try {
-                statusEl && (statusEl.innerText = "저장 중...");
+                if (statusEl) statusEl.innerText = `${this.getYearMonthText()} 저장 중...`;
 
                 const res = await fetch("/api/money/snapshot/update", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        year: startYear,
-                        month: startMonth,
+                        year,
+                        month,
                         nodes
                     })
                 });
@@ -220,41 +300,57 @@ export default function DashboardPage() {
                     throw new Error(`저장 실패: ${res.status}`);
                 }
 
-                statusEl && (statusEl.innerText = "저장 완료! 대시보드 갱신 중...");
+                if (statusEl) statusEl.innerText = `${this.getYearMonthText()} 저장 완료! 갱신 중...`;
 
-                // 저장 후: 대시보드/차트/샌키 갱신
                 await this.updateDashboard();
                 await this.renderSankey();
 
-                statusEl && (statusEl.innerText = "저장 완료 + 갱신 완료");
+                if (statusEl) statusEl.innerText = `${this.getYearMonthText()} 저장 완료 + 갱신 완료`;
             } catch (e) {
                 console.error(e);
                 alert(`저장 실패: ${e.message}`);
-                statusEl && (statusEl.innerText = "");
+                if (statusEl) statusEl.innerText = "";
             }
         },
 
         /* ---------------- Sankey ---------------- */
 
         async renderSankey() {
+            const res = await fetch(`/api/money/flow?year=${this.state.year}&month=${this.state.month}`);
+            if (!res.ok) {
+                throw new Error(`flow 조회 실패: ${res.status}`);
+            }
 
-            const res = await fetch(`/api/money/flow?year=${this.state.startYear}&month=${this.state.startMonth}`);
             const data = await res.json();
-
             const ctx = document.getElementById("sankeyChart");
 
-            if (window.__sankeyChart) window.__sankeyChart.destroy();
+            if (!ctx) return;
+
+            if (window.__sankeyChart) {
+                window.__sankeyChart.destroy();
+            }
+
+            const sankeyData = (data.links || [])
+                .map(l => {
+                    const fromNode = (data.nodes || []).find(n => n.id === l.source);
+                    const toNode = (data.nodes || []).find(n => n.id === l.target);
+
+                    if (!fromNode || !toNode) return null;
+
+                    return {
+                        from: fromNode.name,
+                        to: toNode.name,
+                        flow: l.value
+                    };
+                })
+                .filter(Boolean);
 
             window.__sankeyChart = new Chart(ctx, {
                 type: "sankey",
                 data: {
                     datasets: [{
-                        label: "월급 흐름",
-                        data: data.links.map(l => ({
-                            from: data.nodes.find(n => n.id === l.source).name,
-                            to: data.nodes.find(n => n.id === l.target).name,
-                            flow: l.value
-                        }))
+                        label: `${this.getYearMonthText()} 월급 흐름`,
+                        data: sankeyData
                     }]
                 },
                 options: {
@@ -265,19 +361,29 @@ export default function DashboardPage() {
                             enabled: true,
                             callbacks: {
                                 label: ctx =>
-                                    `${ctx.raw.from} → ${ctx.raw.to}: ${ctx.raw.flow.toLocaleString("ko-KR")}원`
+                                    `${ctx.raw.from} → ${ctx.raw.to}: ${Number(ctx.raw.flow || 0).toLocaleString("ko-KR")}원`
                             }
                         }
                     }
                 }
             });
 
-            const remainingNode = data.nodes.find(n => n.type === "REMAIN");
-            if (remainingNode) {
-                document.getElementById("remainingInfo").innerHTML =
-                    `<div style="color:#2ecc71;font-weight:600;">
-                      ● 이번 달 가용금: ${remainingNode.monthlyAmount.toLocaleString("ko-KR")}원
-                    </div>`;
+            const remainingNode = (data.nodes || []).find(n => n.type === "REMAIN");
+            const remainEl = document.getElementById("remainingInfo");
+
+            if (remainEl) {
+                if (remainingNode) {
+                    remainEl.innerHTML =
+                        `<div style="color:#2ecc71;font-weight:600;">
+                          ● ${this.getYearMonthText()} 가용금: ${Number(remainingNode.monthlyAmount || 0).toLocaleString("ko-KR")}원
+                        </div>`;
+                } else {
+                    remainEl.innerHTML = `
+                        <div style="opacity:0.75;">
+                          ${this.getYearMonthText()} 가용금 데이터가 없습니다.
+                        </div>
+                    `;
+                }
             }
         },
 
@@ -325,16 +431,24 @@ export default function DashboardPage() {
         /* ---------------- 데이터 갱신 ---------------- */
 
         async updateDashboard() {
+            const { year, month, months, target, monthlyIncrease } = this.state;
 
-            const { startYear, startMonth, months, target, monthlyIncrease } = this.state;
-
-            const chartRes = await fetch(`/api/money/chart?year=${startYear}&month=${startMonth}&months=${months}&target=${target}`);
+            const chartRes = await fetch(`/api/money/chart?year=${year}&month=${month}&months=${months}&target=${target}`);
+            if (!chartRes.ok) {
+                throw new Error(`chart 조회 실패: ${chartRes.status}`);
+            }
             const chartData = await chartRes.json();
 
-            const goalRes = await fetch(`/api/money/goal?year=${startYear}&month=${startMonth}&target=${target}`);
+            const goalRes = await fetch(`/api/money/goal?year=${year}&month=${month}&target=${target}`);
+            if (!goalRes.ok) {
+                throw new Error(`goal 조회 실패: ${goalRes.status}`);
+            }
             const goalData = await goalRes.json();
 
-            const compareRes = await fetch(`/api/money/compare-goal?year=${startYear}&month=${startMonth}&target=${target}&monthlyIncrease=${monthlyIncrease}`);
+            const compareRes = await fetch(`/api/money/compare-goal?year=${year}&month=${month}&target=${target}&monthlyIncrease=${monthlyIncrease}`);
+            if (!compareRes.ok) {
+                throw new Error(`compare-goal 조회 실패: ${compareRes.status}`);
+            }
             const compareData = await compareRes.json();
 
             this.renderSummary(target, goalData, compareData);
@@ -345,8 +459,13 @@ export default function DashboardPage() {
 
         renderSummary(target, base, improved) {
             const el = document.getElementById("moneySummary");
+            if (!el) return;
 
             el.innerHTML = `
+              <div style="flex:1; min-width:220px;">
+                <div>기준 월</div>
+                <b>${this.getYearMonthText()}</b>
+              </div>
               <div style="flex:1; min-width:220px;">
                 <div>목표</div>
                 <b>${Number(target).toLocaleString("ko-KR")}원</b>
@@ -365,10 +484,12 @@ export default function DashboardPage() {
         /* ---------------- 라인 차트 ---------------- */
 
         renderChart(data) {
-
             const ctx = document.getElementById("moneyChart");
+            if (!ctx) return;
 
-            if (window.__moneyChart) window.__moneyChart.destroy();
+            if (window.__moneyChart) {
+                window.__moneyChart.destroy();
+            }
 
             window.__moneyChart = new Chart(ctx, {
                 type: "line",
@@ -383,7 +504,7 @@ export default function DashboardPage() {
                             fill: false
                         },
                         {
-                            label: "+20만원 투자",
+                            label: `+${Number(this.state.monthlyIncrease).toLocaleString("ko-KR")}원 투자`,
                             data: data.extraSeries,
                             tension: 0.25,
                             pointRadius: 3,
@@ -392,7 +513,7 @@ export default function DashboardPage() {
                         {
                             label: "목표선",
                             data: data.targetLine,
-                            borderDash: [6,6],
+                            borderDash: [6, 6],
                             pointRadius: 0
                         }
                     ]
@@ -401,25 +522,24 @@ export default function DashboardPage() {
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: {
-                        mode: 'index',
+                        mode: "index",
                         intersect: false
                     },
                     plugins: {
                         tooltip: {
                             enabled: true,
-                            mode: 'index',
+                            mode: "index",
                             intersect: false,
                             callbacks: {
                                 label: ctx =>
-                                    `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString("ko-KR")}원`
+                                    `${ctx.dataset.label}: ${Number(ctx.parsed.y || 0).toLocaleString("ko-KR")}원`
                             }
                         }
                     },
                     scales: {
                         y: {
                             ticks: {
-                                callback: value =>
-                                    value.toLocaleString("ko-KR")
+                                callback: value => Number(value).toLocaleString("ko-KR")
                             }
                         }
                     }

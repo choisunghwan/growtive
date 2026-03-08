@@ -114,6 +114,8 @@ public class FinancialSnapshotServiceImpl implements FinancialSnapshotService {
                 );
             }
         });
+        // 🔥 Sankey flow 금액 동기화
+        mapper.syncFlowSnapshotAmount(userId, year, month);
     }
 
     /**

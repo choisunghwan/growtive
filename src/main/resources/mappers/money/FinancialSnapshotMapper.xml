@@ -189,4 +189,17 @@
                   AND s.to_snapshot_id = fs_to.id
             )
     </insert>
+
+
+    <update id="syncFlowSnapshotAmount">
+
+        UPDATE flow_snapshot f
+            JOIN financial_node_snapshot n
+        ON f.to_snapshot_id = n.id
+            SET f.amount = n.monthly_amount
+        WHERE n.user_id = #{userId}
+          AND n.year = #{year}
+          AND n.month = #{month}
+
+    </update>
 </mapper>
