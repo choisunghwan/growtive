@@ -22,4 +22,13 @@ public interface FinancialCloseMapper {
 
     void updateAssetBalance(@Param("assetSnapshotId") Long assetSnapshotId,
                             @Param("newBalance") Long newBalance);
+
+    void markMonthClosed(@Param("userId") Long userId,
+                         @Param("year") int year,
+                         @Param("month") int month);
+
+    Boolean isMonthClosed(@Param("userId") Long userId,
+                          @Param("year") int year,
+                          @Param("month") int month);
+
 }

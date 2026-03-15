@@ -5,7 +5,7 @@
 
 <mapper namespace="com.growtive.money.mapper.FinancialCloseMapper">
 
-    <!-- 이번 달 ASSET snapshot id 목록 -->
+    <!-- 이번 달 ASSET snapshot id 목록(이미 월 마감된 자산은 조회 안함) -->
     <select id="findAssetSnapshotIds" resultType="java.lang.Long">
         SELECT id
         FROM financial_node_snapshot
@@ -13,6 +13,7 @@
                   AND year = #{year}
                   AND month = #{month}
           AND type = 'ASSET'
+          AND closed = FALSE
     </select>
 
     <!-- 해당 ASSET으로 들어오는 inflow 합 -->
@@ -30,7 +31,8 @@
             resultType="com.growtive.money.dto.AssetSnapshotDto">
         SELECT id,
                current_balance AS currentBalance,
-               expected_annual_return AS expectedAnnualReturn
+               expected_annual_return AS expectedAnnualReturn,
+               monthly_amount AS monthlyAmount
         FROM financial_node_snapshot
         WHERE id = #{assetSnapshotId}
     </select>
@@ -41,5 +43,31 @@
         SET current_balance = #{newBalance}
         WHERE id = #{assetSnapshotId}
     </update>
+
+    <!-- 월 마감 완료 표시 -->
+    <update id="markMonthClosed">
+
+        UPDATE financial_node_snapshot
+        SET closed = TRUE
+        WHERE user_id = #{userId}
+                  AND year = #{year}
+                  AND month = #{month}
+
+    </update>
+
+
+    <select id="isMonthClosed" resultType="boolean">
+
+        SELECT CASE
+                   WHEN COUNT(*) > 0 THEN TRUE
+                   ELSE FALSE
+                   END
+        FROM financial_node_snapshot
+        WHERE user_id = #{userId}
+                  AND year = #{year}
+                  AND month = #{month}
+          AND closed = TRUE
+
+    </select>
 
 </mapper>

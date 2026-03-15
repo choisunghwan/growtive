@@ -31,4 +31,14 @@ public class FinancialCloseController {
 
         return "closed";
     }
+
+    @GetMapping("/month-status")
+    public boolean getMonthStatus(@RequestParam int year,
+                                  @RequestParam int month,
+                                  HttpSession session) {
+
+        Long userId = getUserId(session);
+
+        return service.isMonthClosed(userId, year, month);
+    }
 }

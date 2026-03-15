@@ -25,6 +25,7 @@ export default function DashboardPage() {
               <div id="currentMonthLabel" style="font-weight:700; font-size:16px;"></div>
               <button id="nextMonthBtn" type="button">다음 달 ▶</button>
               <button id="goCurrentMonthBtn" type="button">현재 월로</button>
+              <button id="closeMonthBtn" type="button">월 마감</button>
             </div>
           </div>
 
@@ -118,6 +119,7 @@ export default function DashboardPage() {
             this.initSliders();
             this.bindMonthButtons();
             this.bindSnapshotButtons();
+            this.bindCloseMonthButton();
             this.renderMonthLabel();
 
             await this.refreshAll();
@@ -158,6 +160,82 @@ export default function DashboardPage() {
             await this.loadSnapshotInputs();
             await this.updateDashboard();
             await this.renderSankey();
+            await this.updateCloseMonthButton();
+        },
+
+        async updateCloseMonthButton() {
+            const btn = document.getElementById("closeMonthBtn");
+            if (!btn) return;
+
+            const { year, month } = this.state;
+
+            try {
+                const res = await fetch(`/api/money/month-status?year=${year}&month=${month}`);
+                if (!res.ok) {
+                    throw new Error(`월 상태 조회 실패: ${res.status}`);
+                }
+
+                const closed = await res.json();
+
+                if (closed) {
+                    btn.disabled = true;
+                    btn.innerText = "월 마감 완료";
+                    btn.style.opacity = "0.7";
+                    btn.style.cursor = "not-allowed";
+                } else {
+                    btn.disabled = false;
+                    btn.innerText = "월 마감";
+                    btn.style.opacity = "1";
+                    btn.style.cursor = "pointer";
+                }
+            } catch (e) {
+                console.error(e);
+                btn.disabled = false;
+                btn.innerText = "월 마감";
+                btn.style.opacity = "1";
+                btn.style.cursor = "pointer";
+            }
+        },
+
+        bindCloseMonthButton() {
+            const btn = document.getElementById("closeMonthBtn");
+            if (!btn) return;
+
+            btn.onclick = async () => {
+                if (btn.disabled) return;
+
+                const { year, month } = this.state;
+
+                if (!confirm(`${year}년 ${month}월을 월 마감하시겠습니까?`)) {
+                    return;
+                }
+
+                try {
+                    btn.disabled = true;
+                    btn.innerText = "월 마감 처리 중...";
+
+                    const res = await fetch(
+                        `/api/money/close-month?year=${year}&month=${month}`,
+                        { method: "POST" }
+                    );
+
+                    if (!res.ok) {
+                        throw new Error(`월 마감 실패: ${res.status}`);
+                    }
+
+                    alert("월 마감 완료");
+
+                    // 다음 달로 이동
+                    this.moveMonth(1);
+
+                    await this.refreshAll();
+
+                } catch (e) {
+                    console.error(e);
+                    alert(e.message);
+                    await this.updateCloseMonthButton();
+                }
+            };
         },
 
         bindMonthButtons() {
@@ -224,6 +302,8 @@ export default function DashboardPage() {
 
                 nodes.forEach(node => {
                     const amount = (node.monthlyAmount ?? 0);
+                    const isClosed = !!node.closed;
+
                     container.innerHTML += `
                         <div style="margin-bottom:12px;">
                             <label style="display:block; font-size:14px; margin-bottom:6px;">
@@ -232,6 +312,7 @@ export default function DashboardPage() {
                             <input type="number"
                                    data-id="${node.id}"
                                    value="${amount}"
+                                   ${isClosed ? "disabled" : ""}
                                    style="width:100%; padding:8px; box-sizing:border-box;"
                                    placeholder="0" />
                         </div>
@@ -263,6 +344,7 @@ export default function DashboardPage() {
             if (reloadBtn) {
                 reloadBtn.onclick = async () => {
                     await this.loadSnapshotInputs();
+                    await this.updateCloseMonthButton();
                 };
             }
         },
@@ -271,7 +353,13 @@ export default function DashboardPage() {
             const { year, month } = this.state;
 
             const statusEl = document.getElementById("snapshotStatus");
+            const closeBtn = document.getElementById("closeMonthBtn");
             const inputs = document.querySelectorAll("#snapshotInputs input[data-id]");
+
+            if (closeBtn && closeBtn.disabled && closeBtn.innerText.includes("완료")) {
+                alert("이미 월 마감된 데이터는 수정할 수 없습니다.");
+                return;
+            }
 
             if (!inputs || inputs.length === 0) {
                 alert("저장할 입력 항목이 없습니다.");
@@ -304,6 +392,7 @@ export default function DashboardPage() {
 
                 await this.updateDashboard();
                 await this.renderSankey();
+                await this.updateCloseMonthButton();
 
                 if (statusEl) statusEl.innerText = `${this.getYearMonthText()} 저장 완료 + 갱신 완료`;
             } catch (e) {
