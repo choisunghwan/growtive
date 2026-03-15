@@ -24,17 +24,21 @@ public class FinancialSimulationServiceImpl implements FinancialSimulationServic
                                      long target,
                                      long extraMonthlyInvestment) {
 
-        // ✅ 자산 스냅샷 기반으로 읽음 (current_balance 포함)
-        List<AssetForCloseDto> assets = mapper.findAssetSnapshots(userId, startYear, startMonth);
+        List<AssetSnapshotDto> assets =
+                mapper.findAssetSnapshots(userId, startYear, startMonth);
 
         if (assets == null || assets.isEmpty()) {
-            throw new IllegalStateException("ASSET 스냅샷이 없습니다. 템플릿에서 ASSET을 추가한 뒤 대시보드에서 스냅샷을 생성하세요.");
+            throw new IllegalStateException(
+                    "ASSET 스냅샷이 없습니다. 템플릿에서 ASSET을 추가한 뒤 대시보드에서 스냅샷을 생성하세요."
+            );
         }
 
-        // ✅ 시작 잔액은 snapshot.current_balance
         Map<Long, Long> balances = new HashMap<>();
-        for (AssetForCloseDto asset : assets) {
-            Long startBalance = asset.getCurrentBalance() == null ? 0L : asset.getCurrentBalance();
+
+        for (AssetSnapshotDto asset : assets) {
+            Long startBalance =
+                    asset.getCurrentBalance() == null ? 0L : asset.getCurrentBalance();
+
             balances.put(asset.getId(), startBalance);
         }
 
@@ -48,31 +52,40 @@ public class FinancialSimulationServiceImpl implements FinancialSimulationServic
 
             for (int i = 0; i < assets.size(); i++) {
 
-                AssetForCloseDto asset = assets.get(i);
+                AssetSnapshotDto asset = assets.get(i);
 
-                // ✅ 해당 월 스냅샷의 flow_snapshot 기준 유입 합산
-                long inflow = mapper.sumMonthlyInflowToAssetSnapshot(userId, year, month, asset.getId());
+                // 🔥 기존: flow_snapshot 조회
+                // long inflow = mapper.sumMonthlyInflowToAssetSnapshot(userId, year, month, asset.getId());
 
-                // 추가 투자(첫 자산에 몰빵 - 기존 로직 유지)
+                // ✅ 수정: snapshot monthly_amount 사용
+                long inflow =
+                        asset.getMonthlyAmount() == null
+                                ? 0L
+                                : asset.getMonthlyAmount();
+
                 if (extraMonthlyInvestment > 0 && i == 0) {
                     inflow += extraMonthlyInvestment;
                 }
 
-                long currentBalance = balances.getOrDefault(asset.getId(), 0L);
+                long currentBalance =
+                        balances.getOrDefault(asset.getId(), 0L);
 
-                BigDecimal annual = asset.getExpectedAnnualReturn() == null
-                        ? BigDecimal.ZERO
-                        : asset.getExpectedAnnualReturn();
+                BigDecimal annual =
+                        asset.getExpectedAnnualReturn() == null
+                                ? BigDecimal.ZERO
+                                : asset.getExpectedAnnualReturn();
 
-                BigDecimal monthlyRate = annual
-                        .divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP)
-                        .divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP);
+                BigDecimal monthlyRate =
+                        annual.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP)
+                                .divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP);
 
-                BigDecimal next = BigDecimal.valueOf(currentBalance)
-                        .add(BigDecimal.valueOf(inflow))
-                        .multiply(BigDecimal.ONE.add(monthlyRate));
+                BigDecimal next =
+                        BigDecimal.valueOf(currentBalance)
+                                .add(BigDecimal.valueOf(inflow))
+                                .multiply(BigDecimal.ONE.add(monthlyRate));
 
-                long newBalance = next.setScale(0, RoundingMode.FLOOR).longValue();
+                long newBalance =
+                        next.setScale(0, RoundingMode.FLOOR).longValue();
 
                 balances.put(asset.getId(), newBalance);
                 total += newBalance;
@@ -84,8 +97,8 @@ public class FinancialSimulationServiceImpl implements FinancialSimulationServic
                 return count;
             }
 
-            // 다음 달로 이동
             month++;
+
             if (month > 12) {
                 month = 1;
                 year++;
@@ -104,7 +117,7 @@ public class FinancialSimulationServiceImpl implements FinancialSimulationServic
                                           int startMonth,
                                           int months) {
 
-        List<AssetForCloseDto> assets = mapper.findAssetSnapshots(userId, startYear, startMonth);
+        List<AssetSnapshotDto> assets = mapper.findAssetSnapshots(userId, startYear, startMonth);
 
         if (assets == null || assets.isEmpty()) {
             return new SimulationResponseDto(
@@ -116,7 +129,7 @@ public class FinancialSimulationServiceImpl implements FinancialSimulationServic
         }
 
         Map<Long, Long> balances = new HashMap<>();
-        for (AssetForCloseDto asset : assets) {
+        for (AssetSnapshotDto asset : assets) {
             Long startBalance = asset.getCurrentBalance() == null ? 0L : asset.getCurrentBalance();
             balances.put(asset.getId(), startBalance);
         }
@@ -130,7 +143,7 @@ public class FinancialSimulationServiceImpl implements FinancialSimulationServic
 
             long total = 0;
 
-            for (AssetForCloseDto asset : assets) {
+            for (AssetSnapshotDto asset : assets) {
 
                 long inflow = mapper.sumMonthlyInflowToAssetSnapshot(userId, year, month, asset.getId());
                 long currentBalance = balances.getOrDefault(asset.getId(), 0L);
@@ -248,7 +261,7 @@ public class FinancialSimulationServiceImpl implements FinancialSimulationServic
                                        int months,
                                        long target) {
 
-        List<AssetForCloseDto> assets = mapper.findAssetSnapshots(userId, startYear, startMonth);
+        List<AssetSnapshotDto> assets = mapper.findAssetSnapshots(userId, startYear, startMonth);
 
         if (assets == null || assets.isEmpty()) {
             return new ChartResponseDto(
@@ -262,7 +275,7 @@ public class FinancialSimulationServiceImpl implements FinancialSimulationServic
         Map<Long, Long> baseBalances = new HashMap<>();
         Map<Long, Long> extraBalances = new HashMap<>();
 
-        for (AssetForCloseDto asset : assets) {
+        for (AssetSnapshotDto asset : assets) {
             Long startBalance = asset.getCurrentBalance() == null ? 0L : asset.getCurrentBalance();
             baseBalances.put(asset.getId(), startBalance);
             extraBalances.put(asset.getId(), startBalance);
@@ -285,7 +298,7 @@ public class FinancialSimulationServiceImpl implements FinancialSimulationServic
 
             for (int j = 0; j < assets.size(); j++) {
 
-                AssetForCloseDto asset = assets.get(j);
+                AssetSnapshotDto asset = assets.get(j);
 
                 long inflow = mapper.sumMonthlyInflowToAssetSnapshot(userId, year, month, asset.getId());
 

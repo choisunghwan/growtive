@@ -1,6 +1,6 @@
 package com.growtive.money.mapper;
 
-import com.growtive.money.dto.AssetForCloseDto;
+import com.growtive.money.dto.AssetSnapshotDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -18,7 +18,7 @@ public interface FinancialCloseMapper {
                           @Param("month") int month,
                           @Param("assetSnapshotId") Long assetSnapshotId);
 
-    AssetForCloseDto findAssetForClose(@Param("assetSnapshotId") Long assetSnapshotId);
+    AssetSnapshotDto findAssetForClose(@Param("assetSnapshotId") Long assetSnapshotId);
 
     void updateAssetBalance(@Param("assetSnapshotId") Long assetSnapshotId,
                             @Param("newBalance") Long newBalance);

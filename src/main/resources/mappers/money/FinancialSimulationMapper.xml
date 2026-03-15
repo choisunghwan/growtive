@@ -9,14 +9,15 @@
     <!-- ✅ 1️⃣ 스냅샷 기반 ASSET 조회 (시뮬레이션용 핵심) -->
     <!-- ========================================================= -->
     <select id="findAssetSnapshots"
-            resultType="com.growtive.money.dto.AssetForCloseDto">
+            resultType="com.growtive.money.dto.AssetSnapshotDto">
 
         SELECT
             id,
             current_balance AS currentBalance,
-            expected_annual_return AS expectedAnnualReturn
+            expected_annual_return AS expectedAnnualReturn,
+            monthly_amount AS monthlyAmount
         FROM financial_node_snapshot
-        WHERE user_id = #{userId, jdbcType=VARCHAR}
+        WHERE user_id = #{userId}
                   AND year = #{year}
                   AND month = #{month}
           AND type = 'ASSET'
@@ -33,7 +34,7 @@
 
         SELECT COALESCE(SUM(amount), 0)
         FROM flow_snapshot
-        WHERE user_id = #{userId, jdbcType=VARCHAR}
+        WHERE user_id = #{userId}
                   AND year = #{year}
                   AND month = #{month}
           AND to_snapshot_id = #{assetSnapshotId}
@@ -47,13 +48,13 @@
 
     <!-- 자산 템플릿 조회 -->
     <select id="findAssetTemplates"
-            resultType="com.growtive.money.dto.AssetForCloseDto">
+            resultType="com.growtive.money.dto.AssetSnapshotDto">
 
         SELECT id,
                0 AS currentBalance,
                default_expected_return AS expectedAnnualReturn
         FROM financial_node_template
-        WHERE user_id = #{userId, jdbcType=VARCHAR}
+        WHERE user_id = #{userId}
           AND type = 'ASSET'
 
     </select>
@@ -64,7 +65,7 @@
 
         SELECT COALESCE(SUM(amount),0)
         FROM flow_template
-        WHERE user_id = #{userId, jdbcType=VARCHAR}
+        WHERE user_id = #{userId}
           AND to_template_id = #{templateId}
 
     </select>

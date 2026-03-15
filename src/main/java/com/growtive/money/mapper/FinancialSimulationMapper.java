@@ -1,6 +1,6 @@
 package com.growtive.money.mapper;
 
-import com.growtive.money.dto.AssetForCloseDto;
+import com.growtive.money.dto.AssetSnapshotDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -10,7 +10,7 @@ import java.util.List;
 public interface FinancialSimulationMapper {
 
     // ✅ 스냅샷 기반 자산 조회 (ASSET)
-    List<AssetForCloseDto> findAssetSnapshots(
+    List<AssetSnapshotDto> findAssetSnapshots(
             @Param("userId") Long userId,
             @Param("year") int year,
             @Param("month") int month
@@ -25,7 +25,7 @@ public interface FinancialSimulationMapper {
     );
 
     // (기존 템플릿 기반 메서드들 남겨둬도 됨)
-    List<AssetForCloseDto> findAssetTemplates(@Param("userId") Long userId);
+    List<AssetSnapshotDto> findAssetTemplates(@Param("userId") Long userId);
 
     Long sumMonthlyInflowToAssetTemplate(
             @Param("userId") Long userId,

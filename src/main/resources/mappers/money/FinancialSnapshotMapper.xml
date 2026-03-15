@@ -9,7 +9,7 @@
     <select id="countSnapshot" resultType="int">
         SELECT COUNT(*)
         FROM financial_node_snapshot
-        WHERE user_id = #{userId, jdbcType=VARCHAR}
+        WHERE user_id = #{userId}
                   AND year = #{year}
                   AND month = #{month}
     </select>
@@ -93,7 +93,7 @@
                type,
                monthly_amount AS monthlyAmount
         FROM financial_node_snapshot
-        WHERE user_id = #{userId, jdbcType=VARCHAR}
+        WHERE user_id = #{userId}
                   AND year = #{year}
                   AND month = #{month}
         ORDER BY id
@@ -103,7 +103,7 @@
     <update id="updateMonthlyAmountBySnapshotId">
         UPDATE financial_node_snapshot
         SET monthly_amount = #{amount}
-        WHERE user_id = #{userId, jdbcType=VARCHAR}
+        WHERE user_id = #{userId}
           AND id = #{snapshotId}
     </update>
 
@@ -111,7 +111,7 @@
     <update id="updateMonthlyAmountByName">
         UPDATE financial_node_snapshot
         SET monthly_amount = #{amount}
-        WHERE user_id = #{userId, jdbcType=VARCHAR}
+        WHERE user_id = #{userId}
                   AND year = #{year}
                   AND month = #{month}
           AND name = #{name}

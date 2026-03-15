@@ -13,7 +13,7 @@
             type,
             monthly_amount AS monthlyAmount
         FROM financial_node_snapshot
-        WHERE user_id = #{userId, jdbcType=VARCHAR}
+        WHERE user_id = #{userId}
                   AND year = #{year}
                   AND month = #{month}
     </select>
@@ -25,7 +25,7 @@
             to_snapshot_id AS target,
             amount AS value
         FROM flow_snapshot
-        WHERE user_id = #{userId, jdbcType=VARCHAR}
+        WHERE user_id = #{userId}
           AND year = #{year}
           AND month = #{month}
     </select>

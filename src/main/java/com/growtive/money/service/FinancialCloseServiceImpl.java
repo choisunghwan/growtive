@@ -1,6 +1,6 @@
 package com.growtive.money.service;
 
-import com.growtive.money.dto.AssetForCloseDto;
+import com.growtive.money.dto.AssetSnapshotDto;
 import com.growtive.money.mapper.FinancialCloseMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,7 @@ public class FinancialCloseServiceImpl implements FinancialCloseService {
 
         for (Long assetSnapshotId : assetIds) {
 
-            AssetForCloseDto asset = mapper.findAssetForClose(assetSnapshotId);
+            AssetSnapshotDto asset = mapper.findAssetForClose(assetSnapshotId);
 
             // inflow 합산 시에도 userId = String 적용
             long inflow = mapper.sumInflowToAsset(userId, year, month, assetSnapshotId);

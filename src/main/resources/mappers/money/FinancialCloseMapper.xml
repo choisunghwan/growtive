@@ -9,7 +9,7 @@
     <select id="findAssetSnapshotIds" resultType="java.lang.Long">
         SELECT id
         FROM financial_node_snapshot
-        WHERE user_id = #{userId, jdbcType=VARCHAR}
+        WHERE user_id = #{userId}
                   AND year = #{year}
                   AND month = #{month}
           AND type = 'ASSET'
@@ -19,7 +19,7 @@
     <select id="sumInflowToAsset" resultType="java.lang.Long">
         SELECT COALESCE(SUM(amount),0)
         FROM flow_snapshot
-        WHERE user_id = #{userId, jdbcType=VARCHAR}
+        WHERE user_id = #{userId}
                   AND year = #{year}
                   AND month = #{month}
           AND to_snapshot_id = #{assetSnapshotId}
@@ -27,7 +27,7 @@
 
     <!-- 현재잔액 + 수익률 조회 -->
     <select id="findAssetForClose"
-            resultType="com.growtive.money.dto.AssetForCloseDto">
+            resultType="com.growtive.money.dto.AssetSnapshotDto">
         SELECT id,
                current_balance AS currentBalance,
                expected_annual_return AS expectedAnnualReturn
