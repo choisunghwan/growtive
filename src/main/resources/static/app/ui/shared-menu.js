@@ -43,13 +43,17 @@ export async function renderSharedMenu() {
     clear();
     if (list) {
         const hash = location.hash;
+        // 캘린더는 id(코드)로 구분하고 이름은 표시용일 뿐 — 같은 이름이 여러 개면 만든 사람을 붙여서 구분
+        const nameCount = {};
+        calendars.forEach(c => { nameCount[c.name] = (nameCount[c.name] || 0) + 1; });
         list.insertAdjacentHTML('beforeend', calendars.map(c => {
             const href = `#/shared?id=${c.id}`;
+            const label = nameCount[c.name] > 1 ? `${c.name} · ${c.ownerDisplayName || '?'}` : c.name;
             return `
             <li data-shared-menu>
-                <a href="${href}" class="${hash === href ? 'active' : ''}" title="공유 캘린더 · ${c.memberCount}명">
+                <a href="${href}" class="${hash === href ? 'active' : ''}" title="${escapeHtml(c.name)} (만든 사람 ${escapeHtml(c.ownerDisplayName || '?')} · ${c.memberCount}명)">
                     ${ICON_SHARED}
-                    <span class="sidebar-label">${escapeHtml(c.name)}</span>
+                    <span class="sidebar-label">${escapeHtml(label)}</span>
                 </a>
             </li>`;
         }).join(''));
