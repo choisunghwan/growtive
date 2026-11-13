@@ -38,6 +38,42 @@ public class SharedCalendarTableInitializer implements ApplicationRunner {
                 PRIMARY KEY (calendar_id, user_id),
                 KEY idx_shared_calendar_member_user (user_id)
             ) DEFAULT CHARSET = utf8mb4
+            """,
+            // 2단계: 공유 가계부
+            """
+            CREATE TABLE IF NOT EXISTS shared_transaction (
+                id                  BIGINT       NOT NULL AUTO_INCREMENT,
+                calendar_id         BIGINT       NOT NULL,
+                author_id           BIGINT       NULL,
+                transaction_date    DATE         NOT NULL,
+                type                VARCHAR(10)  NOT NULL,
+                category            VARCHAR(50)  NOT NULL,
+                amount              BIGINT       NOT NULL,
+                memo                VARCHAR(255) NULL,
+                is_recurring        BOOLEAN      NOT NULL DEFAULT FALSE,
+                recurring_origin_id BIGINT       NULL,
+                created_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_shared_transaction_cal_date (calendar_id, transaction_date),
+                KEY idx_shared_transaction_origin (recurring_origin_id)
+            ) DEFAULT CHARSET = utf8mb4
+            """,
+            // 2단계: 공유 일정
+            """
+            CREATE TABLE IF NOT EXISTS shared_event (
+                id          BIGINT       NOT NULL AUTO_INCREMENT,
+                calendar_id BIGINT       NOT NULL,
+                author_id   BIGINT       NULL,
+                start_date  DATE         NOT NULL,
+                end_date    DATE         NOT NULL,
+                event_time  TIME         NULL,
+                title       VARCHAR(100) NOT NULL,
+                memo        VARCHAR(255) NULL,
+                color_tag   VARCHAR(20)  NULL,
+                created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_shared_event_cal_dates (calendar_id, start_date, end_date)
+            ) DEFAULT CHARSET = utf8mb4
             """
     );
 

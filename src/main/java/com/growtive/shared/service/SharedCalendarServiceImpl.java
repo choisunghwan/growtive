@@ -7,6 +7,7 @@ import com.growtive.shared.dto.SharedCalendarDetailDto;
 import com.growtive.shared.dto.SharedCalendarDto;
 import com.growtive.shared.dto.SharedCalendarInvitationDto;
 import com.growtive.shared.mapper.SharedCalendarMapper;
+import com.growtive.shared.mapper.SharedEntryMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ public class SharedCalendarServiceImpl implements SharedCalendarService {
     private static final int NAME_MAX = 30;
 
     private final SharedCalendarMapper mapper;
+    private final SharedEntryMapper entryMapper;
 
     @Override
     @Transactional
@@ -100,9 +102,11 @@ public class SharedCalendarServiceImpl implements SharedCalendarService {
         }
     }
 
-    /** 참여자(수락한 사람)가 0명이면 캘린더 삭제 (남은 초대도 함께) */
+    /** 참여자(수락한 사람)가 0명이면 캘린더 삭제 (가계부·일정·남은 초대도 함께) */
     void deleteIfEmpty(Long calendarId) {
         if (mapper.countAcceptedMembers(calendarId) == 0) {
+            entryMapper.deleteAllTransactionsOfCalendar(calendarId);
+            entryMapper.deleteAllEventsOfCalendar(calendarId);
             mapper.deleteMembersOfCalendar(calendarId);
             mapper.deleteCalendar(calendarId);
         }

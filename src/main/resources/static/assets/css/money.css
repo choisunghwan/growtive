@@ -1007,17 +1007,41 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
     line-height: 18px;
     text-align: center;
 }
+.shared-page { display: grid; gap: 16px; }
+/* 모바일: 개인 캘린더와 같은 바깥 여백을 공유 페이지 전체에 한 번만 (헤더 카드와 캘린더 카드 폭 맞춤) */
+@media (max-width: 768px) {
+    .shared-page { gap: 10px; padding: 12px; }
+    .shared-page .ledger-page { padding: 0; }
+}
+.shared-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 16px; }
+.shared-header-main { min-width: 0; }
 .shared-kicker { font-size: 12px; font-weight: 700; color: var(--brand); }
-.shared-title { margin: 2px 0 4px; font-size: 20px; font-weight: 800; }
-.shared-section-title { margin: 0 0 10px; font-size: 15px; }
-.shared-member-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.shared-member {
-    display: flex;
+.shared-title { margin: 2px 0 0; font-size: 20px; font-weight: 800; overflow-wrap: anywhere; }
+.shared-member-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.shared-member-chip {
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
+    gap: 6px;
+    padding: 3px 10px 3px 3px;
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.shared-member-chip .shared-avatar { width: 24px; height: 24px; font-size: 12px; }
+.shared-member-chip--pending { padding: 3px 10px; color: var(--text-muted); background: var(--bg); }
+/* 공유 캘린더 내역의 작성자 */
+.ledger-tx-author {
+    display: inline-block;
+    margin-right: 6px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: rgba(37, 99, 235, .1);
+    color: var(--brand);
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 18px;
+    vertical-align: 1px;
 }
 .shared-avatar {
     flex: none;
@@ -1030,14 +1054,6 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
     color: var(--brand);
     font-weight: 800;
 }
-.shared-member-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.shared-member-tags { display: flex; gap: 6px; flex: none; }
-.shared-tag { padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 700; border: 1px solid var(--border); }
-.shared-tag--owner { color: #b45309; border-color: #fcd34d; background: #fffbeb; }
-.shared-tag--joined { color: #16a34a; border-color: #bbf7d0; background: #f0fdf4; }
-.shared-tag--pending { color: var(--text-muted); background: var(--bg); }
-html.dark .shared-tag--owner { background: transparent; }
-html.dark .shared-tag--joined { background: transparent; }
 /* 공유 캘린더 메뉴 이름이 길면 말줄임 */
 .sidebar li[data-shared-menu] a { min-width: 0; }
 .sidebar li[data-shared-menu] .sidebar-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

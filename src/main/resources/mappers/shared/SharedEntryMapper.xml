@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.growtive.shared.mapper.SharedEntryMapper">
+
+    <!-- ================= 가계부 ================= -->
+
+    <resultMap id="TxMap" type="com.growtive.shared.dto.SharedTransactionDto">
+        <id     column="id"                  property="id"/>
+        <result column="transaction_date"    property="date"/>
+        <result column="type"                property="type"/>
+        <result column="category"            property="category"/>
+        <result column="amount"              property="amount"/>
+        <result column="memo"                property="memo"/>
+        <result column="is_recurring"        property="recurring"/>
+        <result column="recurring_origin_id" property="recurringOriginId"/>
+        <result column="author_id"           property="authorId"/>
+        <result column="author_display_name" property="authorDisplayName"/>
+    </resultMap>
+
+    <sql id="txColumns">
+        t.id, t.transaction_date, t.type, t.category, t.amount, t.memo, t.is_recurring, t.recurring_origin_id,
+        t.author_id, u.display_name AS author_display_name
+    </sql>
+
+    <select id="findTransactionsByMonth" resultMap="TxMap">
+        SELECT <include refid="txColumns"/>
+        FROM shared_transaction t
+        LEFT JOIN users u ON u.id = t.author_id
+        WHERE t.calendar_id = #{calendarId}
+          AND YEAR(t.transaction_date) = #{year}
+          AND MONTH(t.transaction_date) = #{month}
+        ORDER BY t.transaction_date, t.id
+    </select>
+
+    <select id="findTransaction" resultMap="TxMap">
+        SELECT <include refid="txColumns"/>
+        FROM shared_transaction t
+        LEFT JOIN users u ON u.id = t.author_id
+        WHERE t.calendar_id = #{calendarId} AND t.id = #{id}
+    </select>
+
+    <insert id="insertTransaction" useGeneratedKeys="true" keyProperty="dto.id" keyColumn="id">
+        INSERT INTO shared_transaction
+            (calendar_id, author_id, transaction_date, type, category, amount, memo, is_recurring, recurring_origin_id)
+        VALUES (#{calendarId}, #{authorId}, #{dto.date}, #{dto.type}, #{dto.category}, #{dto.amount}, #{dto.memo},
+                #{dto.recurring}, #{dto.recurringOriginId})
+    </insert>
+
+    <update id="updateTransaction">
+        UPDATE shared_transaction
+        SET transaction_date = #{dto.date},
+            type = #{dto.type},
+            category = #{dto.category},
+            amount = #{dto.amount},
+            memo = #{dto.memo},
+            is_recurring = #{dto.recurring}
+        WHERE calendar_id = #{calendarId} AND id = #{id}
+    </update>
+
+    <delete id="deleteTransaction">
+        DELETE FROM shared_transaction WHERE calendar_id = #{calendarId} AND id = #{id}
+    </delete>
+
+    <select id="findActiveRecurringOrigins" resultMap="TxMap">
+        SELECT <include refid="txColumns"/>
+        FROM shared_transaction t
+        LEFT JOIN users u ON u.id = t.author_id
+        WHERE t.calendar_id = #{calendarId}
+          AND t.is_recurring = TRUE
+          AND t.recurring_origin_id IS NULL
+          AND t.transaction_date &lt;= #{onOrBefore}
+    </select>
+
+    <select id="countOccurrenceForOriginInMonth" resultType="int">
+        SELECT COUNT(*)
+        FROM shared_transaction
+        WHERE recurring_origin_id = #{originId}
+          AND YEAR(transaction_date) = #{year}
+          AND MONTH(transaction_date) = #{month}
+    </select>
+
+    <!-- ================= 일정 ================= -->
+
+    <resultMap id="EventMap" type="com.growtive.shared.dto.SharedEventDto">
+        <id     column="id"                  property="id"/>
+        <result column="start_date"          property="startDate"/>
+        <result column="end_date"            property="endDate"/>
+        <result column="event_time"          property="time"/>
+        <result column="title"               property="title"/>
+        <result column="memo"                property="memo"/>
+        <result column="color_tag"           property="colorTag"/>
+        <result column="author_id"           property="authorId"/>
+        <result column="author_display_name" property="authorDisplayName"/>
+    </resultMap>
+
+    <sql id="eventColumns">
+        e.id, e.start_date, e.end_date, e.event_time, e.title, e.memo, e.color_tag,
+        e.author_id, u.display_name AS author_display_name
+    </sql>
+
+    <select id="findEventsOverlapping" resultMap="EventMap">
+        SELECT <include refid="eventColumns"/>
+        FROM shared_event e
+        LEFT JOIN users u ON u.id = e.author_id
+        WHERE e.calendar_id = #{calendarId}
+          AND e.start_date &lt;= #{monthEnd}
+          AND e.end_date &gt;= #{monthStart}
+        ORDER BY e.start_date, e.event_time IS NULL, e.event_time, e.id
+    </select>
+
+    <select id="findEvent" resultMap="EventMap">
+        SELECT <include refid="eventColumns"/>
+        FROM shared_event e
+        LEFT JOIN users u ON u.id = e.author_id
+        WHERE e.calendar_id = #{calendarId} AND e.id = #{id}
+    </select>
+
+    <insert id="insertEvent" useGeneratedKeys="true" keyProperty="dto.id" keyColumn="id">
+        INSERT INTO shared_event (calendar_id, author_id, start_date, end_date, event_time, title, memo, color_tag)
+        VALUES (#{calendarId}, #{authorId}, #{dto.startDate}, #{dto.endDate}, #{dto.time}, #{dto.title}, #{dto.memo}, #{dto.colorTag})
+    </insert>
+
+    <update id="updateEvent">
+        UPDATE shared_event
+        SET start_date = #{dto.startDate},
+            end_date = #{dto.endDate},
+            event_time = #{dto.time},
+            title = #{dto.title},
+            memo = #{dto.memo},
+            color_tag = #{dto.colorTag}
+        WHERE calendar_id = #{calendarId} AND id = #{id}
+    </update>
+
+    <delete id="deleteEvent">
+        DELETE FROM shared_event WHERE calendar_id = #{calendarId} AND id = #{id}
+    </delete>
+
+    <!-- ================= 캘린더 삭제 시 ================= -->
+
+    <delete id="deleteAllTransactionsOfCalendar">
+        DELETE FROM shared_transaction WHERE calendar_id = #{calendarId}
+    </delete>
+
+    <delete id="deleteAllEventsOfCalendar">
+        DELETE FROM shared_event WHERE calendar_id = #{calendarId}
+    </delete>
+
+</mapper>

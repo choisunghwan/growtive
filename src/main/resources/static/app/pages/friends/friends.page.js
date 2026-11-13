@@ -56,7 +56,7 @@ export default function FriendsPage() {
                 }
                 $('incomingList').innerHTML = list.map(c => `
                     <div class="friend-item" data-id="${c.id}">
-                        <span><b>${c.otherDisplayName}</b> <span class="hint">(${c.otherUsername})</span></span>
+                        <span><b>${escapeHtml(c.otherDisplayName)}</b> <span class="hint">(${escapeHtml(c.otherUsername)})</span></span>
                         <span class="ledger-tx-actions">
                             <button class="btn btn-xs btn-primary" data-accept="${c.id}">수락</button>
                             <button class="btn btn-xs btn-danger" data-decline="${c.id}">거절</button>
@@ -93,7 +93,7 @@ export default function FriendsPage() {
                 }
                 $('outgoingList').innerHTML = list.map(c => `
                     <div class="friend-item" data-id="${c.id}">
-                        <span><b>${c.otherDisplayName}</b> <span class="hint">(${c.otherUsername})</span> · 응답 대기중</span>
+                        <span><b>${escapeHtml(c.otherDisplayName)}</b> <span class="hint">(${escapeHtml(c.otherUsername)})</span> · 응답 대기중</span>
                         <span class="ledger-tx-actions">
                             <button class="btn btn-xs btn-danger" data-cancel="${c.id}">취소</button>
                         </span>
@@ -114,9 +114,9 @@ export default function FriendsPage() {
 
             function friendShareStatusText(c) {
                 if (c.friendSharesFrom && c.friendSharesUntil) {
-                    return `${c.otherDisplayName}님의 공유 기간: ${c.friendSharesFrom} ~ ${c.friendSharesUntil}`;
+                    return `${escapeHtml(c.otherDisplayName)}님의 공유 기간: ${c.friendSharesFrom} ~ ${c.friendSharesUntil}`;
                 }
-                return `${c.otherDisplayName}님이 아직 공유 기간을 설정하지 않았습니다.`;
+                return `${escapeHtml(c.otherDisplayName)}님이 아직 공유 기간을 설정하지 않았습니다.`;
             }
 
             function renderFriends(list) {
@@ -127,7 +127,7 @@ export default function FriendsPage() {
                 $('friendsList').innerHTML = list.map(c => `
                     <div class="friend-item friend-item--stacked" data-id="${c.id}">
                         <div class="friend-item-row">
-                            <span><b>${c.otherDisplayName}</b> <span class="hint">(${c.otherUsername})</span></span>
+                            <span><b>${escapeHtml(c.otherDisplayName)}</b> <span class="hint">(${escapeHtml(c.otherUsername)})</span></span>
                             <span class="ledger-tx-actions">
                                 ${c.comparisonAvailable
                                     ? `<a class="btn btn-xs btn-primary" href="#/compare?id=${c.id}">캘린더 비교</a>`
@@ -313,8 +313,8 @@ export default function FriendsPage() {
                 }
                 $('searchResults').innerHTML = list.map(u => `
                     <div class="friend-item" data-search-id="${u.id}">
-                        <span><b>${u.displayName}</b> <span class="hint">(${u.username})</span></span>
-                        <button class="btn btn-xs btn-primary" data-send="${u.username}">친구 요청 보내기</button>
+                        <span><b>${escapeHtml(u.displayName)}</b> <span class="hint">(${escapeHtml(u.username)})</span></span>
+                        <button class="btn btn-xs btn-primary" data-send="${escapeHtml(u.username)}">친구 요청 보내기</button>
                     </div>
                 `).join('');
 

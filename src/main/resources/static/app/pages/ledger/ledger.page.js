@@ -5,6 +5,7 @@
  */
 
 import { initTopbarSalaryTicker } from '../../ui/salary-ticker.js';
+import { escapeHtml as esc } from '../../ui/modal.js';
 
 const EXPENSE_CATEGORIES = ['식비', '교통', '카페', '쇼핑', '월세', '주거통신', '의료', '문화', '기타'];
 const INCOME_CATEGORIES = ['월급', '부수입', '용돈', '이자/배당', '기타'];
@@ -110,9 +111,31 @@ function parseAmountInput(el) {
     return Number(el.value.replace(/[^\d]/g, '')) || 0;
 }
 
-export default function LedgerPage() {
+/**
+ * @param {object} [options]
+ * @param {number} [options.sharedCalendarId] 공유 캘린더 id — 주면 공유 캘린더 모드
+ *   (같은 화면을 쓰되 데이터는 /api/shared-calendars/{id}/ledger, /schedule 에서 읽고 쓰며
+ *    작성자 이름을 보여주고, 개인 전용 기능(친구에게 숨기기, 상단 급여 게이지 갱신)은 뺀다)
+ */
+export default function LedgerPage(options = {}) {
 
     const now = new Date();
+    const sharedId = options.sharedCalendarId || null;
+    const isShared = !!sharedId;
+    const API = isShared
+        ? { ledger: `/api/shared-calendars/${sharedId}/ledger`, schedule: `/api/shared-calendars/${sharedId}/schedule` }
+        : { ledger: '/api/money/ledger', schedule: '/api/schedule' };
+
+    /** 개인 가계부가 바뀌었을 때만 상단 급여/지출 게이지 갱신 (공유 가계부는 개인 통계와 따로) */
+    function refreshPersonalTicker() {
+        if (!isShared) initTopbarSalaryTicker();
+    }
+
+    /** 공유 캘린더: 누가 입력했는지 */
+    function authorHtml(item) {
+        if (!isShared || !item.authorDisplayName) return '';
+        return `<span class="ledger-tx-author" title="작성자">${esc(item.authorDisplayName)}</span>`;
+    }
 
     const VIEW_MODE_KEY = 'growtive-ledger-view';
     const MODE_KEY = 'growtive-ledger-mode';
@@ -136,7 +159,7 @@ export default function LedgerPage() {
 
     // 🔗 다른 화면(재무 대시보드 > 내역)에서 '#/calendar?date=YYYY-MM-DD&edit=ID'로 들어오면
     //    해당 날짜의 가계부를 열고, edit가 있으면 그 내역의 수정 폼을 바로 띄운다.
-    const linkParams = new URLSearchParams(location.hash.split('?')[1] || '');
+    const linkParams = new URLSearchParams(isShared ? '' : (location.hash.split('?')[1] || ''));
     const linkDate = linkParams.get('date');
     const linkEditId = Number(linkParams.get('edit')) || null;
     if (linkDate && /^\d{4}-\d{2}-\d{2}$/.test(linkDate)) {
@@ -203,7 +226,7 @@ export default function LedgerPage() {
     }
 
     async function loadMonth() {
-        const { data } = await axios.get('/api/money/ledger', {
+        const { data } = await axios.get(API.ledger, {
             params: { year: state.year, month: state.month }
         });
         state.transactions = data;
@@ -211,7 +234,7 @@ export default function LedgerPage() {
     }
 
     async function loadEvents() {
-        const { data } = await axios.get('/api/schedule', {
+        const { data } = await axios.get(API.schedule, {
             params: { year: state.year, month: state.month }
         });
         state.events = data;
@@ -320,7 +343,7 @@ export default function LedgerPage() {
                 const isStart = dateStr === ev.startDate;
                 const isEnd = dateStr === ev.endDate;
                 const cls = `${isStart ? ' is-start' : ''}${isEnd ? ' is-end' : ''}`;
-                barsHtml += `<div class="ledger-event-bar${cls}" style="background:${colorTagHex(ev.colorTag)}" title="${ev.title}">${isStart ? `<span class="ledger-event-bar-label">${ev.title}</span>` : ''}</div>`;
+                barsHtml += `<div class="ledger-event-bar${cls}" style="background:${colorTagHex(ev.colorTag)}" title="${esc(ev.title)}">${isStart ? `<span class="ledger-event-bar-label">${esc(ev.title)}</span>` : ''}</div>`;
             }
             const laneOverflow = multiDayEvents.filter(ev => laneOf.get(ev.id) >= MAX_EVENT_LANES).length;
             if (laneOverflow > 0) {
@@ -328,8 +351,8 @@ export default function LedgerPage() {
             }
 
             const titlesHtml = singleDayEvents.slice(0, MAX_TITLES).map(ev => `
-                <div class="ledger-event-title-mini" title="${ev.title}">
-                    <span class="ledger-event-dot" style="background:${colorTagHex(ev.colorTag)}"></span>${ev.title}
+                <div class="ledger-event-title-mini" title="${esc(ev.title)}">
+                    <span class="ledger-event-dot" style="background:${colorTagHex(ev.colorTag)}"></span>${esc(ev.title)}
                 </div>`).join('');
             const titleOverflow = singleDayEvents.length > MAX_TITLES
                 ? `<div class="ledger-event-more">+${singleDayEvents.length - MAX_TITLES}건 더</div>` : '';
@@ -377,8 +400,8 @@ export default function LedgerPage() {
                 <ul class="ledger-list-items">
                     ${list.map(tx => `
                         <li class="ledger-list-item">
-                            <span class="ledger-list-item-category">${categoryIcon(tx.category)} ${tx.category}${(tx.recurring || tx.recurringOriginId) ? ' <span class="ledger-tx-recurring-badge" title="매달 반복">🔁</span>' : ''}</span>
-                            <span class="ledger-list-item-memo">${tx.memo ? tx.memo : ''}</span>
+                            <span class="ledger-list-item-category">${categoryIcon(tx.category)} ${esc(tx.category)}${(tx.recurring || tx.recurringOriginId) ? ' <span class="ledger-tx-recurring-badge" title="매달 반복">🔁</span>' : ''}</span>
+                            <span class="ledger-list-item-memo">${authorHtml(tx)}${esc(tx.memo)}</span>
                             <span class="ledger-list-item-amount ${tx.type === 'INCOME' ? 'is-income' : 'is-expense'}">${tx.type === 'INCOME' ? '+' : '-'}${won(tx.amount)}</span>
                         </li>
                     `).join('')}
@@ -421,8 +444,8 @@ export default function LedgerPage() {
                 <ul class="ledger-list-items">
                     ${list.map(ev => `
                         <li class="ledger-list-item">
-                            <span class="ledger-list-item-category"><span class="ledger-event-dot" style="background:${colorTagHex(ev.colorTag)}"></span> ${ev.title}${eventRangeBadge(ev)}</span>
-                            <span class="ledger-list-item-memo">${ev.time ? `${ev.time.slice(0, 5)} · ` : ''}${ev.memo ? ev.memo : ''}</span>
+                            <span class="ledger-list-item-category"><span class="ledger-event-dot" style="background:${colorTagHex(ev.colorTag)}"></span> ${esc(ev.title)}${eventRangeBadge(ev)}</span>
+                            <span class="ledger-list-item-memo">${authorHtml(ev)}${ev.time ? `${ev.time.slice(0, 5)} · ` : ''}${esc(ev.memo)}</span>
                         </li>
                     `).join('')}
                 </ul>
@@ -459,13 +482,13 @@ export default function LedgerPage() {
             return `
             <li class="ledger-tx-item">
                 <div class="ledger-tx-main">
-                    <span class="ledger-tx-category">${categoryIcon(tx.category)} ${tx.category}${isRecurringRelated ? ' <span class="ledger-tx-recurring-badge" title="매달 반복">🔁</span>' : ''}${tx.hidden ? ' <span class="ledger-tx-recurring-badge" title="친구에게 숨김">🙈</span>' : ''}</span>
+                    <span class="ledger-tx-category">${categoryIcon(tx.category)} ${esc(tx.category)}${isRecurringRelated ? ' <span class="ledger-tx-recurring-badge" title="매달 반복">🔁</span>' : ''}${tx.hidden ? ' <span class="ledger-tx-recurring-badge" title="친구에게 숨김">🙈</span>' : ''}</span>
                     <span class="ledger-tx-amount ${tx.type === 'INCOME' ? 'is-income' : 'is-expense'}">
                         ${tx.type === 'INCOME' ? '+' : '-'}${won(tx.amount)}
                     </span>
                 </div>
                 <div class="ledger-tx-sub">
-                    <span class="ledger-tx-memo">${tx.memo ? tx.memo : ''}</span>
+                    <span class="ledger-tx-memo">${authorHtml(tx)}${esc(tx.memo)}</span>
                     <span class="ledger-tx-actions">
                         <button class="btn btn-xs" data-edit="${tx.id}">수정</button>
                         ${isOrigin ? `<button class="btn btn-xs" data-stop="${tx.id}">반복 중지</button>` : ''}
@@ -498,11 +521,11 @@ export default function LedgerPage() {
         return `<ul class="ledger-tx-list">${list.map(ev => `
             <li class="ledger-tx-item">
                 <div class="ledger-tx-main">
-                    <span class="ledger-tx-category"><span class="ledger-event-dot" style="background:${colorTagHex(ev.colorTag)}"></span> ${ev.title}${eventRangeBadge(ev)}${ev.hidden ? ' <span class="ledger-tx-recurring-badge" title="친구에게 숨김">🙈</span>' : ''}</span>
+                    <span class="ledger-tx-category"><span class="ledger-event-dot" style="background:${colorTagHex(ev.colorTag)}"></span> ${esc(ev.title)}${eventRangeBadge(ev)}${ev.hidden ? ' <span class="ledger-tx-recurring-badge" title="친구에게 숨김">🙈</span>' : ''}</span>
                     ${ev.time ? `<span class="ledger-event-time">${ev.time.slice(0, 5)}</span>` : ''}
                 </div>
                 <div class="ledger-tx-sub">
-                    <span class="ledger-tx-memo">${ev.memo ? ev.memo : ''}</span>
+                    <span class="ledger-tx-memo">${authorHtml(ev)}${esc(ev.memo)}</span>
                     <span class="ledger-tx-actions">
                         <button class="btn btn-xs" data-edit-event="${ev.id}">수정</button>
                         <button class="btn btn-xs btn-danger" data-del-event="${ev.id}">삭제</button>
@@ -530,9 +553,9 @@ export default function LedgerPage() {
                 <label class="ledger-recurring-label" id="txRecurringLabel">
                     <input type="checkbox" id="txRecurring"> 매달 반복 (월급/월세 등 고정 항목)
                 </label>
-                <label class="ledger-recurring-label">
+                ${isShared ? '' : `<label class="ledger-recurring-label">
                     <input type="checkbox" id="txHidden"> 🙈 친구에게 숨기기
-                </label>
+                </label>`}
                 <div class="btn-row">
                     <button type="submit" id="txSubmitBtn" class="btn btn-primary">추가</button>
                     <button type="button" id="txCancelBtn" class="btn btn-ghost" style="display:none;">취소</button>
@@ -556,9 +579,9 @@ export default function LedgerPage() {
                 <input id="evtMemo" type="text" placeholder="메모 (선택)">
                 <input type="hidden" id="evtColorTag" value="blue">
                 <div class="ledger-color-picker" id="evtColorPicker">${swatches}</div>
-                <label class="ledger-recurring-label">
+                ${isShared ? '' : `<label class="ledger-recurring-label">
                     <input type="checkbox" id="evtHidden"> 🙈 친구에게 숨기기
-                </label>
+                </label>`}
                 <div class="btn-row">
                     <button type="submit" id="evtSubmitBtn" class="btn btn-primary">추가</button>
                     <button type="button" id="evtCancelBtn" class="btn btn-ghost" style="display:none;">취소</button>
@@ -567,7 +590,7 @@ export default function LedgerPage() {
     }
 
     return {
-        title: '가계부',
+        title: isShared ? '공유 캘린더' : '가계부',
 
         render() {
             return `
@@ -715,7 +738,7 @@ export default function LedgerPage() {
                     $('dayTxList').innerHTML = renderEventDayList();
                     $('dayTxList').querySelectorAll('button[data-del-event]').forEach(btn => {
                         btn.onclick = async () => {
-                            await axios.delete(`/api/schedule/${btn.dataset.delEvent}`);
+                            await axios.delete(`${API.schedule}/${btn.dataset.delEvent}`);
                             if (state.editingEventId === Number(btn.dataset.delEvent)) resetEventForm();
                             await refresh();
                         };
@@ -730,10 +753,10 @@ export default function LedgerPage() {
                 $('dayTxList').innerHTML = renderDayList();
                 $('dayTxList').querySelectorAll('button[data-del]').forEach(btn => {
                     btn.onclick = async () => {
-                        await axios.delete(`/api/money/ledger/${btn.dataset.del}`);
+                        await axios.delete(`${API.ledger}/${btn.dataset.del}`);
                         if (state.editingId === Number(btn.dataset.del)) resetForm();
                         await refresh();
-                        initTopbarSalaryTicker();
+                        refreshPersonalTicker();
                     };
                 });
                 $('dayTxList').querySelectorAll('button[data-edit]').forEach(btn => {
@@ -744,13 +767,13 @@ export default function LedgerPage() {
                         if (!confirm('이 항목의 반복을 중지할까요? 이미 생성된 지난 내역은 그대로 유지됩니다.')) return;
                         const tx = (state.byDate[state.selectedDate] || []).find(t => t.id === Number(btn.dataset.stop));
                         if (!tx) return;
-                        await axios.put(`/api/money/ledger/${tx.id}`, {
+                        await axios.put(`${API.ledger}/${tx.id}`, {
                             date: tx.date, type: tx.type, category: tx.category,
                             amount: tx.amount, memo: tx.memo, recurring: false
                         });
                         if (state.editingId === tx.id) resetForm();
                         await refresh();
-                        initTopbarSalaryTicker();
+                        refreshPersonalTicker();
                     };
                 });
             }
@@ -804,7 +827,7 @@ export default function LedgerPage() {
 
                 $('txAmount').value = Number(tx.amount).toLocaleString('ko-KR');
                 $('txMemo').value = tx.memo || '';
-                $('txHidden').checked = !!tx.hidden;
+                if ($('txHidden')) $('txHidden').checked = !!tx.hidden;
 
                 $('txSubmitBtn').textContent = '수정 완료';
                 $('txCancelBtn').style.display = '';
@@ -847,19 +870,19 @@ export default function LedgerPage() {
                     }
 
                     const recurring = state.editingId ? state.editingOriginalRecurring : $('txRecurring').checked;
-                    const hidden = $('txHidden').checked;
+                    const hidden = $('txHidden')?.checked ?? false;
                     const payload = { date: state.selectedDate, type, category, amount, memo, recurring, hidden };
 
                     if (state.editingId) {
-                        await axios.put(`/api/money/ledger/${state.editingId}`, payload);
+                        await axios.put(`${API.ledger}/${state.editingId}`, payload);
                     } else {
-                        await axios.post('/api/money/ledger', payload);
+                        await axios.post(API.ledger, payload);
                     }
 
                     resetForm();
                     setFormOpen(false);
                     await refresh();
-                    initTopbarSalaryTicker();
+                    refreshPersonalTicker();
                 });
             }
 
@@ -894,7 +917,7 @@ export default function LedgerPage() {
                 $('evtMemo').value = ev.memo || '';
                 $('evtColorTag').value = ev.colorTag || 'blue';
                 updateColorSwatchSelection(ev.colorTag || 'blue');
-                $('evtHidden').checked = !!ev.hidden;
+                if ($('evtHidden')) $('evtHidden').checked = !!ev.hidden;
 
                 $('evtSubmitBtn').textContent = '수정 완료';
                 $('evtCancelBtn').style.display = '';
@@ -930,13 +953,13 @@ export default function LedgerPage() {
                     const time = $('evtTime').value || null;
                     const memo = $('evtMemo').value.trim() || null;
                     const colorTag = $('evtColorTag').value || 'blue';
-                    const hidden = $('evtHidden').checked;
+                    const hidden = $('evtHidden')?.checked ?? false;
                     const payload = { startDate, endDate, time, title, memo, colorTag, hidden };
 
                     if (state.editingEventId) {
-                        await axios.put(`/api/schedule/${state.editingEventId}`, payload);
+                        await axios.put(`${API.schedule}/${state.editingEventId}`, payload);
                     } else {
-                        await axios.post('/api/schedule', payload);
+                        await axios.post(API.schedule, payload);
                     }
 
                     resetEventForm();

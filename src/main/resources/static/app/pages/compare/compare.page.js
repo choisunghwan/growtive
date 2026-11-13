@@ -1,3 +1,5 @@
+// 친구가 입력한 글자는 반드시 이스케이프해서 표시 (스크립트 삽입 방지)
+import { escapeHtml as esc } from '../../ui/modal.js';
 const COLOR_TAGS = {
     blue: '#2563eb', indigo: '#4f46e5', purple: '#7c3aed', pink: '#db2777',
     red: '#dc2626', orange: '#f59e0b', yellow: '#ca8a04', green: '#16a34a',
@@ -72,7 +74,7 @@ function renderScheduleMiniCalendar(year, month, events, selectedDate) {
         if (dateStr === selectedDate) cls += ' cmp-cell--selected';
         const titles = list.slice(0, MAX_TITLES).map(ev => `
             <div class="cmp-event-title">
-                <span class="ledger-event-dot" style="background:${colorTagHex(ev.colorTag)}"></span>${ev.title}
+                <span class="ledger-event-dot" style="background:${colorTagHex(ev.colorTag)}"></span>${esc(ev.title)}
             </div>`).join('');
         const overflow = list.length > MAX_TITLES ? `<div class="cmp-event-more">+${list.length - MAX_TITLES}건 더</div>` : '';
         return `
@@ -89,10 +91,10 @@ function txListHtml(list) {
     return `<ul class="ledger-tx-list">${list.map(tx => `
         <li class="ledger-tx-item">
             <div class="ledger-tx-main">
-                <span class="ledger-tx-category">${tx.category}</span>
+                <span class="ledger-tx-category">${esc(tx.category)}</span>
                 <span class="ledger-tx-amount ${tx.type === 'INCOME' ? 'is-income' : 'is-expense'}">${tx.type === 'INCOME' ? '+' : '-'}${won(tx.amount)}</span>
             </div>
-            ${tx.memo ? `<div class="ledger-tx-sub"><span class="ledger-tx-memo">${tx.memo}</span></div>` : ''}
+            ${tx.memo ? `<div class="ledger-tx-sub"><span class="ledger-tx-memo">${esc(tx.memo)}</span></div>` : ''}
         </li>`).join('')}</ul>`;
 }
 
@@ -101,10 +103,10 @@ function eventListHtml(list) {
     return `<ul class="ledger-tx-list">${list.map(ev => `
         <li class="ledger-tx-item">
             <div class="ledger-tx-main">
-                <span class="ledger-tx-category"><span class="ledger-event-dot" style="background:${colorTagHex(ev.colorTag)}"></span> ${ev.title}</span>
+                <span class="ledger-tx-category"><span class="ledger-event-dot" style="background:${colorTagHex(ev.colorTag)}"></span> ${esc(ev.title)}</span>
                 ${ev.time ? `<span class="ledger-event-time">${ev.time.slice(0, 5)}</span>` : ''}
             </div>
-            ${ev.memo ? `<div class="ledger-tx-sub"><span class="ledger-tx-memo">${ev.memo}</span></div>` : ''}
+            ${ev.memo ? `<div class="ledger-tx-sub"><span class="ledger-tx-memo">${esc(ev.memo)}</span></div>` : ''}
         </li>`).join('')}</ul>`;
 }
 
