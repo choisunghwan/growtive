@@ -12,9 +12,9 @@
 |---|---|
 | ![가계부](src/main/resources/static/assets/img/intro/intro-ledger.png) | ![일정](src/main/resources/static/assets/img/intro/intro-schedule.png) |
 
-| 재무 대시보드 (돈 흐름) | 친구 캘린더 비교 |
+| 재무 대시보드 (자산 흐름) | 친구 캘린더 비교 |
 |---|---|
-| ![돈 흐름](src/main/resources/static/assets/img/intro/intro-dashboard.png) | ![캘린더 비교](src/main/resources/static/assets/img/intro/intro-compare.png) |
+| ![자산 흐름](src/main/resources/static/assets/img/intro/intro-dashboard.png) | ![캘린더 비교](src/main/resources/static/assets/img/intro/intro-compare.png) |
 
 ---
 

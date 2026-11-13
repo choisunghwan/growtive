@@ -2,7 +2,7 @@ export default function DashboardPage() {
     const now = new Date();
 
     return {
-        title: "돈 흐름",
+        title: "자산 흐름",
 
         state: {
             year: now.getFullYear(),
@@ -14,7 +14,7 @@ export default function DashboardPage() {
         <section class="dashboard">
 
           <div class="card">
-            <h1 class="title">돈 흐름</h1>
+            <h1 class="title">자산 흐름</h1>
             <p class="subtitle">이번 달 돈이 어디로 흘러가는지 확인하세요</p>
 
             <div style="display:flex; align-items:center; gap:10px; margin-top:16px; flex-wrap:wrap;">
@@ -229,7 +229,7 @@ export default function DashboardPage() {
                 type: "sankey",
                 data: {
                     datasets: [{
-                        label: `${this.getYearMonthText()} 돈 흐름`,
+                        label: `${this.getYearMonthText()} 자산 흐름`,
                         data: flow.sankeyData,
                         colorFrom: c => this.colorForNode(c.raw.from, flow),
                         colorTo: c => this.colorForNode(c.raw.to, flow),

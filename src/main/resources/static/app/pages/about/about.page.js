@@ -40,7 +40,7 @@ export default function AboutPage() {
 
           <div class="card about-feature">
             <div class="about-feature-text">
-              <h3>📈 재무 대시보드 (돈 흐름)</h3>
+              <h3>📈 재무 대시보드 (자산 흐름)</h3>
               <p>가계부에 기록한 수입과 지출이 어디서 어디로 흘러가는지 Sankey 차트로 한눈에 보여줍니다. 이번 달 총수입·총지출·잔액도 함께 요약해드려요.</p>
             </div>
             <img src="/assets/img/intro/intro-dashboard.png" alt="재무 대시보드 화면" class="about-feature-img">

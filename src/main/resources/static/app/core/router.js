@@ -3,7 +3,7 @@ import { mount } from '../ui/mount.js';
 import authStore from '../store/authStore.js';
 import LedgerPage from '../pages/ledger/ledger.page.js';
 
-/*재무 대시보드 페이지(돈 흐름 + 반복 항목 설정)*/
+/*재무 대시보드 페이지(자산 흐름 + 반복 항목 설정)*/
 import DashboardPage from '../pages/dashboard/dashboard.page.js';
 
 /*재무 대시보드 > 내역(한 달 가계부 내역 모아보기)*/
