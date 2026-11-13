@@ -7,6 +7,7 @@
 //  - 카카오톡/네이버/인스타 등 인앱 브라우저 : 설치가 안 되므로 외부 브라우저로 열도록 안내
 //  - 그 외 모바일 브라우저        : 브라우저 메뉴에서 '홈 화면에 추가' 안내
 // 이미 홈 화면 앱으로 실행 중이거나 PC면 아무것도 안 보여준다.
+// 브라우저로 열었어도 '설치됨'을 알면(앱으로 열린 적 있음 / 크롬 설치 확인 / [이미 설치했어요]) 안 보여준다.
 
 const DISMISS_KEY = 'growtive-install-dismissed-at';
 const DISMISS_DAYS = 7;
@@ -88,10 +89,12 @@ export function mountInstallBanner(slot) {
     if (!slot || !pwa) return;
 
     const env = detectEnv();
-    if (!env.isMobile || pwa.isStandalone() || isDismissed()) {
+    if (!env.isMobile || pwa.isStandalone() || pwa.isKnownInstalled() || isDismissed()) {
         slot.innerHTML = '';
         return;
     }
+    // 크롬이 '이미 설치됨'이라고 알려주면 바로 숨김 (응답은 비동기)
+    pwa.checkInstalled().then(installed => { if (installed) slot.innerHTML = ''; });
 
     const draw = () => {
         slot.innerHTML = `
@@ -102,6 +105,7 @@ export function mountInstallBanner(slot) {
                     ${bodyHtml(env, pwa.canPrompt())}
                 </div>
                 <button type="button" class="install-close" data-install-action="close" aria-label="설치 안내 닫기">✕</button>
+                <button type="button" class="install-already" data-install-action="installed">이미 설치했어요</button>
             </div>`;
     };
     draw();
@@ -110,6 +114,10 @@ export function mountInstallBanner(slot) {
         const action = e.target.closest('[data-install-action]')?.dataset.installAction;
         if (action === 'close') {
             dismiss();
+            slot.innerHTML = '';
+        } else if (action === 'installed') {
+            // 다시는 안 띄움
+            pwa.markInstalled();
             slot.innerHTML = '';
         } else if (action === 'prompt') {
             const outcome = await pwa.prompt();

@@ -17,6 +17,17 @@
 
     let deferredPrompt = null;
 
+    // 📲 '설치됨' 기억: 브라우저로 접속하면 홈 화면 앱이 있는지 알 수 없어서,
+    //    앱(standalone)으로 한 번이라도 열렸거나 설치 완료 이벤트가 오면 표시해 둔다.
+    //    (안드로이드는 설치된 앱과 크롬이 같은 저장소를 써서 브라우저에서도 이 값이 보임)
+    const INSTALLED_KEY = 'growtive-app-installed';
+    function markInstalled() {
+        try { localStorage.setItem(INSTALLED_KEY, '1'); } catch { /* 무시 */ }
+    }
+    function isMarkedInstalled() {
+        try { return localStorage.getItem(INSTALLED_KEY) === '1'; } catch { return false; }
+    }
+
     function notify(type) {
         window.dispatchEvent(new CustomEvent('growtive:pwa', { detail: { type } }));
     }
@@ -30,14 +41,33 @@
 
     window.addEventListener('appinstalled', () => {
         deferredPrompt = null;
+        markInstalled();
         notify('installed');
     });
 
+    const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true; // iOS Safari
+    if (isStandalone()) markInstalled();
+
     window.growtivePwa = {
         /** 이미 홈 화면 앱(standalone)으로 실행 중인지 */
-        isStandalone() {
-            return window.matchMedia('(display-mode: standalone)').matches
-                || window.navigator.standalone === true; // iOS Safari
+        isStandalone,
+
+        /** 이 기기에 앱이 설치돼 있다고 알고 있는지 (앱으로 열린 적 있음 / 설치 완료 / '이미 설치했어요') */
+        isKnownInstalled() {
+            return isMarkedInstalled();
+        },
+
+        markInstalled,
+
+        /** 크롬(안드로이드)에 '이 웹앱 설치돼 있어?'라고 물어봄 (지원 안 하면 false) */
+        async checkInstalled() {
+            try {
+                if (!navigator.getInstalledRelatedApps) return false;
+                const apps = await navigator.getInstalledRelatedApps();
+                if (apps && apps.length > 0) { markInstalled(); return true; }
+            } catch { /* 지원 안 함 */ }
+            return false;
         },
 
         /** 버튼 한 번으로 설치창을 띄울 수 있는 상태인지 (안드로이드 크롬 계열) */

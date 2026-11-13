@@ -513,3 +513,35 @@
     background: var(--border);
     color: var(--text);
 }
+
+/* [이미 설치했어요]: 누르면 이 기기에서 다시 안 띄움 */
+.install-already {
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
+    padding: 4px 6px;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.install-already:hover { color: var(--text); }
+.install-card { padding-bottom: 30px; }
+
+/* [이미 설치했어요]: 누르면 이 기기에서 다시 안 띄움 */
+.install-card { padding-bottom: 34px; }
+.install-already {
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
+    padding: 4px 6px;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.install-already:hover { color: var(--text); }
