@@ -441,8 +441,9 @@ export default function HistoryPage() {
                 // 전체 기간에는 앞뒤로 넘길 게 없으므로 화살표 숨김
                 // 전체/사용자 입력 기간에는 앞뒤로 넘길 단위가 없으므로 화살표 숨김
                 const showNav = state.unit !== 'ALL' && state.unit !== 'CUSTOM';
-                $('prevPeriod').style.visibility = showNav ? '' : 'hidden';
-                $('nextPeriod').style.visibility = showNav ? '' : 'hidden';
+                // (자리도 차지하지 않게 숨겨서 검색 버튼이 같은 줄에 남도록)
+                $('prevPeriod').style.display = showNav ? '' : 'none';
+                $('nextPeriod').style.display = showNav ? '' : 'none';
 
                 const cond = conditionHtml();
                 $('historyCondition').innerHTML = cond;

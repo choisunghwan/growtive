@@ -911,3 +911,23 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
 .history-custom-tilde { padding-bottom: 10px; color: var(--text-muted); }
 .history-custom-error { margin: 8px 0 0; font-size: 12.5px; color: #dc2626; }
 .history-custom-apply { width: 100%; margin-top: 10px; }
+
+/* ----- 내역: 기간 표시와 [검색] 버튼을 항상 한 줄에 (좁은 화면에서는 기간 글자가 줄바꿈) ----- */
+.history-header { flex-wrap: nowrap; justify-content: center; }
+.history-header .ledger-month-nav { flex: 0 1 auto; min-width: 0; gap: 8px; }
+.history-header .ledger-nav-btn { flex: none; }
+.history-period { min-width: 0; }
+.history-header h2#periodLabel {
+    min-width: 0;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+}
+.history-search-btn { flex: none; white-space: nowrap; }
+@media (max-width: 768px) {
+    .history-header { gap: 8px; }
+    .history-header .ledger-month-nav { gap: 6px; }
+    .history-header .ledger-nav-btn { width: 30px; height: 30px; }
+    .history-header h2#periodLabel { font-size: clamp(14px, 4.2vw, 16px); }
+    .history-search-btn { padding: 0 10px; }
+}
