@@ -890,3 +890,24 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
+
+/* ----- 내역: 기간 선택 > 사용자 입력 ----- */
+.history-custom-range {
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+}
+.history-custom-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: end;
+    gap: 8px;
+}
+.history-custom-field { display: flex; flex-direction: column; gap: 4px; margin: 0; min-width: 0; }
+.history-custom-field span { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+.history-custom-field input { height: 40px; min-width: 0; font-size: 14px; }
+.history-custom-tilde { padding-bottom: 10px; color: var(--text-muted); }
+.history-custom-error { margin: 8px 0 0; font-size: 12.5px; color: #dc2626; }
+.history-custom-apply { width: 100%; margin-top: 10px; }

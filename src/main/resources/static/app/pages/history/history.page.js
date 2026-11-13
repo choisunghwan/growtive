@@ -4,6 +4,7 @@
  * - 상단: ◀ 기간 ▶ + [검색] / 검색 조건 표시 / 기간 수입·지출 요약(기간만 기준, 고정) / 전체·지출·수입 보기 선택(목록에만 적용)
  * - 목록 맨 위: 카테고리·내용 검색 시 목록에 나온 내역의 건수와 합계 (전체 | 수입 | 지출)
  *   · 기간 단위: 전체(모든 내역) / 연별(◀ 2026년 ▶) / 월별(◀ 2026년 11월 ▶) / 주별(◀ 2026년 11월 1주차 ▶)
+ *               / 사용자 입력(시작일~종료일 직접 지정, ◀▶ 없음)
  * - [검색] 모달: 기간(단위 선택 모달) / 카테고리(체크박스 모달) / 내용(메모 LIKE 검색)
  * - 본문: 날짜별 박스 하나(최근 날짜가 위) 안에 날짜 → 그날 내역 목록 → 그날 합계
  * - 수정: 가계부 캘린더의 해당 날짜로 이동해서 수정 폼을 바로 열어줌 / 삭제: 이 화면에서 바로 삭제
@@ -71,8 +72,26 @@ const UNITS = [
     { key: 'YEAR', label: '연별', desc: '한 해 단위로 보기' },
     { key: 'MONTH', label: '월별', desc: '한 달 단위로 보기' },
     { key: 'WEEK', label: '주별', desc: '한 달 안의 주차 단위로 보기' },
+    { key: 'CUSTOM', label: '사용자 입력', desc: '시작일과 종료일을 직접 지정' },
 ];
 function unitLabel(key) { return (UNITS.find(u => u.key === key) || UNITS[2]).label; }
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+/** 'YYYY-MM-DD' → { y, m, d } */
+function parseYmd(s) { const [y, m, d] = s.split('-').map(Number); return { y, m, d }; }
+/** 'YYYY-MM-DD' → '2026.11.3' (같은 해면 연도 생략 가능) */
+function dotDate(s, withYear = true) {
+    const { y, m, d } = parseYmd(s);
+    return withYear ? `${y}.${m}.${d}` : `${m}.${d}`;
+}
+/** 사용자 입력 기간 표시: '2026.11.3 ~ 11.20' (해가 다르면 둘 다 연도) */
+function customRangeLabel(from, to) {
+    const sameYear = from.slice(0, 4) === to.slice(0, 4);
+    return `${dotDate(from)} ~ ${dotDate(to, !sameYear)}`;
+}
+function daysBetween(from, to) {
+    return Math.round((new Date(to + 'T00:00:00') - new Date(from + 'T00:00:00')) / 86400000) + 1;
+}
 
 function totalsChipsHtml({ income, expense }, filter) {
     // 지출만/수입만 볼 때는 그 금액 하나만 (합계가 같은 숫자라 중복)
@@ -134,7 +153,9 @@ export default function HistoryPage() {
     const today = { y: now.getFullYear(), m: now.getMonth() + 1, d: now.getDate() };
 
     const state = {
-        unit: 'MONTH',                 // 'ALL' | 'YEAR' | 'MONTH' | 'WEEK'
+        unit: 'MONTH',                 // 'ALL' | 'YEAR' | 'MONTH' | 'WEEK' | 'CUSTOM'
+        customFrom: null,              // 사용자 입력 기간 (YYYY-MM-DD)
+        customTo: null,
         year: today.y,
         month: today.m,
         week: weekOfDay(today.y, today.m, today.d),
@@ -158,6 +179,7 @@ export default function HistoryPage() {
             const { startDay, endDay } = weekDayRange(y, m, w);
             return { from: ymd(y, m, startDay), to: ymd(y, m, endDay) };
         }
+        if (unit === 'CUSTOM') return { from: state.customFrom, to: state.customTo };
         return { from: null, to: null };
     }
 
@@ -166,10 +188,12 @@ export default function HistoryPage() {
         if (unit === 'YEAR') return `${y}년`;
         if (unit === 'MONTH') return `${y}년 ${m}월`;
         if (unit === 'WEEK') return `${y}년 ${m}월 ${w}주차`;
+        if (unit === 'CUSTOM') return customRangeLabel(state.customFrom, state.customTo);
         return '전체 기간';
     }
 
     function periodSubLabel() {
+        if (state.unit === 'CUSTOM') return `사용자 입력 · ${daysBetween(state.customFrom, state.customTo)}일`;
         if (state.unit !== 'WEEK') return '';
         const { startDay, endDay } = weekDayRange(state.year, state.month, state.week);
         return `${state.month}/${startDay} ~ ${state.month}/${endDay}`;
@@ -178,6 +202,12 @@ export default function HistoryPage() {
     /** 기간 단위를 바꿀 때 기준 시점 맞추기 */
     function setUnit(unit) {
         if (unit === state.unit) return;
+        if (state.unit === 'CUSTOM' && unit !== 'ALL') {
+            // 사용자 입력 기간에서 다른 단위로 바꾸면 그 기간의 시작일을 기준으로
+            const { y, m } = parseYmd(state.customFrom);
+            state.year = y;
+            state.month = m;
+        }
         if (unit === 'WEEK') {
             // 이번 달이면 오늘이 속한 주, 다른 달이면 1주차
             state.week = (state.year === today.y && state.month === today.m)
@@ -329,7 +359,8 @@ export default function HistoryPage() {
         for (const tx of txs) (byDate[tx.date] ||= []).push(tx);
         const dates = Object.keys(byDate).sort().reverse(); // 최근 날짜가 위로
         // 전체 기간은 여러 해가 섞이므로 날짜에 연도까지 표시
-        const showYear = state.unit === 'ALL';
+        const showYear = state.unit === 'ALL'
+            || (state.unit === 'CUSTOM' && state.customFrom.slice(0, 4) !== state.customTo.slice(0, 4));
 
         const daysHtml = dates.map(dateStr => {
             const list = byDate[dateStr];
@@ -408,7 +439,8 @@ export default function HistoryPage() {
                 $('periodSub').textContent = sub;
                 $('periodSub').style.display = sub ? '' : 'none';
                 // 전체 기간에는 앞뒤로 넘길 게 없으므로 화살표 숨김
-                const showNav = state.unit !== 'ALL';
+                // 전체/사용자 입력 기간에는 앞뒤로 넘길 단위가 없으므로 화살표 숨김
+                const showNav = state.unit !== 'ALL' && state.unit !== 'CUSTOM';
                 $('prevPeriod').style.visibility = showNav ? '' : 'hidden';
                 $('nextPeriod').style.visibility = showNav ? '' : 'hidden';
 
@@ -441,9 +473,14 @@ export default function HistoryPage() {
                 // 모달 안에서 고른 값은 [검색]을 눌러야 실제로 적용
                 const draft = {
                     unit: state.unit,
+                    customFrom: state.customFrom,
+                    customTo: state.customTo,
                     categories: [...state.categories],
                     keyword: state.keyword,
                 };
+                const unitSummary = () => draft.unit === 'CUSTOM'
+                    ? customRangeLabel(draft.customFrom, draft.customTo)
+                    : unitLabel(draft.unit);
 
                 const categorySummary = () => {
                     if (draft.categories.length === 0) return '전체';
@@ -457,7 +494,7 @@ export default function HistoryPage() {
                         <div class="history-search-row">
                             <span class="history-search-label">기간</span>
                             <button type="button" class="history-picker-btn" id="pickUnitBtn">
-                                <span id="pickUnitText">${unitLabel(draft.unit)}</span><span aria-hidden="true">›</span>
+                                <span id="pickUnitText">${escapeHtml(unitSummary())}</span><span aria-hidden="true">›</span>
                             </button>
                         </div>
                         <div class="history-search-row">
@@ -479,9 +516,19 @@ export default function HistoryPage() {
                 const keywordInput = root.querySelector('#searchKeyword');
 
                 root.querySelector('#pickUnitBtn').addEventListener('click', () => {
-                    openUnitModal(draft.unit, (unit) => {
+                    // 사용자 입력 칸의 기본값: 지금 보고 있는 기간 (전체면 이번 달 1일 ~ 오늘)
+                    const cur = periodRange();
+                    const defaults = {
+                        from: draft.customFrom || cur.from || ymd(today.y, today.m, 1),
+                        to: draft.customTo || cur.to || ymd(today.y, today.m, today.d),
+                    };
+                    openUnitModal(draft.unit, defaults, (unit, range) => {
                         draft.unit = unit;
-                        root.querySelector('#pickUnitText').textContent = unitLabel(unit);
+                        if (unit === 'CUSTOM') {
+                            draft.customFrom = range.from;
+                            draft.customTo = range.to;
+                        }
+                        root.querySelector('#pickUnitText').textContent = unitSummary();
                     });
                 });
 
@@ -493,6 +540,10 @@ export default function HistoryPage() {
                 });
 
                 const doSearch = () => {
+                    if (draft.unit === 'CUSTOM') {
+                        state.customFrom = draft.customFrom;
+                        state.customTo = draft.customTo;
+                    }
                     setUnit(draft.unit);
                     state.categories = draft.categories;
                     state.keyword = keywordInput.value.trim();
@@ -505,25 +556,78 @@ export default function HistoryPage() {
                 });
             }
 
-            /** 기간 단위 선택 모달: 고르면 바로 닫히고 onPick 호출 */
-            function openUnitModal(current, onPick) {
+            /**
+             * 기간 단위 선택 모달
+             * - 전체/연별/월별/주별: 고르면 바로 닫히고 onPick(unit)
+             * - 사용자 입력: 아래에 시작일·종료일 칸이 열리고 [적용]을 눌러야 onPick('CUSTOM', {from, to})
+             */
+            function openUnitModal(current, defaults, onPick) {
                 const modal = openModal({
                     title: '기간 선택',
                     className: 'history-modal--sub',
                     bodyHtml: `
                         <div class="history-option-list">
                             ${UNITS.map(u => `
-                                <button type="button" class="history-option${u.key === current ? ' is-selected' : ''}" data-unit="${u.key}">
+                                <button type="button" class="history-option${u.key === current ? ' is-selected' : ''}" data-unit="${u.key}"
+                                        ${u.key === 'CUSTOM' ? `aria-expanded="${current === 'CUSTOM'}" aria-controls="customRangeForm"` : ''}>
                                     <span class="history-option-label">${u.label}</span>
                                     <span class="history-option-desc">${u.desc}</span>
                                 </button>`).join('')}
+                        </div>
+                        <div class="history-custom-range" id="customRangeForm"${current === 'CUSTOM' ? '' : ' hidden'}>
+                            <div class="history-custom-fields">
+                                <label class="history-custom-field">
+                                    <span>시작일</span>
+                                    <input type="date" id="customFrom" value="${defaults.from}">
+                                </label>
+                                <span class="history-custom-tilde" aria-hidden="true">~</span>
+                                <label class="history-custom-field">
+                                    <span>종료일</span>
+                                    <input type="date" id="customTo" value="${defaults.to}">
+                                </label>
+                            </div>
+                            <p class="history-custom-error" id="customError" role="alert" hidden></p>
+                            <button type="button" class="btn btn-primary history-custom-apply" id="customApplyBtn">적용</button>
                         </div>`,
                 });
-                modal.el.querySelectorAll('[data-unit]').forEach(btn => {
+                const root = modal.el;
+                const form = root.querySelector('#customRangeForm');
+                const customBtn = root.querySelector('[data-unit="CUSTOM"]');
+
+                root.querySelectorAll('[data-unit]').forEach(btn => {
                     btn.addEventListener('click', () => {
+                        if (btn.dataset.unit === 'CUSTOM') {
+                            // 바로 닫지 않고 날짜 입력 칸을 펼침
+                            form.hidden = false;
+                            customBtn.setAttribute('aria-expanded', 'true');
+                            root.querySelectorAll('[data-unit]').forEach(b => b.classList.toggle('is-selected', b === btn));
+                            root.querySelector('#customFrom').focus();
+                            return;
+                        }
                         onPick(btn.dataset.unit);
                         modal.close();
                     });
+                });
+
+                // 날짜를 고치면 오류 문구는 지움
+                root.querySelectorAll('#customFrom, #customTo').forEach(input => {
+                    input.addEventListener('input', () => { root.querySelector('#customError').hidden = true; });
+                });
+
+                root.querySelector('#customApplyBtn').addEventListener('click', () => {
+                    const from = root.querySelector('#customFrom').value;
+                    const to = root.querySelector('#customTo').value;
+                    const errorEl = root.querySelector('#customError');
+                    let error = '';
+                    if (!DATE_RE.test(from) || !DATE_RE.test(to)) error = '시작일과 종료일을 모두 입력해주세요.';
+                    else if (from > to) error = '시작일이 종료일보다 늦어요.';
+                    if (error) {
+                        errorEl.textContent = error;
+                        errorEl.hidden = false;
+                        return;
+                    }
+                    onPick('CUSTOM', { from, to });
+                    modal.close();
                 });
             }
 
