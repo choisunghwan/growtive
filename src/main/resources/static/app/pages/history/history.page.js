@@ -1,7 +1,7 @@
 /**
  * 🧾 재무 대시보드 > 내역
  * 가계부에 입력한 내역을 달력 없이 날짜별로 한데 모아 보여준다.
- * - 상단: 전체·지출·수입 보기 선택 / ◀ 기간 ▶ + [검색] / 검색 조건 표시 / 기간 수입·지출 요약
+ * - 상단: ◀ 기간 ▶ + [검색] / 검색 조건 표시 / 기간 수입·지출 요약 / 전체·지출·수입 보기 선택(목록에만 적용)
  *   · 기간 단위: 전체(모든 내역) / 연별(◀ 2026년 ▶) / 월별(◀ 2026년 11월 ▶) / 주별(◀ 2026년 11월 1주차 ▶)
  * - [검색] 모달: 기간(단위 선택 모달) / 카테고리(체크박스 모달) / 내용(메모 LIKE 검색)
  * - 본문: 날짜별 박스 하나(최근 날짜가 위) 안에 날짜 → 그날 내역 목록 → 그날 합계
@@ -317,8 +317,6 @@ export default function HistoryPage() {
             return `
             <section class="ledger-page history-page">
                 <div class="card">
-                    <!-- 전체/지출/수입 보기: 아래 기간·요약 금액과 헷갈리지 않도록 맨 위에 둠 -->
-                    <div class="history-filter" id="historyFilter" role="radiogroup" aria-label="내역 보기">${filterHtml()}</div>
                     <div class="ledger-header history-header">
                         <div class="ledger-month-nav">
                             <button id="prevPeriod" class="ledger-nav-btn" type="button" aria-label="이전 기간">◀</button>
@@ -335,6 +333,8 @@ export default function HistoryPage() {
                     </div>
                     <div class="history-condition" id="historyCondition"></div>
                     <div class="ledger-summary" id="monthSummary"></div>
+                    <!-- 전체/지출/수입 보기: 요약 금액 아래, 목록 바로 위 (목록에만 적용) -->
+                    <div class="history-filter" id="historyFilter" role="radiogroup" aria-label="내역 보기">${filterHtml()}</div>
                 </div>
 
                 <div class="card">
