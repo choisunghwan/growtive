@@ -266,10 +266,22 @@ export default function HistoryPage() {
     function summaryHtml() {
         const { income, expense } = sumOf(state.periodTransactions);
         const net = income - expense;
+        // 좁은 화면에서 아주 큰 금액은 쉼표 뒤에서만 줄바꿈되도록 <wbr> 삽입
+        const num = (n) => Number(n || 0).toLocaleString('ko-KR').replace(/,/g, ',<wbr>');
+        // 3칸 표: 위에 항목명, 아래에 금액 (지출은 -로, 전체는 수입-지출)
         return `
-            <div>수입 <b class="is-income">${won(income)}</b></div>
-            <div>지출 <b class="is-expense">${won(expense)}</b></div>
-            <div>합계 <b class="${net >= 0 ? 'is-income' : 'is-expense'}">${net >= 0 ? '+' : '-'}${won(Math.abs(net))}</b></div>`;
+            <div class="history-sum-col">
+                <span class="history-sum-label">수입</span>
+                <b class="history-sum-value is-income">${num(income)}</b>
+            </div>
+            <div class="history-sum-col">
+                <span class="history-sum-label">지출</span>
+                <b class="history-sum-value is-expense">${expense ? '-' : ''}${num(expense)}</b>
+            </div>
+            <div class="history-sum-col">
+                <span class="history-sum-label">전체</span>
+                <b class="history-sum-value ${net >= 0 ? 'is-income' : 'is-expense'}">${net < 0 ? '-' : ''}${num(Math.abs(net))}</b>
+            </div>`;
     }
 
     function txItemHtml(tx) {

@@ -665,7 +665,30 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
     color: var(--brand);
 }
 .history-filter-opt:has(input:focus-visible) { outline: 2px solid var(--brand); outline-offset: 2px; }
-.history-page .ledger-summary { margin-bottom: 14px; flex-wrap: wrap; }
+.history-page .ledger-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    margin-bottom: 14px;
+}
+/* 상단 기간 요약: 수입 | 지출 | 전체 3칸 */
+.history-sum-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    padding: 2px 6px;
+}
+.history-sum-col + .history-sum-col { border-left: 1px solid var(--border); }
+.history-sum-label { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+.history-sum-value {
+    font-size: 17px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;       /* 줄바꿈은 쉼표 뒤(<wbr>)에서만 */
+    text-align: center;
+}
 
 #historyList { display: grid; gap: 14px; }
 
@@ -704,7 +727,7 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
 .history-page a.btn-xs { display: inline-flex; align-items: center; text-decoration: none; }
 
 @media (max-width: 768px) {
-    .history-page .ledger-summary { gap: 6px 16px; font-size: 13.5px; }
+    .history-sum-value { font-size: clamp(13px, 3.9vw, 15px); }
     #historyList { gap: 10px; }
     .history-day-totals { justify-content: flex-start; }
 }
