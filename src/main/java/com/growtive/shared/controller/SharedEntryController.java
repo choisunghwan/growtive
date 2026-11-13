@@ -3,6 +3,7 @@ package com.growtive.shared.controller;
 import com.growtive.common.exception.UnauthorizedException;
 import com.growtive.shared.dto.SharedEventDto;
 import com.growtive.shared.dto.SharedTransactionDto;
+import com.growtive.shared.dto.SharedTransactionOrderDto;
 import com.growtive.shared.service.SharedEntryService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,12 @@ public class SharedEntryController {
     public SharedTransactionDto updateTx(@PathVariable Long calendarId, @PathVariable Long id,
                                          @RequestBody SharedTransactionDto dto, HttpSession session) {
         return service.updateTransaction(getUserId(session), calendarId, id, dto);
+    }
+
+    /** 한 날짜의 내역 순서 바꾸기 (꾹 눌러 끌기) */
+    @PutMapping("/ledger/order")
+    public void reorderTx(@PathVariable Long calendarId, @RequestBody SharedTransactionOrderDto req, HttpSession session) {
+        service.reorderTransactions(getUserId(session), calendarId, req.getDate(), req.getIds());
     }
 
     @DeleteMapping("/ledger/{id}")

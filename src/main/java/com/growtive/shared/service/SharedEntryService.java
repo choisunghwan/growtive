@@ -16,6 +16,9 @@ public interface SharedEntryService {
 
     void deleteTransaction(Long userId, Long calendarId, Long id);
 
+    /** 한 날짜의 내역 순서 저장 (참여자 누구나, 모두에게 같은 순서로 보임) */
+    void reorderTransactions(Long userId, Long calendarId, java.time.LocalDate date, List<Long> ids);
+
     List<SharedEventDto> getMonthlyEvents(Long userId, Long calendarId, int year, int month);
 
     SharedEventDto createEvent(Long userId, Long calendarId, SharedEventDto dto);

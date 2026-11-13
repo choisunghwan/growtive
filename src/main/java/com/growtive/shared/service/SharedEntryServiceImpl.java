@@ -9,8 +9,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -80,6 +83,22 @@ public class SharedEntryServiceImpl implements SharedEntryService {
         calendarService.requireMember(userId, calendarId);
         requireTransaction(calendarId, id);
         mapper.deleteTransaction(calendarId, id);
+    }
+
+    @Override
+    @Transactional
+    public void reorderTransactions(Long userId, Long calendarId, LocalDate date, List<Long> ids) {
+        calendarService.requireMember(userId, calendarId);
+        if (date == null || ids == null || ids.isEmpty()) throw new BadRequestException("바꿀 순서가 없습니다.");
+        // 그 날짜의 내역 전체와 정확히 같아야 함 (그 사이 다른 사람이 추가/삭제했으면 다시 불러오게)
+        Set<Long> current = new HashSet<>(mapper.findTransactionIdsOnDate(calendarId, date));
+        Set<Long> requested = new HashSet<>(ids);
+        if (requested.size() != ids.size() || !requested.equals(current)) {
+            throw new BadRequestException("그 사이 내역이 바뀌었어요. 새로고침 후 다시 시도해주세요.");
+        }
+        for (int i = 0; i < ids.size(); i++) {
+            mapper.updateSortOrder(calendarId, ids.get(i), i);
+        }
     }
 
     private void requireTransaction(Long calendarId, Long id) {

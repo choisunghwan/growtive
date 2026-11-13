@@ -17,6 +17,8 @@ public class SharedTransactionDto {
     /** 매달 반복 (원본: recurringOriginId == null) */
     private boolean recurring;
     private Long recurringOriginId;
+    /** 같은 날짜 안 표시 순서 (null이면 입력 순서대로 맨 뒤) */
+    private Integer sortOrder;
     /** 작성자 (처음 입력한 사람) */
     private Long authorId;
     private String authorDisplayName;

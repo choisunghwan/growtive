@@ -29,6 +29,10 @@ public interface SharedEntryMapper {
 
     int deleteTransaction(@Param("calendarId") Long calendarId, @Param("id") Long id);
 
+    List<Long> findTransactionIdsOnDate(@Param("calendarId") Long calendarId, @Param("date") LocalDate date);
+
+    int updateSortOrder(@Param("calendarId") Long calendarId, @Param("id") Long id, @Param("sortOrder") int sortOrder);
+
     List<SharedTransactionDto> findActiveRecurringOrigins(@Param("calendarId") Long calendarId,
                                                           @Param("onOrBefore") LocalDate onOrBefore);
 

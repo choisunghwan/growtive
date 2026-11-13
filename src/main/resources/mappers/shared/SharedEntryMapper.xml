@@ -16,12 +16,13 @@
         <result column="memo"                property="memo"/>
         <result column="is_recurring"        property="recurring"/>
         <result column="recurring_origin_id" property="recurringOriginId"/>
+        <result column="sort_order"          property="sortOrder"/>
         <result column="author_id"           property="authorId"/>
         <result column="author_display_name" property="authorDisplayName"/>
     </resultMap>
 
     <sql id="txColumns">
-        t.id, t.transaction_date, t.type, t.category, t.amount, t.memo, t.is_recurring, t.recurring_origin_id,
+        t.id, t.transaction_date, t.type, t.category, t.amount, t.memo, t.is_recurring, t.recurring_origin_id, t.sort_order,
         t.author_id, u.display_name AS author_display_name
     </sql>
 
@@ -32,7 +33,7 @@
         WHERE t.calendar_id = #{calendarId}
           AND YEAR(t.transaction_date) = #{year}
           AND MONTH(t.transaction_date) = #{month}
-        ORDER BY t.transaction_date, t.id
+        ORDER BY t.transaction_date, t.sort_order IS NULL, t.sort_order, t.id
     </select>
 
     <select id="findTransaction" resultMap="TxMap">
@@ -57,6 +58,16 @@
             amount = #{dto.amount},
             memo = #{dto.memo},
             is_recurring = #{dto.recurring}
+        WHERE calendar_id = #{calendarId} AND id = #{id}
+    </update>
+
+    <!-- 날짜 안 순서 (꾹 눌러 끌어서 바꾼 순서). 순서를 정하지 않은 건 NULL → 맨 뒤 -->
+    <select id="findTransactionIdsOnDate" resultType="java.lang.Long">
+        SELECT id FROM shared_transaction WHERE calendar_id = #{calendarId} AND transaction_date = #{date}
+    </select>
+
+    <update id="updateSortOrder">
+        UPDATE shared_transaction SET sort_order = #{sortOrder}
         WHERE calendar_id = #{calendarId} AND id = #{id}
     </update>
 

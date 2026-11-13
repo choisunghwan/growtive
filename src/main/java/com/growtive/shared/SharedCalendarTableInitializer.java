@@ -53,6 +53,7 @@ public class SharedCalendarTableInitializer implements ApplicationRunner {
                 memo                VARCHAR(255) NULL,
                 is_recurring        BOOLEAN      NOT NULL DEFAULT FALSE,
                 recurring_origin_id BIGINT       NULL,
+                sort_order          INT          NULL,
                 created_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (id),
                 KEY idx_shared_transaction_cal_date (calendar_id, transaction_date),
@@ -90,6 +91,24 @@ public class SharedCalendarTableInitializer implements ApplicationRunner {
                 return;
             }
         }
+        // 이미 만들어진 테이블에 나중에 추가된 컬럼 (MySQL은 ADD COLUMN IF NOT EXISTS가 없어서 직접 확인)
+        addColumnIfMissing("shared_transaction", "sort_order",
+                "ALTER TABLE shared_transaction ADD COLUMN sort_order INT NULL AFTER recurring_origin_id");
         log.info("공유 캘린더 테이블 확인 완료");
+    }
+
+    private void addColumnIfMissing(String table, String column, String alterSql) {
+        try {
+            Integer count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM information_schema.COLUMNS "
+                            + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+                    Integer.class, table, column);
+            if (count != null && count == 0) {
+                jdbcTemplate.execute(alterSql);
+                log.info("{}.{} 컬럼 추가", table, column);
+            }
+        } catch (Exception e) {
+            log.error("{}.{} 컬럼을 추가하지 못했습니다. 아래 SQL을 DB에서 직접 실행해주세요.\n{}", table, column, alterSql, e);
+        }
     }
 }

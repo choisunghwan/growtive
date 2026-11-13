@@ -476,11 +476,13 @@ export default function LedgerPage(options = {}) {
         if (list.length === 0) {
             return `<div class="hint">이 날짜에 등록된 내역이 없습니다.</div>`;
         }
-        return `<ul class="ledger-tx-list">${list.map(tx => {
+        const sortable = isShared && list.length > 1;
+        return `${sortable ? '<p class="ledger-reorder-hint">꾹 누른 채로 끌어서 순서를 바꿀 수 있어요</p>' : ''}
+        <ul class="ledger-tx-list${sortable ? ' is-sortable' : ''}">${list.map(tx => {
             const isOrigin = tx.recurring && !tx.recurringOriginId;
             const isRecurringRelated = tx.recurring || tx.recurringOriginId;
             return `
-            <li class="ledger-tx-item">
+            <li class="ledger-tx-item" data-id="${tx.id}">
                 <div class="ledger-tx-main">
                     <span class="ledger-tx-category">${categoryIcon(tx.category)} ${esc(tx.category)}${isRecurringRelated ? ' <span class="ledger-tx-recurring-badge" title="매달 반복">🔁</span>' : ''}${tx.hidden ? ' <span class="ledger-tx-recurring-badge" title="친구에게 숨김">🙈</span>' : ''}</span>
                     <span class="ledger-tx-amount ${tx.type === 'INCOME' ? 'is-income' : 'is-expense'}">
@@ -729,6 +731,94 @@ export default function LedgerPage(options = {}) {
                 }
             }
 
+            /* ---------------- 공유 가계부: 꾹 눌러 끌어서 순서 바꾸기 ---------------- */
+
+            /** 바뀐 순서를 서버에 저장 (모든 멤버에게 같은 순서). 실패하면 다시 불러옴 */
+            async function saveDayOrder(ids) {
+                const date = state.selectedDate;
+                // 화면 데이터도 새 순서로 맞춤 (달력 목록 보기 등)
+                const byId = new Map((state.byDate[date] || []).map(t => [t.id, t]));
+                state.byDate[date] = ids.map(id => byId.get(id)).filter(Boolean);
+                try {
+                    await axios.put(`${API.ledger}/order`, { date, ids });
+                } catch (err) {
+                    alert(err.response?.data?.message || '순서를 저장하지 못했어요.');
+                    await refresh();
+                }
+            }
+
+            /**
+             * 꾹 누르면(0.4초) 그 항목을 들어 올려 위아래로 끌 수 있게 한다.
+             * - 누르기 전에 손가락을 움직이면(스크롤) 취소 → 평소처럼 스크롤됨
+             * - 끄는 동안에는 화면이 스크롤되지 않게 막고, 놓으면 onDone(새 id 순서)
+             */
+            function enableLongPressReorder(ul, onDone) {
+                const HOLD_MS = 400;
+                const MOVE_TOLERANCE = 8;
+                let drag = null;    // { li, pointerId, before }
+                let pending = null; // { timer, x, y }
+
+                const idsInDom = () => [...ul.querySelectorAll('li[data-id]')].map(li => Number(li.dataset.id));
+
+                const clearPending = () => {
+                    if (pending) clearTimeout(pending.timer);
+                    pending = null;
+                };
+
+                function startDrag(li, pointerId) {
+                    drag = { li, pointerId, before: idsInDom().join(',') };
+                    li.classList.add('is-dragging');
+                    ul.classList.add('is-reordering');
+                    try { li.setPointerCapture(pointerId); } catch { /* 무시 */ }
+                    navigator.vibrate?.(25);
+                }
+
+                function moveTo(clientY) {
+                    const others = [...ul.querySelectorAll('li[data-id]')].filter(el => el !== drag.li);
+                    const next = others.find(el => {
+                        const r = el.getBoundingClientRect();
+                        return clientY < r.top + r.height / 2;
+                    });
+                    if (next) { if (next.previousElementSibling !== drag.li) ul.insertBefore(drag.li, next); }
+                    else if (ul.lastElementChild !== drag.li) ul.appendChild(drag.li);
+                    // 화면 끝에 닿으면 조금씩 스크롤
+                    if (clientY < 80) window.scrollBy(0, -12);
+                    else if (clientY > window.innerHeight - 80) window.scrollBy(0, 12);
+                }
+
+                function endDrag(save) {
+                    if (!drag) return;
+                    const { li, before } = drag;
+                    drag = null;
+                    li.classList.remove('is-dragging');
+                    ul.classList.remove('is-reordering');
+                    const after = idsInDom();
+                    if (save && after.join(',') !== before) onDone(after);
+                    else if (!save) renderDayPanel(); // 취소되면 원래 순서로
+                }
+
+                ul.addEventListener('pointerdown', (e) => {
+                    if (e.pointerType === 'mouse' && e.button !== 0) return;
+                    const li = e.target.closest('li[data-id]');
+                    if (!li || e.target.closest('button, a, input, select')) return;
+                    clearPending();
+                    const pointerId = e.pointerId;
+                    pending = { x: e.clientX, y: e.clientY, timer: setTimeout(() => { pending = null; startDrag(li, pointerId); }, HOLD_MS) };
+                });
+                ul.addEventListener('pointermove', (e) => {
+                    if (pending && Math.hypot(e.clientX - pending.x, e.clientY - pending.y) > MOVE_TOLERANCE) clearPending();
+                    if (drag && e.pointerId === drag.pointerId) {
+                        e.preventDefault();
+                        moveTo(e.clientY);
+                    }
+                });
+                ul.addEventListener('pointerup', () => { clearPending(); endDrag(true); });
+                ul.addEventListener('pointercancel', () => { clearPending(); endDrag(false); });
+                // 끄는 중에는 화면 스크롤 막기 (터치) / 꾹 눌렀을 때 뜨는 메뉴 막기
+                ul.addEventListener('touchmove', (e) => { if (drag) e.preventDefault(); }, { passive: false });
+                ul.addEventListener('contextmenu', (e) => e.preventDefault());
+            }
+
             function renderDayPanel() {
                 $('dayPanelTitle').textContent = state.selectedDate;
                 $('daySectionLabel').textContent = isSchedule() ? '등록된 일정' : '등록된 내역';
@@ -751,6 +841,8 @@ export default function LedgerPage(options = {}) {
 
                 $('dayTotals').innerHTML = renderDayTotalsHtml(state.selectedDate);
                 $('dayTxList').innerHTML = renderDayList();
+                const sortableList = $('dayTxList').querySelector('ul.is-sortable');
+                if (sortableList) enableLongPressReorder(sortableList, saveDayOrder);
                 $('dayTxList').querySelectorAll('button[data-del]').forEach(btn => {
                     btn.onclick = async () => {
                         await axios.delete(`${API.ledger}/${btn.dataset.del}`);
