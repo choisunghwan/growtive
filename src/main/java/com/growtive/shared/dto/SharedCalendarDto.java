@@ -11,7 +11,7 @@ public class SharedCalendarDto {
     private String name;
     private Long ownerId;
     private String ownerDisplayName;
-    /** 요청한 사용자가 만든 사람인지 */
+    /** 요청한 사용자가 👑 관리자인지 (owner_id = 관리자, 처음엔 만든 사람) */
     private boolean owner;
     /** 참여 중(수락한) 인원 */
     private int memberCount;

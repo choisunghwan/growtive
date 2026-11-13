@@ -1065,3 +1065,36 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
         min-width: 8px; height: 8px; padding: 0; font-size: 0;
     }
 }
+
+/* ----- 공유 캘린더 3단계: 👑 관리자 / 멤버 관리 ----- */
+.shared-header-side { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; }
+.shared-manage-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 999px; border: 1px solid var(--border);
+    background: var(--bg-elevated); color: var(--text); font-weight: 700;
+}
+.shared-manage-btn:hover { border-color: #c7d7ff; background: var(--bg); }
+.shared-crown { margin-right: 3px; font-size: .95em; }
+.shared-members-modal { width: min(460px, 94vw); }
+.shared-members-modal .history-modal-body { max-height: min(62vh, 560px); overflow-y: auto; }
+.shared-member-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.shared-member {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.shared-member-name { flex: 1; min-width: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 6px; }
+.shared-member-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; flex: none; }
+.shared-me {
+    padding: 0 6px; border-radius: 999px; font-size: 11px; font-weight: 700; line-height: 17px;
+    background: rgba(37, 99, 235, .1); color: var(--brand);
+}
+.shared-invite-btn { margin-top: 10px; width: 100%; border: 1px dashed #c7d7ff; background: rgba(37, 99, 235, .05); color: var(--brand); font-weight: 700; }
+.shared-admin-box { margin-top: 16px; padding: 12px; border: 1px solid #fcd34d; border-radius: var(--radius-sm); background: rgba(252, 211, 77, .08); }
+.shared-admin-title { margin-bottom: 10px; font-size: 13.5px; font-weight: 800; }
+.shared-rename-row { display: flex; gap: 8px; margin-top: 6px; }
+.shared-rename-row input { flex: 1; min-width: 0; }
+.shared-delete-btn { margin-top: 12px; }
+.shared-admin-note { margin-top: 12px; }
+.btn-danger-ghost { background: transparent; border: 1px solid #fecaca; color: #b91c1c; }
+.btn-danger-ghost:hover { background: #fee2e2; }
+.shared-members-modal .modal-actions { justify-content: space-between; }

@@ -1,5 +1,6 @@
 package com.growtive.shared.mapper;
 
+import com.growtive.shared.dto.InvitableFriendDto;
 import com.growtive.shared.dto.SharedCalendarDto;
 import com.growtive.shared.dto.SharedCalendarInvitationDto;
 import com.growtive.shared.dto.SharedCalendarMemberDto;
@@ -15,10 +16,26 @@ public interface SharedCalendarMapper {
     /** 생성 후 params.id 에 새 id가 담김 (keys: name, ownerId, id) */
     int insertCalendar(Map<String, Object> params);
 
+    /** status가 ACCEPTED면 joined_at도 지금 시각으로 */
     int insertMember(@Param("calendarId") Long calendarId,
                      @Param("userId") Long userId,
                      @Param("status") String status,
                      @Param("invitedBy") Long invitedBy);
+
+    /** 초대 수락: ACCEPTED + joined_at = 지금 */
+    int acceptMember(@Param("calendarId") Long calendarId, @Param("userId") Long userId);
+
+    Long findInvitedBy(@Param("calendarId") Long calendarId, @Param("userId") Long userId);
+
+    /** 내 친구 중 이 캘린더의 멤버/초대 대기가 아닌 사람 */
+    List<InvitableFriendDto> findInvitableFriends(@Param("calendarId") Long calendarId, @Param("userId") Long userId);
+
+    int updateOwner(@Param("calendarId") Long calendarId, @Param("ownerId") Long ownerId);
+
+    int updateName(@Param("calendarId") Long calendarId, @Param("name") String name);
+
+    /** 참여 중인 멤버 중 가장 먼저 참여한 사람 (exceptUserId 제외) */
+    Long findEarliestAcceptedMember(@Param("calendarId") Long calendarId, @Param("exceptUserId") Long exceptUserId);
 
     /** 두 사람이 친구(ACCEPTED)인지 */
     int countAcceptedFriendship(@Param("a") Long a, @Param("b") Long b);
@@ -31,10 +48,6 @@ public interface SharedCalendarMapper {
 
     /** 이 캘린더에서 나의 상태 (없으면 null) */
     String findMemberStatus(@Param("calendarId") Long calendarId, @Param("userId") Long userId);
-
-    int updateMemberStatus(@Param("calendarId") Long calendarId,
-                           @Param("userId") Long userId,
-                           @Param("status") String status);
 
     int deleteMember(@Param("calendarId") Long calendarId, @Param("userId") Long userId);
 

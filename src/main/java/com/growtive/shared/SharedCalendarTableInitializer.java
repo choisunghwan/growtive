@@ -35,6 +35,7 @@ public class SharedCalendarTableInitializer implements ApplicationRunner {
                 status      VARCHAR(10) NOT NULL,
                 invited_by  BIGINT      NULL,
                 created_at  TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                joined_at   TIMESTAMP   NULL,
                 PRIMARY KEY (calendar_id, user_id),
                 KEY idx_shared_calendar_member_user (user_id)
             ) DEFAULT CHARSET = utf8mb4
