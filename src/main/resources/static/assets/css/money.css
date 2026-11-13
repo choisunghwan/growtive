@@ -623,7 +623,47 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
 /* 🧾 재무 대시보드 > 내역 (history.page.js) */
 /* ============================= */
 
-.history-header { justify-content: center; }
+.history-header { justify-content: center; margin-bottom: 12px; }
+
+/* 전체 / 지출 / 수입 라디오 (월 이동 바로 아래) */
+.history-filter {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+.history-filter-opt {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    font-size: 13.5px;
+    font-weight: 700;
+    margin: 0;              /* 전역 label 여백 무시 */
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease, color .15s ease;
+}
+.history-filter-opt input {
+    width: auto;            /* 전역 input 폭(100%) 규칙 무시 */
+    height: auto;
+    margin: 0;
+    padding: 0;
+    flex: none;
+    accent-color: var(--brand);
+    cursor: pointer;
+}
+.history-filter-opt:hover { border-color: #c7d7ff; color: var(--text); }
+.history-filter-opt:has(input:checked) {
+    border-color: var(--brand);
+    background: rgba(37, 99, 235, .08);
+    color: var(--brand);
+}
+.history-filter-opt:has(input:focus-visible) { outline: 2px solid var(--brand); outline-offset: 2px; }
 .history-page .ledger-summary { margin-bottom: 0; flex-wrap: wrap; }
 
 #historyList { display: grid; gap: 14px; }

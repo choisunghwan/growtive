@@ -1,7 +1,7 @@
 /**
  * 🧾 재무 대시보드 > 내역
  * 한 달 동안 가계부에 입력한 내역을 달력 없이 날짜별로 한데 모아 보여준다.
- * - 상단: ◀ YYYY년 M월 ▶ (가계부 캘린더와 동일) + 이번 달 수입/지출 요약
+ * - 상단: ◀ YYYY년 M월 ▶ (가계부 캘린더와 동일) + 전체/지출/수입 보기 선택 + 이번 달 수입/지출 요약
  * - 본문: 날짜별 박스 하나(최근 날짜가 위) 안에 날짜 → 그날 내역 목록 → 그날 합계
  * - 수정: 가계부 캘린더의 해당 날짜로 이동해서 수정 폼을 바로 열어줌
  * - 삭제: 이 화면에서 바로 삭제
@@ -30,7 +30,27 @@ function sumOf(list) {
     return { income, expense };
 }
 
-function totalsChipsHtml({ income, expense }) {
+/* 보기 필터: 전체 / 지출 / 수입 (마지막 선택은 브라우저에 기억) */
+const FILTER_KEY = 'growtive-history-filter';
+const FILTERS = [
+    { key: 'ALL', label: '전체' },
+    { key: 'EXPENSE', label: '지출' },
+    { key: 'INCOME', label: '수입' },
+];
+
+function loadFilter() {
+    try {
+        const v = localStorage.getItem(FILTER_KEY);
+        return FILTERS.some(f => f.key === v) ? v : 'ALL';
+    } catch {
+        return 'ALL';
+    }
+}
+
+function totalsChipsHtml({ income, expense }, filter) {
+    // 지출만/수입만 볼 때는 그 금액 하나만 (합계가 같은 숫자라 중복)
+    if (filter === 'EXPENSE') return `<span class="ledger-day-chip is-expense">지출 -${won(expense)}</span>`;
+    if (filter === 'INCOME') return `<span class="ledger-day-chip is-income">수입 +${won(income)}</span>`;
     const net = income - expense;
     return `
         ${income ? `<span class="ledger-day-chip is-income">수입 +${won(income)}</span>` : ''}
@@ -44,7 +64,21 @@ export default function HistoryPage() {
         year: now.getFullYear(),
         month: now.getMonth() + 1,
         transactions: [],
+        filter: loadFilter(),   // 'ALL' | 'EXPENSE' | 'INCOME'
     };
+
+    function filteredTransactions() {
+        if (state.filter === 'ALL') return state.transactions;
+        return state.transactions.filter(tx => tx.type === state.filter);
+    }
+
+    function filterHtml() {
+        return FILTERS.map(f => `
+            <label class="history-filter-opt">
+                <input type="radio" name="historyFilter" value="${f.key}"${state.filter === f.key ? ' checked' : ''}>
+                <span>${f.label}</span>
+            </label>`).join('');
+    }
 
     async function loadMonth() {
         const { data } = await axios.get('/api/money/ledger', {
@@ -83,12 +117,14 @@ export default function HistoryPage() {
     }
 
     function listHtml() {
-        if (state.transactions.length === 0) {
-            return `<div class="hint">${state.month}월에 등록된 내역이 없습니다.</div>`;
+        const txs = filteredTransactions();
+        if (txs.length === 0) {
+            const what = state.filter === 'EXPENSE' ? '지출 내역' : state.filter === 'INCOME' ? '수입 내역' : '내역';
+            return `<div class="hint">${state.month}월에 등록된 ${what}이 없습니다.</div>`;
         }
 
         const byDate = {};
-        for (const tx of state.transactions) (byDate[tx.date] ||= []).push(tx);
+        for (const tx of txs) (byDate[tx.date] ||= []).push(tx);
         const dates = Object.keys(byDate).sort().reverse(); // 최근 날짜가 위로
 
         return dates.map(dateStr => {
@@ -100,7 +136,7 @@ export default function HistoryPage() {
                 <section class="history-day">
                     <h3 class="history-day-title${dowClass}">${d.getMonth() + 1}월 ${d.getDate()}일 <span>(${WEEKDAYS[dow]})</span></h3>
                     <ul class="ledger-tx-list history-tx-list">${list.map(txItemHtml).join('')}</ul>
-                    <div class="ledger-day-totals history-day-totals">${totalsChipsHtml(sumOf(list))}</div>
+                    <div class="ledger-day-totals history-day-totals">${totalsChipsHtml(sumOf(list), state.filter)}</div>
                 </section>`;
         }).join('');
     }
@@ -119,6 +155,7 @@ export default function HistoryPage() {
                             <button id="nextMonth" class="ledger-nav-btn" type="button" aria-label="다음 달">▶</button>
                         </div>
                     </div>
+                    <div class="history-filter" id="historyFilter" role="radiogroup" aria-label="내역 보기">${filterHtml()}</div>
                     <div class="ledger-summary" id="monthSummary"></div>
                 </div>
 
@@ -143,6 +180,14 @@ export default function HistoryPage() {
                 $('monthSummary').innerHTML = summaryHtml();
                 $('historyList').innerHTML = listHtml();
             }
+
+            // 전체/지출/수입 전환: 이미 불러온 이번 달 데이터에서 걸러서 다시 그림 (서버 재호출 없음)
+            $('historyFilter').addEventListener('change', (e) => {
+                if (e.target.name !== 'historyFilter') return;
+                state.filter = e.target.value;
+                try { localStorage.setItem(FILTER_KEY, state.filter); } catch { /* 기억 못 해도 동작엔 지장 없음 */ }
+                $('historyList').innerHTML = listHtml();
+            });
 
             $('prevMonth').addEventListener('click', () => {
                 state.month--;
