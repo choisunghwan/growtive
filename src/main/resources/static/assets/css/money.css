@@ -844,3 +844,18 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
     accent-color: var(--brand);
     cursor: pointer;
 }
+
+/* ----- 내역: 하단 검색 결과 합계 ----- */
+.history-result-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--brand);
+    border-radius: var(--radius-md);
+    background: rgba(37, 99, 235, .06);
+}
+.history-result-count { font-size: 14px; color: var(--text-muted); }
+.history-result-count b { color: var(--text); }

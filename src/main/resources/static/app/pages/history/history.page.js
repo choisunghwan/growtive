@@ -1,7 +1,8 @@
 /**
  * 🧾 재무 대시보드 > 내역
  * 가계부에 입력한 내역을 달력 없이 날짜별로 한데 모아 보여준다.
- * - 상단: ◀ 기간 ▶ + [검색] / 검색 조건 표시 / 기간 수입·지출 요약 / 전체·지출·수입 보기 선택(목록에만 적용)
+ * - 상단: ◀ 기간 ▶ + [검색] / 검색 조건 표시 / 기간 수입·지출 요약(기간만 기준, 고정) / 전체·지출·수입 보기 선택(목록에만 적용)
+ * - 하단: 카테고리·내용 검색 시 목록에 나온 내역의 건수와 합계
  *   · 기간 단위: 전체(모든 내역) / 연별(◀ 2026년 ▶) / 월별(◀ 2026년 11월 ▶) / 주별(◀ 2026년 11월 1주차 ▶)
  * - [검색] 모달: 기간(단위 선택 모달) / 카테고리(체크박스 모달) / 내용(메모 LIKE 검색)
  * - 본문: 날짜별 박스 하나(최근 날짜가 위) 안에 날짜 → 그날 내역 목록 → 그날 합계
@@ -134,7 +135,8 @@ export default function HistoryPage() {
         week: weekOfDay(today.y, today.m, today.d),
         categories: [],                // 빈 배열 = 전체 카테고리
         keyword: '',                   // 빈 문자열 = 조건 없음
-        transactions: [],
+        transactions: [],              // 검색 결과 (기간 + 카테고리 + 내용) → 목록
+        periodTransactions: [],        // 기간만 적용한 내역 → 상단 수입/지출/합계
         filter: loadFilter(),          // 'ALL' | 'EXPENSE' | 'INCOME'
         usedCategories: null,          // 검색 모달용 (처음 열 때 한 번 불러옴)
     };
@@ -204,17 +206,28 @@ export default function HistoryPage() {
 
     async function load() {
         const { from, to } = periodRange();
-        // 카테고리는 categories=a&categories=b 형태로 보내야 스프링 List<String>으로 받음
-        const params = new URLSearchParams();
-        if (from) params.append('from', from);
-        if (to) params.append('to', to);
-        state.categories.forEach(c => params.append('categories', c));
-        if (state.keyword) params.append('keyword', state.keyword);
+        const periodParams = new URLSearchParams();
+        if (from) periodParams.append('from', from);
+        if (to) periodParams.append('to', to);
 
         const seq = ++requestSeq;
-        const { data } = await axios.get('/api/money/ledger/search', { params });
+        const fetch = async (params) => (await axios.get('/api/money/ledger/search', { params })).data || [];
+
+        let periodTxs, resultTxs;
+        if (hasSearchCondition()) {
+            // 카테고리는 categories=a&categories=b 형태로 보내야 스프링 List<String>으로 받음
+            const searchParams = new URLSearchParams(periodParams);
+            state.categories.forEach(c => searchParams.append('categories', c));
+            if (state.keyword) searchParams.append('keyword', state.keyword);
+            [periodTxs, resultTxs] = await Promise.all([fetch(periodParams), fetch(searchParams)]);
+        } else {
+            // 검색 조건이 없으면 기간 내역 = 목록이므로 한 번만 부름
+            periodTxs = resultTxs = await fetch(periodParams);
+        }
+
         if (seq !== requestSeq) return false; // 더 최근 요청이 있음
-        state.transactions = data || [];
+        state.periodTransactions = periodTxs;
+        state.transactions = resultTxs;
         return true;
     }
 
@@ -249,8 +262,9 @@ export default function HistoryPage() {
             <button type="button" class="btn btn-xs" id="clearSearchBtn">조건 초기화</button>`;
     }
 
+    /** 상단 요약: 기간만 기준 (카테고리·내용 검색, 라디오 선택과 무관) */
     function summaryHtml() {
-        const { income, expense } = sumOf(state.transactions);
+        const { income, expense } = sumOf(state.periodTransactions);
         const net = income - expense;
         return `
             <div>수입 <b class="is-income">${won(income)}</b></div>
@@ -296,7 +310,7 @@ export default function HistoryPage() {
         // 전체 기간은 여러 해가 섞이므로 날짜에 연도까지 표시
         const showYear = state.unit === 'ALL';
 
-        return dates.map(dateStr => {
+        const daysHtml = dates.map(dateStr => {
             const list = byDate[dateStr];
             const d = new Date(dateStr + 'T00:00:00');
             const dow = d.getDay();
@@ -308,6 +322,18 @@ export default function HistoryPage() {
                     <div class="ledger-day-totals history-day-totals">${totalsChipsHtml(sumOf(list), state.filter)}</div>
                 </section>`;
         }).join('');
+
+        return daysHtml + resultTotalHtml(txs);
+    }
+
+    /** 하단: 카테고리·내용으로 검색했을 때 목록에 나온 내역의 건수와 합계 (라디오 선택 반영) */
+    function resultTotalHtml(txs) {
+        if (!hasSearchCondition()) return '';
+        return `
+            <div class="history-result-total">
+                <span class="history-result-count">검색 결과 <b>${txs.length}건</b></span>
+                <div class="ledger-day-totals">${totalsChipsHtml(sumOf(txs), state.filter)}</div>
+            </div>`;
     }
 
     return {
