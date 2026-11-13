@@ -6,6 +6,9 @@ import LedgerPage from '../pages/ledger/ledger.page.js';
 /*재무 대시보드 페이지(돈 흐름 + 반복 항목 설정)*/
 import DashboardPage from '../pages/dashboard/dashboard.page.js';
 
+/*재무 대시보드 > 내역(한 달 가계부 내역 모아보기)*/
+import HistoryPage from '../pages/history/history.page.js';
+
 /*회원가입,로그인 페이지*/
 import RegisterPage from '../pages/auth/register.page.js';
 import LoginPage from '../pages/auth/login.page.js';
@@ -30,6 +33,7 @@ const routes = {
     '#/': LedgerPage,
     '#/calendar': LedgerPage,
     '#/money/flow': DashboardPage,
+    '#/money/history': HistoryPage,
     /*예전 이름(캐시된 옛날 JS/북마크/공유링크 대비 하위호환용) - 새 코드는 위 이름을 쓴다*/
     '#/dashboard': LedgerPage,
     '#/money/dashboard': DashboardPage,
@@ -54,6 +58,7 @@ const routes = {
 const authRequiredRoutes = [
     '#/calendar',
     '#/money/flow',
+    '#/money/history',
     '#/dashboard',
     '#/money/dashboard',
     '#/admin/members',

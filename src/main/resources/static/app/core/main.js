@@ -34,7 +34,8 @@ function highlightActive() {
     // sidebar
     document.querySelectorAll('#sidebar a').forEach(a => {
         const route = a.getAttribute('href');
-        a.classList.toggle('active', route === hash);
+        // '#/calendar?date=...'처럼 쿼리가 붙어도 같은 메뉴로 표시
+        a.classList.toggle('active', route === hash.split('?')[0]);
     });
 }
 

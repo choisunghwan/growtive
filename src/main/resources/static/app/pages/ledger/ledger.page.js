@@ -134,6 +134,20 @@ export default function LedgerPage() {
         mode: localStorage.getItem(MODE_KEY) === 'schedule' ? 'schedule' : 'money',
     };
 
+    // 🔗 다른 화면(재무 대시보드 > 내역)에서 '#/calendar?date=YYYY-MM-DD&edit=ID'로 들어오면
+    //    해당 날짜의 가계부를 열고, edit가 있으면 그 내역의 수정 폼을 바로 띄운다.
+    const linkParams = new URLSearchParams(location.hash.split('?')[1] || '');
+    const linkDate = linkParams.get('date');
+    const linkEditId = Number(linkParams.get('edit')) || null;
+    if (linkDate && /^\d{4}-\d{2}-\d{2}$/.test(linkDate)) {
+        state.year = Number(linkDate.slice(0, 4));
+        state.month = Number(linkDate.slice(5, 7));
+        state.selectedDate = linkDate;
+        state.mode = 'money';
+        // 새로고침 시 수정 폼이 또 열리지 않도록 주소는 깨끗하게 (replaceState는 hashchange 안 일으킴)
+        history.replaceState(null, '', '#/calendar');
+    }
+
     function isSchedule() { return state.mode === 'schedule'; }
 
     function gridContainerClass() {
@@ -1017,6 +1031,11 @@ export default function LedgerPage() {
             }
 
             await refresh();
+
+            if (linkEditId && !isSchedule()) {
+                startEdit(linkEditId);
+                $('entryFormWrap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
     };
 }
