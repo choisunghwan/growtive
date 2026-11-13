@@ -9,6 +9,8 @@
  * - 본문: 날짜별 박스 하나(최근 날짜가 위) 안에 날짜 → 그날 내역 목록 → 그날 합계
  * - 수정: 가계부 캘린더의 해당 날짜로 이동해서 수정 폼을 바로 열어줌 / 삭제: 이 화면에서 바로 삭제
  * - 기간 선택 모달의 📌 핀: 고정한 기간이 내역 메뉴 진입 시 기본 기간 (없으면 이번 달)
+ *   · 서버(DB, /api/settings/history-pin)에 저장 → 기기가 달라도 같은 핀
+ *   · 브라우저에는 화면을 바로 그리기 위한 캐시로만 보관하고, 진입할 때 서버 값으로 맞춤
  * 일정(schedule)은 보여주지 않는다. 데이터는 /api/money/ledger/search 를 사용.
  */
 
@@ -91,28 +93,52 @@ function customRangeLabel(from, to) {
     const sameYear = from.slice(0, 4) === to.slice(0, 4);
     return `${dotDate(from)} ~ ${dotDate(to, !sameYear)}`;
 }
-/* ---------------- 📌 기본 기간 핀 (사용자별, 이 브라우저에 저장) ---------------- */
+/* ---------------- 📌 기본 기간 핀 (서버 저장 + 이 브라우저 캐시) ---------------- */
 
 const PIN_KEY_PREFIX = 'growtive-history-pin:';
 function pinKey() { return PIN_KEY_PREFIX + (authStore.getUserId?.() ?? 'guest'); }
 
-/** 저장된 핀: { unit } 또는 사용자 입력이면 { unit: 'CUSTOM', from, to }. 없거나 잘못됐으면 null */
+/** 핀 값 검사: { unit } 또는 사용자 입력이면 { unit: 'CUSTOM', from, to }. 잘못됐으면 null */
+function normalizePin(pin) {
+    if (!pin || !UNITS.some(u => u.key === pin.unit)) return null;
+    if (pin.unit !== 'CUSTOM') return { unit: pin.unit };
+    if (!(DATE_RE.test(pin.from) && DATE_RE.test(pin.to) && pin.from <= pin.to)) return null;
+    return { unit: 'CUSTOM', from: pin.from, to: pin.to };
+}
+
+function samePin(a, b) {
+    return (a?.unit ?? null) === (b?.unit ?? null) && (a?.from ?? null) === (b?.from ?? null) && (a?.to ?? null) === (b?.to ?? null);
+}
+
+/** 브라우저 캐시에 있는 핀 (화면을 바로 그리는 용도) */
 function loadPin() {
     try {
-        const pin = JSON.parse(localStorage.getItem(pinKey()) || 'null');
-        if (!pin || !UNITS.some(u => u.key === pin.unit)) return null;
-        if (pin.unit === 'CUSTOM' && !(DATE_RE.test(pin.from) && DATE_RE.test(pin.to) && pin.from <= pin.to)) return null;
-        return pin;
+        return normalizePin(JSON.parse(localStorage.getItem(pinKey()) || 'null'));
     } catch {
         return null;
     }
 }
 
-function savePin(pin) {
+function cachePin(pin) {
     try {
         if (pin) localStorage.setItem(pinKey(), JSON.stringify(pin));
         else localStorage.removeItem(pinKey());
-    } catch { /* 저장 못 해도 이번 화면 동작엔 지장 없음 */ }
+    } catch { /* 캐시 못 해도 서버 값으로 동작 */ }
+}
+
+/** 서버에 저장된 핀 (없으면 null). 서버 응답으로 캐시도 갱신 */
+async function fetchServerPin() {
+    const res = await axios.get('/api/settings/history-pin');
+    const pin = res.status === 204 ? null : normalizePin(res.data);
+    cachePin(pin);
+    return pin;
+}
+
+/** 핀 저장/해제를 서버에 반영 (성공하면 캐시도 갱신) */
+async function persistPin(pin) {
+    if (pin) await axios.put('/api/settings/history-pin', pin);
+    else await axios.delete('/api/settings/history-pin');
+    cachePin(pin);
 }
 
 const ICON_PIN = `<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path class="pin-shape" d="M9 3h6l-1 5 3 3v2h-4v6l-1 2-1-2v-6H7v-2l3-3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
@@ -196,15 +222,23 @@ export default function HistoryPage() {
     };
     let requestSeq = 0;                // 빠르게 ◀▶를 눌렀을 때 늦게 온 예전 응답 무시용
 
-    // 📌 고정한 기간이 있으면 그 기간으로 시작 (전체/연별/주별은 오늘 기준, 사용자 입력은 저장한 날짜)
-    const startPin = loadPin();
-    if (startPin) {
-        state.unit = startPin.unit;
-        if (startPin.unit === 'CUSTOM') {
-            state.customFrom = startPin.from;
-            state.customTo = startPin.to;
+    /**
+     * 📌 핀 기준 기본 기간으로 맞춤 (전체/연별/주별은 오늘 기준, 사용자 입력은 저장한 날짜, 핀 없으면 이번 달)
+     */
+    function applyPin(pin) {
+        state.unit = pin?.unit || 'MONTH';
+        state.year = today.y;
+        state.month = today.m;
+        state.week = weekOfDay(today.y, today.m, today.d);
+        if (pin?.unit === 'CUSTOM') {
+            state.customFrom = pin.from;
+            state.customTo = pin.to;
         }
     }
+
+    // 우선 브라우저 캐시의 핀으로 바로 그리고, 화면이 뜨면 서버 값으로 다시 맞춤 (onMounted)
+    let currentPin = loadPin();        // 지금 고정된 핀 (서버 값을 받으면 그걸로 바뀜)
+    applyPin(currentPin);
 
     /* ---------------- 기간 ---------------- */
 
@@ -638,9 +672,8 @@ export default function HistoryPage() {
                 const form = root.querySelector('#customRangeForm');
                 const customBtn = root.querySelector('[data-unit="CUSTOM"]');
 
-                /* 📌 핀: 한 번에 하나만. 같은 핀을 다시 누르면 해제 */
-                function renderPins() {
-                    const pin = loadPin();
+                /* 📌 핀: 한 번에 하나만. 같은 핀을 다시 누르면 해제. 누르면 바로 표시하고 서버에 저장 */
+                function renderPins(pin = currentPin) {
                     root.querySelectorAll('[data-pin]').forEach(btn => {
                         const on = pin?.unit === btn.dataset.pin;
                         btn.classList.toggle('is-pinned', on);
@@ -656,13 +689,32 @@ export default function HistoryPage() {
                 }
                 renderPins();
 
+                let savingPin = false;
+                async function changePin(next) {
+                    if (savingPin) return;
+                    savingPin = true;
+                    const prev = currentPin;
+                    currentPin = next;
+                    renderPins();                       // 먼저 화면에 반영
+                    root.querySelectorAll('[data-pin]').forEach(b => { b.disabled = true; });
+                    try {
+                        await persistPin(next);         // 서버(DB)에 저장
+                    } catch (err) {
+                        console.error(err);
+                        currentPin = prev;              // 실패하면 원래대로
+                        renderPins();
+                        alert('핀을 저장하지 못했어요. 잠시 후 다시 시도해주세요.');
+                    } finally {
+                        savingPin = false;
+                        root.querySelectorAll('[data-pin]').forEach(b => { b.disabled = false; });
+                    }
+                }
+
                 root.querySelectorAll('[data-pin]').forEach(btn => {
                     btn.addEventListener('click', () => {
                         const unit = btn.dataset.pin;
-                        const pin = loadPin();
                         if (unit !== 'CUSTOM') {
-                            savePin(pin?.unit === unit ? null : { unit });
-                            renderPins();
+                            changePin(currentPin?.unit === unit ? null : { unit });
                             return;
                         }
                         // 사용자 입력: 아래 날짜 칸의 기간을 고정 (같은 기간으로 이미 고정돼 있으면 해제)
@@ -670,9 +722,8 @@ export default function HistoryPage() {
                         customBtn.setAttribute('aria-expanded', 'true');
                         const range = readCustomRange();
                         if (!range) return;
-                        const same = pin?.unit === 'CUSTOM' && pin.from === range.from && pin.to === range.to;
-                        savePin(same ? null : { unit: 'CUSTOM', ...range });
-                        renderPins();
+                        const next = { unit: 'CUSTOM', ...range };
+                        changePin(samePin(currentPin, next) ? null : next);
                     });
                 });
 
@@ -799,6 +850,17 @@ export default function HistoryPage() {
                 await refresh();
                 initTopbarSalaryTicker();
             });
+
+            // 📌 서버에 저장된 핀 확인 → 캐시와 다르면(다른 기기에서 바꿈 등) 서버 값 기준으로 기본 기간을 다시 맞춤
+            try {
+                const serverPin = await fetchServerPin();
+                if (!samePin(serverPin, currentPin)) {
+                    currentPin = serverPin;
+                    applyPin(serverPin);
+                }
+            } catch (err) {
+                console.warn('핀 설정을 불러오지 못해 브라우저에 저장된 값으로 표시합니다.', err);
+            }
 
             await refresh();
         }

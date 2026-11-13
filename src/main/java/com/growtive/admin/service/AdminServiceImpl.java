@@ -4,6 +4,7 @@ import com.growtive.admin.dto.AdminUserDto;
 import com.growtive.admin.mapper.AdminMapper;
 import com.growtive.common.exception.BadRequestException;
 import com.growtive.common.exception.NotFoundException;
+import com.growtive.setting.mapper.UserSettingMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.util.List;
 public class AdminServiceImpl implements AdminService {
 
     private final AdminMapper mapper;
+    private final UserSettingMapper userSettingMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -52,6 +54,7 @@ public class AdminServiceImpl implements AdminService {
             throw new BadRequestException("자기 자신은 탈퇴 처리할 수 없습니다.");
         }
         try {
+            userSettingMapper.deleteAllByUser(id); // 사용자 설정(내역 핀 등)은 함께 삭제
             mapper.deleteUser(id);
         } catch (DataIntegrityViolationException e) {
             throw new BadRequestException("이 사용자는 연결된 데이터(워크스페이스/초대 등)가 있어 삭제할 수 없습니다.");
