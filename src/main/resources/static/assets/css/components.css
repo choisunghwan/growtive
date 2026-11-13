@@ -230,6 +230,31 @@ html.dark .user-role-badge { background: rgba(148, 163, 184, .18); color: #cbd5e
     max-width: 100%;
 }
 
+.about-feature-text p + p { margin-top: 8px; }
+
+/* 스크린샷 두 장을 세로로 */
+.about-feature-imgs {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 280px;
+}
+
+.about-list {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+    display: grid;
+    gap: 8px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+}
+.about-list b { color: var(--text); }
+
 /* 가로로 넓은 스크린샷(상단바 게이지 등)은 옆이 아니라 위에 통짜로 얹는다 */
 .about-feature--banner .about-feature-img {
     width: 100%;
@@ -252,6 +277,13 @@ html.dark .user-role-badge { background: rgba(148, 163, 184, .18); color: #cbd5e
     }
     .about-feature-img--wide {
         width: 420px;
+    }
+    .about-feature-imgs {
+        flex-shrink: 0;
+        width: 220px;
+    }
+    .about-feature-imgs .about-feature-img {
+        width: 100%;
     }
     .about-feature--banner {
         flex-direction: column;

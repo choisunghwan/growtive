@@ -11,7 +11,7 @@ export default function AboutPage() {
           <div class="card about-hero">
             <img src="/assets/img/icon-192.png?v=3" alt="" class="about-hero-icon">
             <h1 class="title">GROWTIVE</h1>
-            <p class="subtitle">가계부와 일정을 한 곳에서, 가족·친구와 함께 관리하는 개인 재무·캘린더 서비스입니다.</p>
+            <p class="subtitle">가계부와 일정을 한 곳에서 기록하고, 가족·친구와 함께 쓰는 공유 캘린더까지 — 돈과 시간을 같이 관리하는 캘린더 서비스입니다.</p>
           </div>
 
           <div class="card about-feature about-feature--banner">
@@ -25,33 +25,68 @@ export default function AboutPage() {
           <div class="card about-feature">
             <div class="about-feature-text">
               <h3>📅 가계부 캘린더</h3>
-              <p>매일 수입/지출을 달력에 바로 기록하고, 한 달 전체 흐름을 한눈에 확인하세요. 월급·월세처럼 매달 반복되는 항목은 "매달 반복" 체크 한 번으로 자동 등록됩니다.</p>
+              <p>매일 수입/지출을 달력에 바로 기록하고, 한 달 전체 흐름을 한눈에 확인하세요. 월급·월세처럼 매달 반복되는 항목은 "매달 반복" 체크 한 번으로 자동 등록됩니다. 날짜를 누르면 그날 내역을 바로 수정·복사·삭제할 수 있어요.</p>
             </div>
-            <img src="/assets/img/intro/intro-ledger.png" alt="가계부 캘린더 화면" class="about-feature-img">
+            <img src="/assets/img/intro/intro-ledger.png?v=2" alt="가계부 캘린더 화면" class="about-feature-img">
           </div>
 
           <div class="card about-feature">
             <div class="about-feature-text">
               <h3>🗓️ 일정 캘린더</h3>
-              <p>같은 캘린더에서 탭 전환만으로 일정도 관리할 수 있습니다. 하루짜리 일정은 물론 기간이 있는 일정, 시간, 색상 태그까지 자유롭게 지정하세요.</p>
+              <p>같은 캘린더에서 [가계부] / [일정] 전환만으로 일정도 관리할 수 있습니다. 하루짜리 일정은 물론 여러 날에 걸친 일정, 시간, 색상까지 자유롭게 지정하고, 달력·목록 두 가지로 볼 수 있어요.</p>
             </div>
-            <img src="/assets/img/intro/intro-schedule.png" alt="일정 캘린더 화면" class="about-feature-img">
+            <img src="/assets/img/intro/intro-schedule.png?v=2" alt="일정 캘린더 화면" class="about-feature-img">
           </div>
 
           <div class="card about-feature">
             <div class="about-feature-text">
-              <h3>📈 재무 대시보드 (자산 흐름)</h3>
-              <p>가계부에 기록한 수입과 지출이 어디서 어디로 흘러가는지 Sankey 차트로 한눈에 보여줍니다. 이번 달 총수입·총지출·잔액도 함께 요약해드려요.</p>
+              <h3>👨‍👩‍👧 공유 캘린더</h3>
+              <p>가족·연인·룸메이트와 가계부와 일정을 함께 쓰는 캘린더를 만들어보세요. 친구를 초대하면 수락한 사람끼리 같은 달력을 보고, 내역마다 누가 썼는지 이름표가 붙습니다. 내역은 꾹 눌러 끌어서 순서를 바꿀 수 있어요.</p>
+              <p>만든 사람은 👑 관리자로 멤버 초대·캘린더 이름 변경·삭제를 맡고, 관리자 권한을 다른 멤버에게 넘길 수도 있어요. 누구나 언제든 나갈 수 있고, 내 개인 가계부 통계와는 따로 계산됩니다.</p>
             </div>
-            <img src="/assets/img/intro/intro-dashboard.png" alt="재무 대시보드 화면" class="about-feature-img">
+            <div class="about-feature-imgs">
+              <img src="/assets/img/intro/intro-shared.png" alt="공유 캘린더 화면" class="about-feature-img">
+              <img src="/assets/img/intro/intro-members.png" alt="공유 캘린더 멤버 관리" class="about-feature-img">
+            </div>
           </div>
 
           <div class="card about-feature">
             <div class="about-feature-text">
-              <h3>👫 소셜 (친구 캘린더 비교)</h3>
-              <p>가족, 친구, 연인과 아이디로 서로 연결하고 캘린더를 나란히 놓고 비교해보세요. 단, 양쪽이 각자 공유 기간을 지정해야만 비교가 가능해서 사생활은 안전하게 지켜집니다. 항목별로 숨기기도 가능합니다.</p>
+              <h3>📈 자산 흐름</h3>
+              <p>가계부에 기록한 수입과 지출이 어디서 어디로 흘러가는지 흐름 차트로 한눈에 보여줍니다. ◀ ▶로 달을 옮겨 보고, 이번 달 총수입·총지출·잔액도 함께 요약해드려요.</p>
             </div>
-            <img src="/assets/img/intro/intro-compare.png" alt="친구 캘린더 비교 화면" class="about-feature-img about-feature-img--wide">
+            <img src="/assets/img/intro/intro-dashboard.png?v=2" alt="자산 흐름 화면" class="about-feature-img">
+          </div>
+
+          <div class="card about-feature">
+            <div class="about-feature-text">
+              <h3>🧾 자산 내역</h3>
+              <p>한 달 내역을 날짜별로 모아서 보고, 전체 / 수입 / 지출만 골라볼 수 있어요. [검색]에서 기간(전체·연별·월별·주별·직접 입력), 카테고리, 메모 내용으로 찾고 결과 합계까지 바로 확인하세요.</p>
+              <p>자주 보는 기간은 📌 핀으로 고정해두면 다음에 들어올 때 그 기간으로 바로 열립니다. (어느 기기에서든 그대로)</p>
+            </div>
+            <img src="/assets/img/intro/intro-history.png" alt="자산 내역 화면" class="about-feature-img">
+          </div>
+
+          <div class="card about-feature">
+            <div class="about-feature-text">
+              <h3>👫 친구 캘린더 비교</h3>
+              <p>친구를 아이디나 닉네임으로 찾아 연결하고, 서로의 캘린더를 나란히 놓고 비교해보세요. 양쪽이 각자 공유 기간을 지정해야만 비교가 가능해서 사생활은 안전하게 지켜집니다. 항목별로 숨기기도 가능합니다.</p>
+            </div>
+            <img src="/assets/img/intro/intro-compare.png?v=2" alt="친구 캘린더 비교 화면" class="about-feature-img about-feature-img--wide">
+          </div>
+
+          <div class="card about-feature">
+            <div class="about-feature-text">
+              <h3>✨ 편의 기능</h3>
+              <ul class="about-list">
+                <li><b>📋 복사</b> — 가계부 내역·일정을 [복사] 한 번으로 내 캘린더·공유 캘린더 여러 곳에, 원하는 날짜로 똑같이 만들어요.</li>
+                <li><b>🙂 닉네임</b> — 다른 사람에게는 실명 대신 닉네임으로 보여요. 마이페이지에서 언제든 바꿀 수 있어요.</li>
+                <li><b>📲 홈 화면 설치</b> — 휴대폰 홈 화면에 앱처럼 설치해서 전체 화면으로 바로 열 수 있어요.</li>
+                <li><b>💬 카카오 로그인</b> — 카카오 계정으로 바로 시작하거나 기존 계정에 연결할 수 있어요.</li>
+                <li><b>🌙 다크 모드</b> — 밤에도 눈이 편하게 어두운 화면으로 바꿀 수 있어요.</li>
+              </ul>
+            </div>
+            <img src="/assets/img/intro/intro-copy.png" alt="복사 화면" class="about-feature-img">
           </div>
 
           <div class="card about-cta" id="aboutCta">

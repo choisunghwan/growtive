@@ -8,22 +8,32 @@
 
 ## Screenshots
 
-| 가계부 캘린더 | 일정 캘린더 |
-|---|---|
-| ![가계부](src/main/resources/static/assets/img/intro/intro-ledger.png) | ![일정](src/main/resources/static/assets/img/intro/intro-schedule.png) |
+| 가계부 캘린더 | 일정 캘린더 | 공유 캘린더 |
+|:---:|:---:|:---:|
+| ![가계부](src/main/resources/static/assets/img/intro/intro-ledger.png) | ![일정](src/main/resources/static/assets/img/intro/intro-schedule.png) | ![공유 캘린더](src/main/resources/static/assets/img/intro/intro-shared.png) |
 
-| 재무 대시보드 (자산 흐름) | 친구 캘린더 비교 |
-|---|---|
-| ![자산 흐름](src/main/resources/static/assets/img/intro/intro-dashboard.png) | ![캘린더 비교](src/main/resources/static/assets/img/intro/intro-compare.png) |
+| 자산 흐름 | 자산 내역 | 복사 |
+|:---:|:---:|:---:|
+| ![자산 흐름](src/main/resources/static/assets/img/intro/intro-dashboard.png) | ![자산 내역](src/main/resources/static/assets/img/intro/intro-history.png) | ![복사](src/main/resources/static/assets/img/intro/intro-copy.png) |
 
----
+| 친구 캘린더 비교 |
+|:---:|
+| ![캘린더 비교](src/main/resources/static/assets/img/intro/intro-compare.png) |
+
+> 스크린샷은 테스트용 가짜 데이터로 찍었습니다.
 
 ## Features
 
+- ⏱️ **실시간 급여·지출 게이지** — 상단바에서 근무 시간에 맞춰 차오르는 월급과 이번 달 지출을 한눈에
 - 📅 **가계부 캘린더** — 매일 수입/지출을 달력에 바로 기록, 매달 반복되는 월급·월세는 자동 등록
-- 🗓️ **일정 캘린더** — 같은 화면에서 탭 전환, 기간/시간/색상 태그 지정, 달력·목록 두 가지 보기
-- 📈 **재무 대시보드** — Sankey 차트로 이번 달 돈의 흐름(수입 → 지출)을 한눈에 시각화
-- 👫 **소셜(친구 캘린더 비교)** — 아이디로 친구를 연결하고 캘린더를 비교. 단, 양쪽이 각자 공유 기간을 지정해야만 비교 가능(사생활 보호), 항목별 숨기기 지원
+- 🗓️ **일정 캘린더** — 같은 화면에서 [가계부]/[일정] 전환, 기간/시간/색상 지정, 달력·목록 두 가지 보기
+- 👨‍👩‍👧 **공유 캘린더** — 가족·연인과 가계부·일정을 함께 쓰는 캘린더. 초대·수락, 작성자 표시, 꾹 눌러 순서 바꾸기, 👑 관리자(멤버 관리·이름 변경·삭제·권한 넘기기), 나가기, 개인 통계와 분리
+- 📈 **자산 흐름** — 흐름(Sankey) 차트로 이번 달 수입 → 지출을 시각화, 총수입·총지출·잔액 요약
+- 🧾 **자산 내역** — 날짜별 모아보기, 전체/수입/지출 보기, 검색(기간: 전체·연별·월별·주별·직접 입력 / 카테고리 / 메모), 📌 기본 기간 핀(기기 간 유지)
+- 👫 **친구 캘린더 비교** — 아이디·닉네임으로 친구를 연결하고 캘린더를 비교. 양쪽이 각자 공유 기간을 지정해야만 비교 가능(사생활 보호), 항목별 숨기기 지원
+- 📋 **복사** — 가계부 내역·일정을 내 캘린더/공유 캘린더 여러 곳에 원하는 날짜로 복사
+- 🙂 **닉네임** — 다른 사람에게는 실명 대신 닉네임 표시, 마이페이지에서 변경
+- 📲 **홈 화면 설치(PWA)** — 모바일에서 앱처럼 설치해 전체 화면으로 실행
 - 💬 **카카오 소셜 로그인** — 카카오 계정으로 바로 로그인, 기존 계정에 연결도 가능
 - 📱 **모바일 최적화** — 반응형 레이아웃, 접이식 사이드바, 터치 드래그로 일정 기간 선택
 - 🌙 다크 모드 지원
