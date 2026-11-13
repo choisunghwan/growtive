@@ -337,7 +337,7 @@ html.dark .money-stat--remain { --stat-accent: #2dd4bf; }
 /* 일정 등록 폼: 색상 태그 선택 */
 .ledger-color-picker { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 4px 0; }
 
-.ledger-daterange { display: flex; align-items: center; gap: 8px; }
+.ledger-daterange { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .ledger-daterange input[type="date"],
 .ledger-daterange input[type="time"] { flex: 1 1 0; width: auto; min-width: 0; }
 
@@ -366,6 +366,13 @@ html.dark .money-stat--remain { --stat-accent: #2dd4bf; }
     color: #fff;
 }
 .ledger-daterange-sep { color: var(--text-muted); font-weight: 600; flex-shrink: 0; }
+/* 좁은 폰: 날짜 2칸을 나란히 두면 날짜가 잘려서(예: '2026. 11. 13.') 세로로 쌓음 */
+@media (max-width: 480px) {
+    .ledger-daterange { flex-direction: column; align-items: stretch; gap: 4px; }
+    .ledger-daterange input[type="date"],
+    .ledger-daterange input[type="time"] { flex: none; width: 100%; }
+    .ledger-daterange-sep { align-self: center; line-height: 1; }
+}
 
 .ledger-event-range {
     font-size: 11px;

@@ -92,7 +92,15 @@ html.dark .user-role-badge { background: rgba(148, 163, 184, .18); color: #cbd5e
 .tbl tbody tr:hover { background: var(--bg); }
 
 /* ===== Form ===== */
-.form { display: grid; gap: 14px; text-align: left; }
+.form {
+    display: grid;
+    /* 열 폭을 컨테이너에 고정: 안 그러면 안드로이드 크롬의 넓은 날짜/시간 입력칸 때문에
+       열이 늘어나서 모든 입력칸이 카드 밖으로 삐져나감 (일정 입력 폼) */
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    text-align: left;
+}
+.form > * { min-width: 0; }
 .form label { display:block; margin:6px 0 4px; color:var(--text); font-weight:600; font-size: 13px; }
 .form input:not([type="checkbox"]):not([type="radio"]), .form textarea, .form select {
     width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius-sm);
