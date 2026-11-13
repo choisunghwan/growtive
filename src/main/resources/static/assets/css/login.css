@@ -418,3 +418,98 @@
         font-size: 21px;
     }
 }
+
+/* ============================= */
+/* 📲 홈 화면 설치 안내 카드 (모바일 전용, install-banner.js) */
+/* ============================= */
+
+.install-card {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin: 0 0 20px;
+    padding: 14px 36px 14px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, rgba(37, 99, 235, .08), rgba(22, 163, 74, .08));
+    color: var(--text);
+}
+
+.install-app-icon {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    box-shadow: var(--shadow-sm);
+}
+
+.install-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.install-title {
+    display: block;
+    font-size: 14.5px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.install-desc,
+.install-steps {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+.install-steps {
+    padding-left: 18px;
+}
+
+.install-steps b,
+.install-desc b {
+    color: var(--text);
+}
+
+.install-inline-icon {
+    vertical-align: -3px;
+    color: var(--brand);
+}
+
+.install-action-btn {
+    margin-top: 10px;
+    height: 36px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: var(--brand);
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.install-action-btn:hover {
+    background: var(--brand-hover);
+}
+
+.install-close {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.install-close:hover {
+    background: var(--border);
+    color: var(--text);
+}

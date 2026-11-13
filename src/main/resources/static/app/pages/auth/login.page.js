@@ -7,6 +7,7 @@ import authStore from '../../store/authStore.js';
 import { renderUserPanel } from '../../ui/topbar-user.js';
 import { initTopbarSalaryTicker } from '../../ui/salary-ticker.js';
 import { authVisualHtml } from './auth-visual.js';
+import { mountInstallBanner } from '../../ui/install-banner.js';
 
 export default function LoginPage() {
     return {
@@ -24,6 +25,9 @@ export default function LoginPage() {
 
                     <div class="auth-panel">
                         <div class="auth-panel-inner">
+                            <!-- 📲 모바일 브라우저 접속 시 홈 화면 설치 안내 (install-banner.js) -->
+                            <div id="install-banner-slot"></div>
+
                             <div class="auth-tabs">
                                 <a href="#/login" class="auth-tab is-active">로그인</a>
                                 <a href="#/register" class="auth-tab">회원가입</a>
@@ -96,6 +100,9 @@ export default function LoginPage() {
          * - 이벤트 바인딩
          */
         onMounted() {
+
+            // 📲 모바일이면 홈 화면 설치 안내 카드 표시
+            mountInstallBanner(document.getElementById('install-banner-slot'));
 
             // 소셜 로그인 콜백 처리 중 오류가 났을 때 (OAuth2LoginSuccessHandler 참고)
             const query = location.hash.split('?')[1];
