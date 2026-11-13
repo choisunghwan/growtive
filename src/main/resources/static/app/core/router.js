@@ -28,6 +28,9 @@ import AboutPage from '../pages/about/about.page.js';
 /*마이페이지*/
 import MyPage from '../pages/mypage/mypage.page.js';
 
+/*공유 캘린더 (친구와 함께 쓰는 가계부/일정) - #/shared?id=3*/
+import SharedCalendarPage from '../pages/shared/shared.page.js';
+
 const routes = {
     /*홈 = 가계부(캘린더)*/
     '#/': LedgerPage,
@@ -49,6 +52,8 @@ const routes = {
     '#/about': AboutPage,
     /*마이페이지*/
     '#/mypage': MyPage,
+    /*공유 캘린더*/
+    '#/shared': SharedCalendarPage,
 };
 
 /**
@@ -65,6 +70,7 @@ const authRequiredRoutes = [
     '#/friends',
     '#/compare',
     '#/mypage',
+    '#/shared',
 ];
 
 export function navigate() {

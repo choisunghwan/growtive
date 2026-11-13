@@ -17,6 +17,7 @@
 import { categoryIcon } from '../ledger/ledger.page.js';
 import { initTopbarSalaryTicker } from '../../ui/salary-ticker.js';
 import authStore from '../../store/authStore.js';
+import { openModal, escapeHtml } from '../../ui/modal.js';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -25,11 +26,6 @@ function pad2(n) { return String(n).padStart(2, '0'); }
 function ymd(y, m, d) { return `${y}-${pad2(m)}-${pad2(d)}`; }
 function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
 
-function escapeHtml(s) {
-    return String(s ?? '').replace(/[&<>"']/g, c => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[c]));
-}
 
 function sumOf(list) {
     let income = 0, expense = 0;
@@ -161,45 +157,6 @@ function totalsChipsHtml({ income, expense }, filter) {
             <span class="ledger-day-chip ledger-day-net ${net >= 0 ? 'is-income' : 'is-expense'}">합계 ${net >= 0 ? '+' : '-'}${won(Math.abs(net))}</span>
         </div>
         <div class="history-chip-row">${detail}</div>`;
-}
-
-/* ---------------- 모달 (겹쳐 띄우기 가능) ---------------- */
-
-/**
- * 모달을 띄우고 { el, close } 를 돌려준다. 나중에 띄운 모달이 위에 쌓인다.
- * 바깥(어두운 영역) 클릭 / Esc 로 닫힘 → onClose 호출
- */
-function openModal({ title, bodyHtml, actionsHtml, className = '', onClose }) {
-    const wrap = document.createElement('div');
-    wrap.className = 'modal-wrap';
-    wrap.innerHTML = `
-        <div class="modal-dim"></div>
-        <div class="modal history-modal ${className}" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
-            <div class="history-modal-head">
-                <div class="modal-title">${escapeHtml(title)}</div>
-                <button type="button" class="history-modal-x" data-modal-close aria-label="닫기">✕</button>
-            </div>
-            <div class="history-modal-body">${bodyHtml}</div>
-            ${actionsHtml ? `<div class="modal-actions">${actionsHtml}</div>` : ''}
-        </div>`;
-    document.body.appendChild(wrap);
-
-    let closed = false;
-    const onKey = (e) => {
-        // 맨 위 모달만 Esc에 반응
-        if (e.key === 'Escape' && document.querySelector('.modal-wrap:last-of-type') === wrap) close();
-    };
-    function close() {
-        if (closed) return;
-        closed = true;
-        document.removeEventListener('keydown', onKey);
-        wrap.remove();
-        onClose?.();
-    }
-    wrap.querySelector('.modal-dim').addEventListener('click', close);
-    wrap.querySelectorAll('[data-modal-close]').forEach(b => b.addEventListener('click', close));
-    document.addEventListener('keydown', onKey);
-    return { el: wrap, close };
 }
 
 export default function HistoryPage() {

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.growtive.shared.mapper.SharedCalendarMapper">
+
+    <insert id="insertCalendar" parameterType="map" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO shared_calendar (name, owner_id) VALUES (#{name}, #{ownerId})
+    </insert>
+
+    <insert id="insertMember">
+        INSERT INTO shared_calendar_member (calendar_id, user_id, status, invited_by)
+        VALUES (#{calendarId}, #{userId}, #{status}, #{invitedBy})
+    </insert>
+
+    <select id="countAcceptedFriendship" resultType="int">
+        SELECT COUNT(*)
+        FROM friend_connection
+        WHERE status = 'ACCEPTED'
+          AND ((requester_id = #{a} AND addressee_id = #{b})
+            OR (requester_id = #{b} AND addressee_id = #{a}))
+    </select>
+
+    <sql id="calendarColumns">
+        c.id, c.name, c.owner_id, ou.display_name AS owner_display_name,
+        (c.owner_id = #{userId}) AS owner,
+        (SELECT COUNT(*) FROM shared_calendar_member m2
+          WHERE m2.calendar_id = c.id AND m2.status = 'ACCEPTED') AS member_count,
+        c.created_at
+    </sql>
+
+    <select id="findMyCalendars" resultType="com.growtive.shared.dto.SharedCalendarDto">
+        SELECT <include refid="calendarColumns"/>
+        FROM shared_calendar c
+        JOIN shared_calendar_member m ON m.calendar_id = c.id AND m.user_id = #{userId} AND m.status = 'ACCEPTED'
+        LEFT JOIN users ou ON ou.id = c.owner_id
+        ORDER BY c.created_at, c.id
+    </select>
+
+    <select id="findCalendar" resultType="com.growtive.shared.dto.SharedCalendarDto">
+        SELECT <include refid="calendarColumns"/>
+        FROM shared_calendar c
+        LEFT JOIN users ou ON ou.id = c.owner_id
+        WHERE c.id = #{calendarId}
+    </select>
+
+    <select id="findPendingInvitations" resultType="com.growtive.shared.dto.SharedCalendarInvitationDto">
+        SELECT c.id AS calendar_id, c.name AS calendar_name,
+               iu.display_name AS invited_by_display_name, m.created_at
+        FROM shared_calendar_member m
+        JOIN shared_calendar c ON c.id = m.calendar_id
+        LEFT JOIN users iu ON iu.id = m.invited_by
+        WHERE m.user_id = #{userId} AND m.status = 'PENDING'
+        ORDER BY m.created_at DESC
+    </select>
+
+    <select id="findMemberStatus" resultType="java.lang.String">
+        SELECT status FROM shared_calendar_member
+        WHERE calendar_id = #{calendarId} AND user_id = #{userId}
+    </select>
+
+    <update id="updateMemberStatus">
+        UPDATE shared_calendar_member SET status = #{status}
+        WHERE calendar_id = #{calendarId} AND user_id = #{userId}
+    </update>
+
+    <delete id="deleteMember">
+        DELETE FROM shared_calendar_member WHERE calendar_id = #{calendarId} AND user_id = #{userId}
+    </delete>
+
+    <select id="findMembers" resultType="com.growtive.shared.dto.SharedCalendarMemberDto">
+        SELECT u.id AS user_id, u.username, u.display_name, m.status,
+               (c.owner_id = u.id) AS owner
+        FROM shared_calendar_member m
+        JOIN shared_calendar c ON c.id = m.calendar_id
+        JOIN users u ON u.id = m.user_id
+        WHERE m.calendar_id = #{calendarId}
+        ORDER BY (c.owner_id = u.id) DESC, m.status, m.created_at
+    </select>
+
+    <select id="countAcceptedMembers" resultType="int">
+        SELECT COUNT(*) FROM shared_calendar_member
+        WHERE calendar_id = #{calendarId} AND status = 'ACCEPTED'
+    </select>
+
+    <select id="findCalendarIdsOfUser" resultType="java.lang.Long">
+        SELECT calendar_id FROM shared_calendar_member WHERE user_id = #{userId}
+    </select>
+
+    <delete id="deleteAllMembersOfUser">
+        DELETE FROM shared_calendar_member WHERE user_id = #{userId}
+    </delete>
+
+    <delete id="deleteMembersOfCalendar">
+        DELETE FROM shared_calendar_member WHERE calendar_id = #{calendarId}
+    </delete>
+
+    <delete id="deleteCalendar">
+        DELETE FROM shared_calendar WHERE id = #{calendarId}
+    </delete>
+
+</mapper>

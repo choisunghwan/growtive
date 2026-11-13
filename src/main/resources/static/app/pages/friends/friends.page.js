@@ -1,3 +1,6 @@
+import { openModal, escapeHtml } from '../../ui/modal.js';
+import { renderSharedMenu } from '../../ui/shared-menu.js';
+
 function emptyHint(text) {
     return `<div class="hint">${text}</div>`;
 }
@@ -18,6 +21,12 @@ export default function FriendsPage() {
                     </form>
                     <div id="friendStatus" style="margin-top:8px; font-size:13px; color:var(--text-muted);"></div>
                     <div id="searchResults" style="margin-top:12px;"></div>
+                </div>
+
+                <div class="card" style="margin-top:20px;" id="sharedInviteCard" hidden>
+                    <h3>공유 캘린더 초대</h3>
+                    <p class="hint" style="margin:6px 0 0;">수락하면 사이드바 [가계부] 아래에 공유 캘린더가 생겨요.</p>
+                    <div id="sharedInviteList" style="margin-top:12px;"></div>
                 </div>
 
                 <div class="card" style="margin-top:20px;">
@@ -123,6 +132,7 @@ export default function FriendsPage() {
                                 ${c.comparisonAvailable
                                     ? `<a class="btn btn-xs btn-primary" href="#/compare?id=${c.id}">캘린더 비교</a>`
                                     : `<button class="btn btn-xs" disabled title="두 사람 모두 공유 기간을 설정해야 비교할 수 있습니다">캘린더 비교</button>`}
+                                <button class="btn btn-xs" data-create-shared="${c.otherUserId}" data-friend-name="${escapeHtml(c.otherDisplayName)}">공유 캘린더 생성</button>
                             </span>
                         </div>
                         <div class="friend-item-row friend-share-row" style="flex-direction:column; align-items:stretch; gap:8px;">
@@ -141,6 +151,10 @@ export default function FriendsPage() {
                         </div>
                     </div>
                 `).join('');
+
+                $('friendsList').querySelectorAll('button[data-create-shared]').forEach(btn => {
+                    btn.onclick = () => openCreateSharedModal(Number(btn.dataset.createShared), btn.dataset.friendName);
+                });
 
                 $('friendsList').querySelectorAll('button[data-unfriend]').forEach(btn => {
                     btn.onclick = async () => {
@@ -188,14 +202,108 @@ export default function FriendsPage() {
             }
 
             async function refresh() {
-                const [incoming, outgoing, friends] = await Promise.all([
+                const [incoming, outgoing, friends, invites] = await Promise.all([
                     axios.get('/api/friends/requests/incoming'),
                     axios.get('/api/friends/requests/outgoing'),
-                    axios.get('/api/friends')
+                    axios.get('/api/friends'),
+                    axios.get('/api/shared-calendars/invitations').catch(() => ({ data: [] }))
                 ]);
                 renderIncoming(incoming.data);
                 renderOutgoing(outgoing.data);
                 renderFriends(friends.data);
+                renderSharedInvites(invites.data || []);
+            }
+
+            /* ---------------- 공유 캘린더 ---------------- */
+
+            /** 받은 공유 캘린더 초대 (없으면 카드 자체를 숨김) */
+            function renderSharedInvites(list) {
+                $('sharedInviteCard').hidden = list.length === 0;
+                $('sharedInviteList').innerHTML = list.map(inv => `
+                    <div class="friend-item">
+                        <span><b>${escapeHtml(inv.calendarName)}</b>
+                            <span class="hint">· ${escapeHtml(inv.invitedByDisplayName || '알 수 없음')}님이 초대</span></span>
+                        <span class="ledger-tx-actions">
+                            <button class="btn btn-xs btn-primary" data-accept-shared="${inv.calendarId}">수락</button>
+                            <button class="btn btn-xs btn-danger" data-decline-shared="${inv.calendarId}">거절</button>
+                        </span>
+                    </div>`).join('');
+
+                $('sharedInviteList').querySelectorAll('button[data-accept-shared]').forEach(btn => {
+                    btn.onclick = async () => {
+                        btn.disabled = true;
+                        try {
+                            await axios.post(`/api/shared-calendars/${btn.dataset.acceptShared}/accept`);
+                            await Promise.all([refresh(), renderSharedMenu()]);
+                            if (confirm('공유 캘린더에 참여했어요. 지금 열어볼까요?')) {
+                                location.hash = `#/shared?id=${btn.dataset.acceptShared}`;
+                            }
+                        } catch (e) {
+                            btn.disabled = false;
+                            alert(e.response?.data?.message || '수락에 실패했습니다.');
+                        }
+                    };
+                });
+                $('sharedInviteList').querySelectorAll('button[data-decline-shared]').forEach(btn => {
+                    btn.onclick = async () => {
+                        if (!confirm('이 공유 캘린더 초대를 거절할까요?')) return;
+                        btn.disabled = true;
+                        try {
+                            await axios.post(`/api/shared-calendars/${btn.dataset.declineShared}/decline`);
+                            await Promise.all([refresh(), renderSharedMenu()]);
+                        } catch (e) {
+                            btn.disabled = false;
+                            alert(e.response?.data?.message || '거절에 실패했습니다.');
+                        }
+                    };
+                });
+            }
+
+            /** [공유 캘린더 생성] → 이름 입력 모달 */
+            function openCreateSharedModal(friendUserId, friendName) {
+                const modal = openModal({
+                    title: '공유 캘린더 생성',
+                    bodyHtml: `
+                        <p class="history-modal-help"><b>${escapeHtml(friendName)}</b>님과 함께 쓸 가계부·일정을 만들어요.
+                            ${escapeHtml(friendName)}님이 초대를 수락하면 함께 볼 수 있어요.</p>
+                        <label class="history-search-label" for="sharedName" style="display:block; margin-bottom:6px;">공유 캘린더 이름</label>
+                        <input type="text" id="sharedName" class="history-search-input" maxlength="30" placeholder="예: ss couple" style="width:100%;">
+                        <p class="history-custom-error" id="sharedNameError" role="alert" hidden></p>`,
+                    actionsHtml: `
+                        <button type="button" class="btn btn-ghost" data-modal-close>닫기</button>
+                        <button type="button" class="btn btn-primary" id="createSharedBtn">생성</button>`,
+                });
+                const root = modal.el;
+                const input = root.querySelector('#sharedName');
+                const errorEl = root.querySelector('#sharedNameError');
+                const btn = root.querySelector('#createSharedBtn');
+                input.focus();
+                input.addEventListener('input', () => { errorEl.hidden = true; });
+
+                const submit = async () => {
+                    const name = input.value.trim();
+                    if (!name) {
+                        errorEl.textContent = '이름을 입력해주세요.';
+                        errorEl.hidden = false;
+                        input.focus();
+                        return;
+                    }
+                    btn.disabled = true;
+                    try {
+                        const { data } = await axios.post('/api/shared-calendars', { name, friendUserId });
+                        modal.close();
+                        await renderSharedMenu();
+                        alert(`'${data.name}' 공유 캘린더를 만들었어요. ${friendName}님에게 초대를 보냈어요.`);
+                    } catch (e) {
+                        btn.disabled = false;
+                        errorEl.textContent = e.response?.data?.message || '생성에 실패했습니다.';
+                        errorEl.hidden = false;
+                    }
+                };
+                btn.addEventListener('click', submit);
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); submit(); }
+                });
             }
 
             function renderSearchResults(list) {

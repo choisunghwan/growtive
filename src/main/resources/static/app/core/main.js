@@ -34,8 +34,10 @@ function highlightActive() {
     // sidebar
     document.querySelectorAll('#sidebar a').forEach(a => {
         const route = a.getAttribute('href');
-        // '#/calendar?date=...'처럼 쿼리가 붙어도 같은 메뉴로 표시
-        a.classList.toggle('active', route === hash.split('?')[0]);
+        // 공유 캘린더(#/shared?id=3)처럼 링크 자체에 쿼리가 있으면 전체 주소로 비교,
+        // 그 외에는 '#/calendar?date=...'처럼 쿼리가 붙어도 같은 메뉴로 표시
+        const active = route?.includes('?') ? route === hash : route === hash.split('?')[0];
+        a.classList.toggle('active', active);
     });
 }
 

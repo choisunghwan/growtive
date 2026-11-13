@@ -990,3 +990,62 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
 .history-pin-btn.is-pinned svg { transform: rotate(-20deg); }
 .history-pin-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .history-pin-help { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
+
+/* ============================= */
+/* 👫 공유 캘린더 (shared.page.js, shared-menu.js) */
+/* ============================= */
+.sidebar-badge {
+    margin-left: auto;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 18px;
+    text-align: center;
+}
+.shared-kicker { font-size: 12px; font-weight: 700; color: var(--brand); }
+.shared-title { margin: 2px 0 4px; font-size: 20px; font-weight: 800; }
+.shared-section-title { margin: 0 0 10px; font-size: 15px; }
+.shared-member-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.shared-member {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+.shared-avatar {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, .12);
+    color: var(--brand);
+    font-weight: 800;
+}
+.shared-member-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shared-member-tags { display: flex; gap: 6px; flex: none; }
+.shared-tag { padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 700; border: 1px solid var(--border); }
+.shared-tag--owner { color: #b45309; border-color: #fcd34d; background: #fffbeb; }
+.shared-tag--joined { color: #16a34a; border-color: #bbf7d0; background: #f0fdf4; }
+.shared-tag--pending { color: var(--text-muted); background: var(--bg); }
+html.dark .shared-tag--owner { background: transparent; }
+html.dark .shared-tag--joined { background: transparent; }
+/* 공유 캘린더 메뉴 이름이 길면 말줄임 */
+.sidebar li[data-shared-menu] a { min-width: 0; }
+.sidebar li[data-shared-menu] .sidebar-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 사이드바를 접었을 때 초대 배지는 작은 점으로 */
+.sidebar a { position: relative; }
+@media (min-width: 769px) {
+    body.sidebar-collapsed .sidebar-badge {
+        position: absolute; top: 5px; right: 6px;
+        min-width: 8px; height: 8px; padding: 0; font-size: 0;
+    }
+}

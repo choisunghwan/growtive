@@ -1,5 +1,6 @@
 import authStore from '../store/authStore.js';
 import { stopTopbarSalaryTicker } from './salary-ticker.js';
+import { renderSharedMenu } from './shared-menu.js';
 
 function renderAdminNav() {
     const isAdmin = authStore.user?.role === 'ADMIN';
@@ -33,6 +34,7 @@ async function logout() {
  */
 export function renderUserPanel() {
     renderAdminNav();
+    renderSharedMenu();   // 가계부 아래 공유 캘린더 메뉴 + 친구 메뉴 초대 배지
 
     const logoutBtn = document.getElementById('sidebarLogoutBtn');
     if (logoutBtn) {
