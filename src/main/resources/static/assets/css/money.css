@@ -735,6 +735,20 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
 .history-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .history-chip-row:empty { display: none; }
 
+/* 자산 내역 목록: 가계부 목록 보기와 같은 한 줄 모양 (높이 제한 없이 쭉) */
+.history-group { cursor: default; background: var(--bg-elevated); }
+.history-group:hover { background: var(--bg-elevated); border-color: var(--border); }
+.history-row {
+    cursor: pointer;
+    margin: 0 -6px;
+    padding: 4px 6px;
+    border-radius: 6px;
+}
+.history-row:hover, .history-row:focus-visible { background: var(--bg); outline: none; }
+.history-row .ledger-list-item-memo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-row .ledger-list-item-amount { flex: none; }
+.history-tx-modal .modal-actions a.btn { display: inline-flex; align-items: center; text-decoration: none; }
+
 .history-page a.btn-xs { display: inline-flex; align-items: center; text-decoration: none; }
 
 @media (max-width: 768px) {

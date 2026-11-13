@@ -143,20 +143,10 @@ function daysBetween(from, to) {
     return Math.round((new Date(to + 'T00:00:00') - new Date(from + 'T00:00:00')) / 86400000) + 1;
 }
 
-function totalsChipsHtml({ income, expense }, filter) {
-    // 지출만/수입만 볼 때는 그 금액 하나만 (합계가 같은 숫자라 중복)
-    if (filter === 'EXPENSE') return `<span class="ledger-day-chip is-expense">지출 -${won(expense)}</span>`;
-    if (filter === 'INCOME') return `<span class="ledger-day-chip is-income">수입 +${won(income)}</span>`;
+// 날짜 줄 오른쪽 그날 합계 (수입 - 지출) — 색과 +/-로 구분되니 숫자 하나만
+function dayNetHtml({ income, expense }) {
     const net = income - expense;
-    // 첫 줄: 합계 / 둘째 줄: 수입 · 지출
-    const detail = `
-        ${income ? `<span class="ledger-day-chip is-income">수입 +${won(income)}</span>` : ''}
-        ${expense ? `<span class="ledger-day-chip is-expense">지출 -${won(expense)}</span>` : ''}`;
-    return `
-        <div class="history-chip-row">
-            <span class="ledger-day-chip ledger-day-net ${net >= 0 ? 'is-income' : 'is-expense'}">합계 ${net >= 0 ? '+' : '-'}${won(Math.abs(net))}</span>
-        </div>
-        <div class="history-chip-row">${detail}</div>`;
+    return `<span class="ledger-list-date-total"><b class="${net >= 0 ? 'is-income' : 'is-expense'}">${net >= 0 ? '+' : '-'}${won(Math.abs(net))}</b></span>`;
 }
 
 export default function HistoryPage() {
@@ -355,23 +345,14 @@ export default function HistoryPage() {
             </div>`;
     }
 
+    // 가계부 목록 보기와 같은 한 줄 모양. 줄을 누르면 [수정][삭제] 창
     function txItemHtml(tx) {
         const isRecurringRelated = tx.recurring || tx.recurringOriginId;
         return `
-            <li class="ledger-tx-item">
-                <div class="ledger-tx-main">
-                    <span class="ledger-tx-category">${categoryIcon(tx.category)} ${escapeHtml(tx.category)}${isRecurringRelated ? ' <span class="ledger-tx-recurring-badge" title="매달 반복">🔁</span>' : ''}${tx.hidden ? ' <span class="ledger-tx-recurring-badge" title="친구에게 숨김">🙈</span>' : ''}</span>
-                    <span class="ledger-tx-amount ${tx.type === 'INCOME' ? 'is-income' : 'is-expense'}">
-                        ${tx.type === 'INCOME' ? '+' : '-'}${won(tx.amount)}
-                    </span>
-                </div>
-                <div class="ledger-tx-sub">
-                    <span class="ledger-tx-memo">${tx.memo ? escapeHtml(tx.memo) : ''}</span>
-                    <span class="ledger-tx-actions">
-                        <a class="btn btn-xs" href="#/calendar?date=${tx.date}&edit=${tx.id}">수정</a>
-                        <button type="button" class="btn btn-xs btn-danger" data-del="${tx.id}">삭제</button>
-                    </span>
-                </div>
+            <li class="ledger-list-item history-row" data-tx="${tx.id}" role="button" tabindex="0">
+                <span class="ledger-list-item-category">${categoryIcon(tx.category)} ${escapeHtml(tx.category)}${isRecurringRelated ? ' <span class="ledger-tx-recurring-badge" title="매달 반복">🔁</span>' : ''}${tx.hidden ? ' <span class="ledger-tx-recurring-badge" title="친구에게 숨김">🙈</span>' : ''}</span>
+                <span class="ledger-list-item-memo">${tx.memo ? escapeHtml(tx.memo) : ''}</span>
+                <span class="ledger-list-item-amount ${tx.type === 'INCOME' ? 'is-income' : 'is-expense'}">${tx.type === 'INCOME' ? '+' : '-'}${won(tx.amount)}</span>
             </li>`;
     }
 
@@ -398,13 +379,15 @@ export default function HistoryPage() {
             const list = byDate[dateStr];
             const d = new Date(dateStr + 'T00:00:00');
             const dow = d.getDay();
-            const dowClass = dow === 0 ? ' is-sunday' : dow === 6 ? ' is-saturday' : '';
+            const dateCls = dow === 0 ? ' ledger-list-date--sunday' : dow === 6 ? ' ledger-list-date--saturday' : '';
             return `
-                <section class="history-day">
-                    <h3 class="history-day-title${dowClass}">${showYear ? `${d.getFullYear()}년 ` : ''}${d.getMonth() + 1}월 ${d.getDate()}일 <span>(${WEEKDAYS[dow]})</span></h3>
-                    <ul class="ledger-tx-list history-tx-list">${list.map(txItemHtml).join('')}</ul>
-                    <div class="ledger-day-totals history-day-totals">${totalsChipsHtml(sumOf(list), state.filter)}</div>
-                </section>`;
+                <div class="ledger-list-group history-group">
+                    <div class="ledger-list-date-row">
+                        <span class="ledger-list-date${dateCls}">${showYear ? `${d.getFullYear()}년 ` : ''}${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAYS[dow]})</span>
+                        ${dayNetHtml(sumOf(list))}
+                    </div>
+                    <ul class="ledger-list-items">${list.map(txItemHtml).join('')}</ul>
+                </div>`;
         }).join('');
 
         // 검색 결과 합계는 목록 맨 위에
@@ -792,24 +775,59 @@ export default function HistoryPage() {
             $('prevPeriod').addEventListener('click', () => { movePeriod(-1); refresh(); });
             $('nextPeriod').addEventListener('click', () => { movePeriod(1); refresh(); });
 
-            $('historyList').addEventListener('click', async (e) => {
-                const btn = e.target.closest('button[data-del]');
-                if (!btn) return;
-                const tx = state.transactions.find(t => t.id === Number(btn.dataset.del));
-                if (!tx) return;
-                if (!confirm(`${tx.date} ${tx.category} ${won(tx.amount)} 내역을 삭제할까요?`)) return;
-                btn.disabled = true;
+            async function deleteTx(tx) {
+                if (!confirm(`${tx.date} ${tx.category} ${won(tx.amount)} 내역을 삭제할까요?`)) return false;
                 try {
                     await axios.delete(`/api/money/ledger/${tx.id}`);
                 } catch (err) {
                     console.error(err);
                     alert('삭제하지 못했어요. 잠시 후 다시 시도해주세요.');
-                    btn.disabled = false;
-                    return;
+                    return false;
                 }
                 state.usedCategories = null; // 마지막 내역이 지워진 카테고리가 있을 수 있음
                 await refresh();
                 initTopbarSalaryTicker();
+                return true;
+            }
+
+            // 줄을 누르면 그 내역의 [수정][삭제] 창
+            function openTxModal(tx) {
+                const d = new Date(tx.date + 'T00:00:00');
+                const modal = openModal({
+                    title: `${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAYS[d.getDay()]})`,
+                    className: 'history-tx-modal',
+                    bodyHtml: `
+                        <div class="ledger-copy-summary">
+                            <span>${categoryIcon(tx.category)} <b>${escapeHtml(tx.category)}</b>${tx.memo ? ` · ${escapeHtml(tx.memo)}` : ''}</span>
+                            <b class="${tx.type === 'INCOME' ? 'is-income' : 'is-expense'}">${tx.type === 'INCOME' ? '+' : '-'}${won(tx.amount)}</b>
+                        </div>`,
+                    actionsHtml: `
+                        <button type="button" class="btn btn-danger" data-act="del">삭제</button>
+                        <a class="btn btn-primary" href="#/calendar?date=${tx.date}&edit=${tx.id}">수정</a>
+                        <button type="button" class="btn btn-ghost" data-modal-close>닫기</button>`,
+                });
+                const root = modal.el;
+                root.addEventListener('click', async (e) => {
+                    const act = e.target.closest('[data-act]')?.dataset.act;
+                    if (act === 'del') {
+                        e.target.disabled = true;
+                        if (await deleteTx(tx)) modal.close();
+                        else e.target.disabled = false;
+                    }
+                });
+            }
+
+            const txOf = (el) => state.transactions.find(t => t.id === Number(el.dataset.tx));
+            $('historyList').addEventListener('click', (e) => {
+                const row = e.target.closest('[data-tx]');
+                const tx = row && txOf(row);
+                if (tx) openTxModal(tx);
+            });
+            $('historyList').addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                const row = e.target.closest('[data-tx]');
+                const tx = row && txOf(row);
+                if (tx) { e.preventDefault(); openTxModal(tx); }
             });
 
             // 📌 서버에 저장된 핀 확인 → 캐시와 다르면(다른 기기에서 바꿈 등) 서버 값 기준으로 기본 기간을 다시 맞춤
