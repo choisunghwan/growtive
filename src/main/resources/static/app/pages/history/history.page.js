@@ -1,5 +1,5 @@
 /**
- * 🧾 재무 대시보드 > 내역
+ * 🧾 재무 대시보드 > 자산 내역
  * 가계부에 입력한 내역을 달력 없이 날짜별로 한데 모아 보여준다.
  * - 상단: ◀ 기간 ▶ + [검색] / 검색 조건 표시 / 기간 수입·지출 요약(기간만 기준, 고정) / 전체·지출·수입 보기 선택(목록에만 적용)
  * - 목록 맨 위: 카테고리·내용 검색 시 목록에 나온 내역의 건수와 합계 (전체 | 수입 | 지출)
@@ -8,7 +8,7 @@
  * - [검색] 모달: 기간(단위 선택 모달) / 카테고리(체크박스 모달) / 내용(메모 LIKE 검색)
  * - 본문: 날짜별 박스 하나(최근 날짜가 위) 안에 날짜 → 그날 내역 목록 → 그날 합계
  * - 수정: 가계부 캘린더의 해당 날짜로 이동해서 수정 폼을 바로 열어줌 / 삭제: 이 화면에서 바로 삭제
- * - 기간 선택 모달의 📌 핀: 고정한 기간이 내역 메뉴 진입 시 기본 기간 (없으면 이번 달)
+ * - 기간 선택 모달의 📌 핀: 고정한 기간이 자산 내역 메뉴 진입 시 기본 기간 (없으면 이번 달)
  *   · 서버(DB, /api/settings/history-pin)에 저장 → 기기가 달라도 같은 핀
  *   · 브라우저에는 화면을 바로 그리기 위한 캐시로만 보관하고, 진입할 때 서버 값으로 맞춤
  * 일정(schedule)은 보여주지 않는다. 데이터는 /api/money/ledger/search 를 사용.
@@ -426,7 +426,7 @@ export default function HistoryPage() {
     }
 
     return {
-        title: '내역',
+        title: '자산 내역',
 
         render() {
             return `
@@ -609,10 +609,10 @@ export default function HistoryPage() {
                                         <span class="history-option-desc" data-desc="${u.key}">${u.desc}</span>
                                     </button>
                                     <button type="button" class="history-pin-btn" data-pin="${u.key}" aria-pressed="false"
-                                            title="내역 메뉴를 열 때 이 기간으로 보기">${ICON_PIN}</button>
+                                            title="자산 내역 메뉴를 열 때 이 기간으로 보기">${ICON_PIN}</button>
                                 </div>`).join('')}
                         </div>
-                        <p class="history-pin-help">📌 핀을 꽂은 기간이 내역 메뉴를 열 때 기본으로 보여요. (없으면 이번 달)</p>
+                        <p class="history-pin-help">📌 핀을 꽂은 기간이 자산 내역 메뉴를 열 때 기본으로 보여요. (없으면 이번 달)</p>
                         <div class="history-custom-range" id="customRangeForm"${current === 'CUSTOM' ? '' : ' hidden'}>
                             <div class="history-custom-fields">
                                 <label class="history-custom-field">

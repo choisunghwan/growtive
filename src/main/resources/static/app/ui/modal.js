@@ -60,11 +60,14 @@ export function openModal({ title, bodyHtml, actionsHtml, className = '', onClos
         if (closed) return;
         closed = true;
         document.removeEventListener('keydown', onKey);
+        window.removeEventListener('hashchange', close);
         wrap.remove();
         onClose?.();
     }
     wrap.querySelector('.modal-dim').addEventListener('click', close);
     wrap.querySelectorAll('[data-modal-close]').forEach(b => b.addEventListener('click', close));
     document.addEventListener('keydown', onKey);
+    // 화면이 바뀌면(뒤로 가기, 메뉴 이동) 열려 있던 모달은 닫음
+    window.addEventListener('hashchange', close);
     return { el: wrap, close };
 }

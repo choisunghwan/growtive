@@ -157,7 +157,7 @@ export default function LedgerPage(options = {}) {
         mode: localStorage.getItem(MODE_KEY) === 'schedule' ? 'schedule' : 'money',
     };
 
-    // 🔗 다른 화면(재무 대시보드 > 내역)에서 '#/calendar?date=YYYY-MM-DD&edit=ID'로 들어오면
+    // 🔗 다른 화면(재무 대시보드 > 자산 내역)에서 '#/calendar?date=YYYY-MM-DD&edit=ID'로 들어오면
     //    해당 날짜의 가계부를 열고, edit가 있으면 그 내역의 수정 폼을 바로 띄운다.
     const linkParams = new URLSearchParams(isShared ? '' : (location.hash.split('?')[1] || ''));
     const linkDate = linkParams.get('date');
