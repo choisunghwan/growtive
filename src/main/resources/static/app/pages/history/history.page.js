@@ -239,6 +239,8 @@ export default function HistoryPage() {
     // 우선 브라우저 캐시의 핀으로 바로 그리고, 화면이 뜨면 서버 값으로 다시 맞춤 (onMounted)
     let currentPin = loadPin();        // 지금 고정된 핀 (서버 값을 받으면 그걸로 바뀜)
     applyPin(currentPin);
+    // 핀은 '메뉴 진입 시 시작 기간'일 뿐. 사용자가 기간을 바꾼 뒤에는 핀이 조회 기간을 덮어쓰지 않도록 표시
+    let periodTouched = false;
 
     /* ---------------- 기간 ---------------- */
 
@@ -289,6 +291,7 @@ export default function HistoryPage() {
     }
 
     function movePeriod(dir) {
+        periodTouched = true;
         if (state.unit === 'YEAR') {
             state.year += dir;
         } else if (state.unit === 'MONTH') {
@@ -613,6 +616,7 @@ export default function HistoryPage() {
                 });
 
                 const doSearch = () => {
+                    periodTouched = true;
                     if (draft.unit === 'CUSTOM') {
                         state.customFrom = draft.customFrom;
                         state.customTo = draft.customTo;
@@ -856,7 +860,8 @@ export default function HistoryPage() {
                 const serverPin = await fetchServerPin();
                 if (!samePin(serverPin, currentPin)) {
                     currentPin = serverPin;
-                    applyPin(serverPin);
+                    // 서버 응답 전에 사용자가 이미 기간을 바꿨으면 그 선택을 유지
+                    if (!periodTouched) applyPin(serverPin);
                 }
             } catch (err) {
                 console.warn('핀 설정을 불러오지 못해 브라우저에 저장된 값으로 표시합니다.', err);
