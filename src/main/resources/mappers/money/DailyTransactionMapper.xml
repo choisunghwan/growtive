@@ -89,6 +89,44 @@
           AND MONTH(transaction_date) = #{month}
     </select>
 
+    <!-- 내역 검색 (재무 대시보드 > 내역): 모든 조건은 선택 사항 -->
+    <select id="search" resultMap="DailyTransactionMap">
+        SELECT id, transaction_date, type, category, amount, memo, is_recurring, recurring_origin_id, is_hidden
+        FROM daily_transaction
+        WHERE user_id = #{userId}
+          <if test="from != null">
+              AND transaction_date &gt;= #{from}
+          </if>
+          <if test="to != null">
+              AND transaction_date &lt;= #{to}
+          </if>
+          <if test="categories != null and categories.size() > 0">
+              AND category IN
+              <foreach collection="categories" item="c" open="(" separator="," close=")">#{c}</foreach>
+          </if>
+          <if test="keyword != null">
+              AND memo LIKE CONCAT('%', #{keyword}, '%')
+          </if>
+        ORDER BY transaction_date, id
+    </select>
+
+    <select id="findUsedCategories" resultType="java.lang.String">
+        SELECT category
+        FROM daily_transaction
+        WHERE user_id = #{userId}
+          AND category IS NOT NULL AND category &lt;&gt; ''
+        GROUP BY category
+        ORDER BY COUNT(*) DESC, category
+    </select>
+
+    <select id="findEarliestRecurringOriginDate" resultType="java.time.LocalDate">
+        SELECT MIN(transaction_date)
+        FROM daily_transaction
+        WHERE user_id = #{userId}
+          AND is_recurring = TRUE
+          AND recurring_origin_id IS NULL
+    </select>
+
     <!-- 친구 캘린더 비교용: 숨긴 항목 제외, sinceDate~untilDate 범위 내만 -->
     <select id="findVisibleByMonth" resultMap="DailyTransactionMap">
         SELECT id, transaction_date, type, category, amount, memo, is_recurring, recurring_origin_id, is_hidden

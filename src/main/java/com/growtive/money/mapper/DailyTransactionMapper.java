@@ -46,6 +46,19 @@ public interface DailyTransactionMapper {
                                         @Param("year") int year,
                                         @Param("month") int month);
 
+    /** 내역 검색: from/to/categories/keyword 모두 null 허용 (null이면 조건 없음) */
+    List<DailyTransactionDto> search(@Param("userId") Long userId,
+                                     @Param("from") LocalDate from,
+                                     @Param("to") LocalDate to,
+                                     @Param("categories") List<String> categories,
+                                     @Param("keyword") String keyword);
+
+    /** 사용자가 사용한 카테고리 (중복 제거, 많이 쓴 순) */
+    List<String> findUsedCategories(@Param("userId") Long userId);
+
+    /** 가장 이른 반복 원본 날짜 (전체 기간 검색 시 반복 occurrence 보장 시작점) */
+    LocalDate findEarliestRecurringOriginDate(@Param("userId") Long userId);
+
     /** 친구 캘린더 비교용: 숨긴 항목 제외, sinceDate~untilDate 범위 내만 */
     List<DailyTransactionDto> findVisibleByMonth(@Param("userId") Long userId,
                                                  @Param("year") int year,

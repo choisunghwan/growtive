@@ -707,3 +707,139 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
     #historyList { gap: 10px; }
     .history-day-totals { justify-content: flex-start; }
 }
+
+/* ----- 내역: 기간 표시 + 검색 버튼 ----- */
+.history-header { gap: 10px 14px; }
+.history-period { display: flex; flex-direction: column; align-items: center; }
+.history-period-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.history-search-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--text);
+    font-weight: 700;
+}
+.history-search-btn:hover { border-color: #c7d7ff; background: var(--bg); }
+
+/* 검색 조건 표시 줄 */
+.history-condition {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: -4px 0 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+.history-condition b { color: var(--text); }
+
+/* ----- 내역: 검색 모달 ----- */
+.history-modal { width: min(420px, 92vw); padding: 18px 18px 16px; }
+.history-modal--sub { width: min(360px, 88vw); }
+.history-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.history-modal-head .modal-title { margin: 0; font-size: 16px; }
+.history-modal-x {
+    width: 30px; height: 30px;
+    border: 0; border-radius: 50%;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+.history-modal-x:hover { background: var(--bg); color: var(--text); }
+.history-modal-body { margin-bottom: 16px; }
+.history-modal-help { margin: 0 0 10px; font-size: 12.5px; color: var(--text-muted); }
+
+.history-search-row {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+}
+.history-search-row + .history-search-row { border-top: 1px solid var(--border); }
+.history-search-label { margin: 0; font-size: 13.5px; font-weight: 700; color: var(--text); }
+.history-picker-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.history-picker-btn span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-picker-btn span:last-child { color: var(--text-muted); font-size: 18px; }
+.history-picker-btn:hover { border-color: #c7d7ff; }
+.history-search-input { height: 40px; font-size: 14px; }
+
+/* 기간 선택 */
+.history-option-list { display: grid; gap: 8px; }
+.history-option {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    color: var(--text);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.history-option:hover { border-color: #c7d7ff; background: var(--bg); }
+.history-option.is-selected { border-color: var(--brand); background: rgba(37, 99, 235, .08); }
+.history-option-label { font-size: 14.5px; font-weight: 700; }
+.history-option.is-selected .history-option-label { color: var(--brand); }
+.history-option-desc { font-size: 12px; color: var(--text-muted); }
+
+/* 카테고리 체크 목록 */
+.history-category-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: min(50vh, 360px);
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+.history-category-list li + li { border-top: 1px solid var(--border); }
+.history-category-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0;
+    padding: 11px 14px;
+    font-size: 14px;
+    cursor: pointer;
+}
+.history-category-item:hover { background: var(--bg); }
+.history-category-item input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    padding: 0;
+    flex: none;
+    accent-color: var(--brand);
+    cursor: pointer;
+}
