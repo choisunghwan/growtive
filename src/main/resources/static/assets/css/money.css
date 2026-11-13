@@ -872,20 +872,12 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
     cursor: pointer;
 }
 
-/* ----- 내역: 하단 검색 결과 합계 (스크롤해도 화면 아래에 고정) ----- */
+/* ----- 내역: 검색 결과 합계 (목록 카드 맨 위) ----- */
 .history-result-total {
-    position: fixed;            /* left/width는 history.page.js가 목록 카드에 맞춰 지정 */
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    z-index: 5;
-    box-sizing: border-box;
-    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 14px 12px;
     border: 1px solid var(--brand);
-    border-bottom: 0;
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
-    background: var(--bg-elevated);
-    box-shadow: 0 -6px 18px rgba(15, 23, 42, .12);
+    border-radius: var(--radius-md);
+    background: rgba(37, 99, 235, .05);
 }
 .history-result-count {
     margin-bottom: 6px;

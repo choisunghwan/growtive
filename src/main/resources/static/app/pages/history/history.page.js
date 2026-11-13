@@ -2,7 +2,7 @@
  * 🧾 재무 대시보드 > 내역
  * 가계부에 입력한 내역을 달력 없이 날짜별로 한데 모아 보여준다.
  * - 상단: ◀ 기간 ▶ + [검색] / 검색 조건 표시 / 기간 수입·지출 요약(기간만 기준, 고정) / 전체·지출·수입 보기 선택(목록에만 적용)
- * - 하단: 카테고리·내용 검색 시 목록에 나온 내역의 건수와 합계
+ * - 목록 맨 위: 카테고리·내용 검색 시 목록에 나온 내역의 건수와 합계 (전체 | 수입 | 지출)
  *   · 기간 단위: 전체(모든 내역) / 연별(◀ 2026년 ▶) / 월별(◀ 2026년 11월 ▶) / 주별(◀ 2026년 11월 1주차 ▶)
  * - [검색] 모달: 기간(단위 선택 모달) / 카테고리(체크박스 모달) / 내용(메모 LIKE 검색)
  * - 본문: 날짜별 박스 하나(최근 날짜가 위) 안에 날짜 → 그날 내역 목록 → 그날 합계
@@ -344,11 +344,12 @@ export default function HistoryPage() {
                 </section>`;
         }).join('');
 
-        return daysHtml + resultTotalHtml(txs);
+        // 검색 결과 합계는 목록 맨 위에
+        return resultTotalHtml(txs) + daysHtml;
     }
 
     /**
-     * 하단(화면 아래 고정): 카테고리·내용으로 검색했을 때 목록에 나온 내역의 건수와 합계
+     * 목록 맨 위: 카테고리·내용으로 검색했을 때 목록에 나온 내역의 건수와 합계
      * - 상단과 같은 전체 | 수입 | 지출 3칸 표
      * - 라디오 선택 반영 (예: '지출'이면 목록에 보이는 지출만 더함)
      */
@@ -397,44 +398,9 @@ export default function HistoryPage() {
         async onMounted() {
             const $ = (id) => document.getElementById(id);
 
-            /** 목록 그리기 + 하단 고정 검색 결과 합계 위치 맞추기 */
             function renderList() {
                 $('historyList').innerHTML = listHtml();
-                placeResultBar();
             }
-
-            /**
-             * 하단 검색 결과 합계는 화면 아래에 고정(position: fixed).
-             * - PC에서 사이드바를 덮지 않도록 목록 카드와 같은 가로 위치/폭으로 맞춤
-             * - 마지막 내역이 가려지지 않도록 목록 아래에 그 높이만큼 여백
-             */
-            function placeResultBar() {
-                const list = $('historyList');
-                if (!list) return;
-                const bar = list.querySelector('.history-result-total');
-                if (!bar) {
-                    list.style.paddingBottom = '';
-                    return;
-                }
-                const card = list.closest('.card') || list;
-                const r = card.getBoundingClientRect();
-                bar.style.left = `${r.left}px`;
-                bar.style.width = `${r.width}px`;
-                list.style.paddingBottom = `${bar.offsetHeight + 8}px`;
-            }
-
-            // 창 크기 변경 / 사이드바 접기·펼치기로 목록 폭이 바뀌면 다시 맞춤 (페이지를 떠나면 정리)
-            const onResize = () => {
-                if (!$('historyList')) {
-                    window.removeEventListener('resize', onResize);
-                    resizeObserver?.disconnect();
-                    return;
-                }
-                placeResultBar();
-            };
-            window.addEventListener('resize', onResize);
-            const resizeObserver = 'ResizeObserver' in window ? new ResizeObserver(onResize) : null;
-            resizeObserver?.observe(document.getElementById('app'));
 
             function renderHeader() {
                 $('periodLabel').textContent = periodLabel();
