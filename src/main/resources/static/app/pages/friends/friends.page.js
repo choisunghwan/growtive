@@ -147,7 +147,7 @@ export default function FriendsPage() {
                             </span>
                         </div>
                         <div class="friend-item-row friend-unfriend-row">
-                            <button class="btn btn-xs btn-ghost friend-unfriend-btn" data-unfriend="${c.id}">친구 해제</button>
+                            <button class="btn btn-xs btn-danger friend-unfriend-btn" data-unfriend="${c.id}">친구 해제</button>
                         </div>
                     </div>
                 `).join('');

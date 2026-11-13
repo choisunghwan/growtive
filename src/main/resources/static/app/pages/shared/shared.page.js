@@ -62,7 +62,7 @@ export default function SharedCalendarPage() {
                             </li>`).join('')}
                         ${pending.length ? `<li class="shared-member-chip shared-member-chip--pending" title="${escapeHtml(pending.map(m => m.displayName).join(', '))}">초대 대기 ${pending.length}명</li>` : ''}
                     </ul>
-                    <button type="button" class="btn btn-sm shared-manage-btn" id="openMembersBtn">
+                    <button type="button" class="btn btn-sm btn-pill shared-manage-btn" id="openMembersBtn">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
                         멤버 관리
                     </button>
@@ -87,7 +87,7 @@ export default function SharedCalendarPage() {
             className: 'shared-members-modal',
             bodyHtml: '',
             actionsHtml: `
-                <button type="button" class="btn btn-danger-ghost shared-leave-btn" id="leaveBtn">나가기</button>
+                <button type="button" class="btn btn-danger shared-leave-btn" id="leaveBtn">나가기</button>
                 <button type="button" class="btn btn-ghost" data-modal-close>닫기</button>`,
         });
         modal.el.querySelector('#leaveBtn').onclick = () => leave(modal);
@@ -121,17 +121,17 @@ export default function SharedCalendarPage() {
                     </li>`;
                 }).join('')}
             </ul>
-            <button type="button" class="btn btn-sm shared-invite-btn" id="inviteMoreBtn">+ 친구 초대</button>
+            <button type="button" class="ledger-form-toggle-btn shared-invite-btn" id="inviteMoreBtn">+ 친구 초대</button>
             ${admin ? `
             <div class="shared-admin-box">
                 <div class="shared-admin-title">${CROWN} 관리자 메뉴</div>
                 <label class="history-search-label" for="renameInput">캘린더 이름</label>
                 <div class="shared-rename-row">
                     <input type="text" id="renameInput" class="history-search-input" maxlength="30" value="${escapeHtml(calendar.name)}">
-                    <button type="button" class="btn btn-sm btn-primary" id="renameBtn">변경</button>
+                    <button type="button" class="btn btn-primary" id="renameBtn">변경</button>
                 </div>
                 <p class="history-custom-error" id="renameError" role="alert" hidden></p>
-                <button type="button" class="btn btn-sm btn-danger shared-delete-btn" id="deleteCalBtn">캘린더 삭제</button>
+                <button type="button" class="btn btn-danger shared-delete-btn" id="deleteCalBtn">캘린더 삭제</button>
             </div>` : `
             <p class="history-modal-help shared-admin-note">이름 변경·관리자 넘기기·삭제는 ${CROWN} 관리자만 할 수 있어요.</p>`}`;
 

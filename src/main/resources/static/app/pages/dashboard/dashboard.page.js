@@ -21,7 +21,7 @@ export default function DashboardPage() {
               <button id="prevMonthBtn" class="ledger-nav-btn" type="button" aria-label="이전 달">◀</button>
               <div id="currentMonthLabel" style="font-weight:700; font-size:16px;"></div>
               <button id="nextMonthBtn" class="ledger-nav-btn" type="button" aria-label="다음 달">▶</button>
-              <button id="goCurrentMonthBtn" type="button">이번달</button>
+              <button id="goCurrentMonthBtn" class="btn btn-sm btn-pill" type="button">이번달</button>
             </div>
           </div>
 
