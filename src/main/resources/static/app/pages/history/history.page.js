@@ -79,10 +79,11 @@ function totalsChipsHtml({ income, expense }, filter) {
     if (filter === 'EXPENSE') return `<span class="ledger-day-chip is-expense">지출 -${won(expense)}</span>`;
     if (filter === 'INCOME') return `<span class="ledger-day-chip is-income">수입 +${won(income)}</span>`;
     const net = income - expense;
+    // 순서: 합계 → 수입 → 지출 (상단 요약 전체/수입/지출과 맞춤)
     return `
+        <span class="ledger-day-chip ledger-day-net ${net >= 0 ? 'is-income' : 'is-expense'}">합계 ${net >= 0 ? '+' : '-'}${won(Math.abs(net))}</span>
         ${income ? `<span class="ledger-day-chip is-income">수입 +${won(income)}</span>` : ''}
-        ${expense ? `<span class="ledger-day-chip is-expense">지출 -${won(expense)}</span>` : ''}
-        <span class="ledger-day-chip ledger-day-net ${net >= 0 ? 'is-income' : 'is-expense'}">합계 ${net >= 0 ? '+' : '-'}${won(Math.abs(net))}</span>`;
+        ${expense ? `<span class="ledger-day-chip is-expense">지출 -${won(expense)}</span>` : ''}`;
 }
 
 /* ---------------- 모달 (겹쳐 띄우기 가능) ---------------- */
