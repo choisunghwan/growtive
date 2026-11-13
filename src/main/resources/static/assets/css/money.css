@@ -727,19 +727,13 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
 }
 .history-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .history-chip-row:empty { display: none; }
-.history-result-total .ledger-day-totals {
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
-}
 
 .history-page a.btn-xs { display: inline-flex; align-items: center; text-decoration: none; }
 
 @media (max-width: 768px) {
     .history-sum-value { font-size: clamp(13px, 3.9vw, 15px); }
     #historyList { gap: 10px; }
-    .history-day-totals,
-    .history-result-total .ledger-day-totals { align-items: flex-start; }
+    .history-day-totals { align-items: flex-start; }
 }
 
 /* ----- 내역: 기간 표시 + 검색 버튼 ----- */
@@ -878,17 +872,29 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
     cursor: pointer;
 }
 
-/* ----- 내역: 하단 검색 결과 합계 ----- */
+/* ----- 내역: 하단 검색 결과 합계 (스크롤해도 화면 아래에 고정) ----- */
 .history-result-total {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-    padding: 12px 14px;
+    position: fixed;            /* left/width는 history.page.js가 목록 카드에 맞춰 지정 */
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 5;
+    box-sizing: border-box;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
     border: 1px solid var(--brand);
-    border-radius: var(--radius-md);
-    background: rgba(37, 99, 235, .06);
+    border-bottom: 0;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    background: var(--bg-elevated);
+    box-shadow: 0 -6px 18px rgba(15, 23, 42, .12);
 }
-.history-result-count { font-size: 14px; color: var(--text-muted); }
+.history-result-count {
+    margin-bottom: 6px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+}
 .history-result-count b { color: var(--text); }
+.history-result-sum {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}

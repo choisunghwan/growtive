@@ -269,7 +269,11 @@ export default function HistoryPage() {
 
     /** 상단 요약: 기간만 기준 (카테고리·내용 검색, 라디오 선택과 무관) */
     function summaryHtml() {
-        const { income, expense } = sumOf(state.periodTransactions);
+        return sumColumnsHtml(sumOf(state.periodTransactions));
+    }
+
+    /** 전체 | 수입 | 지출 3칸 표 (상단 요약, 하단 검색 결과 합계 공용) */
+    function sumColumnsHtml({ income, expense }) {
         const net = income - expense;
         // 좁은 화면에서 아주 큰 금액은 쉼표 뒤에서만 줄바꿈되도록 <wbr> 삽입
         const num = (n) => Number(n || 0).toLocaleString('ko-KR').replace(/,/g, ',<wbr>');
@@ -343,13 +347,17 @@ export default function HistoryPage() {
         return daysHtml + resultTotalHtml(txs);
     }
 
-    /** 하단: 카테고리·내용으로 검색했을 때 목록에 나온 내역의 건수와 합계 (라디오 선택 반영) */
+    /**
+     * 하단(화면 아래 고정): 카테고리·내용으로 검색했을 때 목록에 나온 내역의 건수와 합계
+     * - 상단과 같은 전체 | 수입 | 지출 3칸 표
+     * - 라디오 선택 반영 (예: '지출'이면 목록에 보이는 지출만 더함)
+     */
     function resultTotalHtml(txs) {
         if (!hasSearchCondition()) return '';
         return `
             <div class="history-result-total">
-                <span class="history-result-count">검색 결과 <b>${txs.length}건</b></span>
-                <div class="ledger-day-totals">${totalsChipsHtml(sumOf(txs), state.filter)}</div>
+                <div class="history-result-count">검색 결과 <b>${txs.length}건</b></div>
+                <div class="history-result-sum">${sumColumnsHtml(sumOf(txs))}</div>
             </div>`;
     }
 
@@ -389,6 +397,45 @@ export default function HistoryPage() {
         async onMounted() {
             const $ = (id) => document.getElementById(id);
 
+            /** 목록 그리기 + 하단 고정 검색 결과 합계 위치 맞추기 */
+            function renderList() {
+                $('historyList').innerHTML = listHtml();
+                placeResultBar();
+            }
+
+            /**
+             * 하단 검색 결과 합계는 화면 아래에 고정(position: fixed).
+             * - PC에서 사이드바를 덮지 않도록 목록 카드와 같은 가로 위치/폭으로 맞춤
+             * - 마지막 내역이 가려지지 않도록 목록 아래에 그 높이만큼 여백
+             */
+            function placeResultBar() {
+                const list = $('historyList');
+                if (!list) return;
+                const bar = list.querySelector('.history-result-total');
+                if (!bar) {
+                    list.style.paddingBottom = '';
+                    return;
+                }
+                const card = list.closest('.card') || list;
+                const r = card.getBoundingClientRect();
+                bar.style.left = `${r.left}px`;
+                bar.style.width = `${r.width}px`;
+                list.style.paddingBottom = `${bar.offsetHeight + 8}px`;
+            }
+
+            // 창 크기 변경 / 사이드바 접기·펼치기로 목록 폭이 바뀌면 다시 맞춤 (페이지를 떠나면 정리)
+            const onResize = () => {
+                if (!$('historyList')) {
+                    window.removeEventListener('resize', onResize);
+                    resizeObserver?.disconnect();
+                    return;
+                }
+                placeResultBar();
+            };
+            window.addEventListener('resize', onResize);
+            const resizeObserver = 'ResizeObserver' in window ? new ResizeObserver(onResize) : null;
+            resizeObserver?.observe(document.getElementById('app'));
+
             function renderHeader() {
                 $('periodLabel').textContent = periodLabel();
                 const sub = periodSubLabel();
@@ -419,7 +466,7 @@ export default function HistoryPage() {
                     return;
                 }
                 $('monthSummary').innerHTML = summaryHtml();
-                $('historyList').innerHTML = listHtml();
+                renderList();
             }
 
             /* ---------------- 검색 모달 ---------------- */
@@ -571,7 +618,7 @@ export default function HistoryPage() {
                 if (e.target.name !== 'historyFilter') return;
                 state.filter = e.target.value;
                 try { localStorage.setItem(FILTER_KEY, state.filter); } catch { /* 기억 못 해도 동작엔 지장 없음 */ }
-                $('historyList').innerHTML = listHtml();
+                renderList();
             });
 
             $('prevPeriod').addEventListener('click', () => { movePeriod(-1); refresh(); });
