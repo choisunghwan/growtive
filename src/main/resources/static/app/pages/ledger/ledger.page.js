@@ -531,6 +531,7 @@ export default function LedgerPage(options = {}) {
                     <span class="ledger-tx-memo">${authorHtml(ev)}${esc(ev.memo)}</span>
                     <span class="ledger-tx-actions">
                         <button class="btn btn-xs" data-edit-event="${ev.id}">수정</button>
+                        <button class="btn btn-xs" data-copy-event="${ev.id}">복사</button>
                         <button class="btn btn-xs btn-danger" data-del-event="${ev.id}">삭제</button>
                     </span>
                 </div>
@@ -740,8 +741,28 @@ export default function LedgerPage(options = {}) {
              * - 각 캘린더의 '추가' API를 그대로 쓰므로 공유 캘린더는 서버가 참여자인지 확인
              * - 복사본은 원본과 독립된 새 내역 (반복 항목도 한 건만), 공유 캘린더에서는 작성자 '나'·순서 맨 뒤
              */
-            async function openCopyModal(tx) {
+            /** 시작일~종료일 일수 (같은 날이면 1) */
+            function daysBetweenYmd(startStr, endStr) {
+                const ms = new Date(endStr + 'T00:00:00') - new Date(startStr + 'T00:00:00');
+                return Math.max(1, Math.round(ms / 86400000) + 1);
+            }
+
+            /** 'YYYY-MM-DD'에 n일 더하기 */
+            function addDaysYmd(dateStr, n) {
+                const d = new Date(dateStr + 'T00:00:00');
+                d.setDate(d.getDate() + n);
+                return ymd(d.getFullYear(), d.getMonth() + 1, d.getDate());
+            }
+
+            /**
+             * @param item 가계부 내역(tx) 또는 일정(ev)
+             * @param kind 'money' | 'event' — 일정은 고른 날짜를 시작일로, 원래 기간(일수)을 그대로 유지
+             */
+            async function openCopyModal(item, kind = 'money') {
+                const isEvent = kind === 'event';
+                const tx = item;
                 const sign = tx.type === 'INCOME' ? '+' : '-';
+                const spanDays = isEvent ? daysBetweenYmd(item.startDate, item.endDate) : 1;
                 const modal = openModal({
                     title: '복사',
                     className: 'ledger-copy-modal',
@@ -752,10 +773,12 @@ export default function LedgerPage(options = {}) {
                 let targets;
                 try {
                     const { data } = await axios.get('/api/shared-calendars');
-                    const personal = { key: 'personal', name: '내 캘린더', sub: '개인 가계부', url: '/api/money/ledger' };
+                    const personal = isEvent
+                        ? { key: 'personal', name: '내 캘린더', sub: '개인 일정', url: '/api/schedule' }
+                        : { key: 'personal', name: '내 캘린더', sub: '개인 가계부', url: '/api/money/ledger' };
                     const shared = (data || []).map(c => ({
                         key: `shared-${c.id}`, name: c.name, sub: `공유 캘린더 · ${c.memberCount}명`,
-                        url: `/api/shared-calendars/${c.id}/ledger`,
+                        url: `/api/shared-calendars/${c.id}/${isEvent ? 'schedule' : 'ledger'}`,
                     }));
                     // 지금 보고 있는 캘린더를 맨 위에 (같은 캘린더 안 다른 날짜로 복제할 때)
                     const currentKey = isShared ? `shared-${sharedId}` : 'personal';
@@ -771,7 +794,11 @@ export default function LedgerPage(options = {}) {
                 }
                 if (!modal.el.isConnected) return;
 
-                const summary = `
+                const summary = isEvent ? `
+                    <div class="ledger-copy-summary">
+                        <span><span class="ledger-event-dot" style="background:${colorTagHex(item.colorTag)}"></span> <b>${esc(item.title)}</b>${item.memo ? ` · ${esc(item.memo)}` : ''}</span>
+                        <span class="hint" style="flex:none;">${formatMonthDay(item.startDate)}${spanDays > 1 ? ` ~ ${formatMonthDay(item.endDate)}` : ''}${item.time ? ` ${item.time.slice(0, 5)}` : ''}</span>
+                    </div>` : `
                     <div class="ledger-copy-summary">
                         <span>${categoryIcon(tx.category)} <b>${esc(tx.category)}</b>${tx.memo ? ` · ${esc(tx.memo)}` : ''}</span>
                         <b class="${tx.type === 'INCOME' ? 'is-income' : 'is-expense'}">${sign}${won(tx.amount)}</b>
@@ -779,8 +806,9 @@ export default function LedgerPage(options = {}) {
 
                 body.innerHTML = `
                     ${summary}
-                    <label class="history-search-label" for="copyDate" style="display:block;margin:14px 0 6px;">날짜</label>
-                    <input type="date" id="copyDate" class="history-search-input" value="${tx.date}" style="width:100%;">
+                    <label class="history-search-label" for="copyDate" style="display:block;margin:14px 0 6px;">${isEvent && spanDays > 1 ? '시작일' : '날짜'}</label>
+                    <input type="date" id="copyDate" class="history-search-input" value="${isEvent ? item.startDate : tx.date}" style="width:100%;">
+                    ${isEvent && spanDays > 1 ? `<p class="history-modal-help" style="margin:6px 0 0;">📅 ${spanDays}일 일정이라, 고른 시작일부터 ${spanDays}일로 복사돼요.</p>` : ''}
                     <div class="history-search-label" style="margin:14px 0 6px;">복사할 캘린더 <span class="hint">(여러 개 선택 가능)</span></div>
                     <ul class="history-category-list">
                         ${targets.map(t => `
@@ -791,7 +819,7 @@ export default function LedgerPage(options = {}) {
                                 </label>
                             </li>`).join('')}
                     </ul>
-                    ${tx.recurring || tx.recurringOriginId ? '<p class="history-modal-help" style="margin:10px 0 0;">🔁 반복 항목은 이 날짜에 한 건만 복사돼요.</p>' : ''}
+                    ${!isEvent && (tx.recurring || tx.recurringOriginId) ? '<p class="history-modal-help" style="margin:10px 0 0;">🔁 반복 항목은 이 날짜에 한 건만 복사돼요.</p>' : ''}
                     <p class="history-custom-error" id="copyError" role="alert" hidden></p>
                     <div class="modal-actions" style="margin-top:16px;">
                         <button type="button" class="btn btn-ghost" data-modal-close>닫기</button>
@@ -810,18 +838,22 @@ export default function LedgerPage(options = {}) {
 
                     const btn = body.querySelector('#copyDoBtn');
                     btn.disabled = true;
-                    const payload = { date, type: tx.type, category: tx.category, amount: tx.amount, memo: tx.memo || '', recurring: false, hidden: false };
+                    const payload = isEvent
+                        ? { startDate: date, endDate: addDaysYmd(date, spanDays - 1), time: item.time || null,
+                            title: item.title, memo: item.memo || '', colorTag: item.colorTag || 'blue', hidden: false }
+                        : { date, type: tx.type, category: tx.category, amount: tx.amount, memo: tx.memo || '', recurring: false, hidden: false };
                     const results = await Promise.allSettled(picked.map(t => axios.post(t.url, payload)));
                     const ok = picked.filter((_, i) => results[i].status === 'fulfilled');
                     const failed = picked.filter((_, i) => results[i].status === 'rejected');
 
                     // 개인 가계부에 복사했으면 상단 게이지 갱신, 지금 캘린더에 복사했으면 화면 다시 불러오기
-                    if (ok.some(t => t.key === 'personal')) initTopbarSalaryTicker();
+                    if (!isEvent && ok.some(t => t.key === 'personal')) initTopbarSalaryTicker();
                     if (ok.some(t => t.current)) await refresh();
 
                     if (failed.length === 0) {
                         modal.close();
-                        alert(`${ok.map(t => `'${t.name}'`).join(', ')}에 복사했어요. (${date})`);
+                        const when = isEvent && spanDays > 1 ? `${date} ~ ${addDaysYmd(date, spanDays - 1)}` : date;
+                        alert(`${ok.map(t => `'${t.name}'`).join(', ')}에 복사했어요. (${when})`);
                         return;
                     }
                     btn.disabled = false;
@@ -939,6 +971,12 @@ export default function LedgerPage(options = {}) {
                     });
                     $('dayTxList').querySelectorAll('button[data-edit-event]').forEach(btn => {
                         btn.onclick = () => startEditEvent(Number(btn.dataset.editEvent));
+                    });
+                    $('dayTxList').querySelectorAll('button[data-copy-event]').forEach(btn => {
+                        btn.onclick = () => {
+                            const ev = (state.eventsByDate[state.selectedDate] || []).find(e => e.id === Number(btn.dataset.copyEvent));
+                            if (ev) openCopyModal(ev, 'event');
+                        };
                     });
                     return;
                 }
