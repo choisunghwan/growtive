@@ -61,10 +61,10 @@ export default function AboutPage() {
           <div class="card about-feature">
             <div class="about-feature-text">
               <h3>🧾 자산 내역</h3>
-              <p>한 달 내역을 날짜별로 모아서 보고, 전체 / 수입 / 지출만 골라볼 수 있어요. [검색]에서 기간(전체·연별·월별·주별·직접 입력), 카테고리, 메모 내용으로 찾고 결과 합계까지 바로 확인하세요.</p>
+              <p>한 달 내역을 날짜별로 한 줄씩 모아서 보고(줄을 누르면 수정·삭제), 전체 / 수입 / 지출만 골라볼 수 있어요. [검색]에서 기간(전체·연별·월별·주별·직접 입력), 카테고리, 메모 내용으로 찾고 결과 합계까지 바로 확인하세요.</p>
               <p>자주 보는 기간은 📌 핀으로 고정해두면 다음에 들어올 때 그 기간으로 바로 열립니다. (어느 기기에서든 그대로)</p>
             </div>
-            <img src="/assets/img/intro/intro-history.png" alt="자산 내역 화면" class="about-feature-img">
+            <img src="/assets/img/intro/intro-history.png?v=2" alt="자산 내역 화면" class="about-feature-img">
           </div>
 
           <div class="card about-feature">
