@@ -719,9 +719,18 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
     border-bottom: 1px solid var(--border);
 }
 .history-day-totals {
-    justify-content: flex-end;
+    flex-direction: column;     /* 합계 줄 아래에 수입·지출 줄 */
+    align-items: flex-end;
+    gap: 6px;
     padding: 10px 14px;
     background: var(--bg);
+}
+.history-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.history-chip-row:empty { display: none; }
+.history-result-total .ledger-day-totals {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
 }
 
 .history-page a.btn-xs { display: inline-flex; align-items: center; text-decoration: none; }
@@ -729,7 +738,8 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
 @media (max-width: 768px) {
     .history-sum-value { font-size: clamp(13px, 3.9vw, 15px); }
     #historyList { gap: 10px; }
-    .history-day-totals { justify-content: flex-start; }
+    .history-day-totals,
+    .history-result-total .ledger-day-totals { align-items: flex-start; }
 }
 
 /* ----- 내역: 기간 표시 + 검색 버튼 ----- */
