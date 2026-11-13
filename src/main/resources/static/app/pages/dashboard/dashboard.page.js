@@ -15,22 +15,19 @@ export default function DashboardPage() {
 
           <div class="card">
             <h1 class="title">자산 흐름</h1>
-            <p class="subtitle">이번 달 돈이 어디로 흘러가는지 확인하세요</p>
+            <p class="subtitle">이번 달 나의 자산 흐름을 확인해보세요</p>
 
             <div style="display:flex; align-items:center; gap:10px; margin-top:16px; flex-wrap:wrap;">
-              <button id="prevMonthBtn" type="button">◀ 이전 달</button>
+              <button id="prevMonthBtn" class="ledger-nav-btn" type="button" aria-label="이전 달">◀</button>
               <div id="currentMonthLabel" style="font-weight:700; font-size:16px;"></div>
-              <button id="nextMonthBtn" type="button">다음 달 ▶</button>
-              <button id="goCurrentMonthBtn" type="button">현재 월로</button>
+              <button id="nextMonthBtn" class="ledger-nav-btn" type="button" aria-label="다음 달">▶</button>
+              <button id="goCurrentMonthBtn" type="button">이번달</button>
             </div>
           </div>
 
           <!-- 🔥 월급 흐름 -->
           <div class="card" style="margin-top:20px;">
             <h3>월급 흐름</h3>
-            <div style="font-size:13px; opacity:0.75; margin-top:6px;">
-              가계부에 기록한 수입/지출을 기반으로 이번 달 돈의 흐름을 보여줍니다.
-            </div>
             <div class="chart-wrapper sankey-scroll" style="margin-top:12px;">
               <div class="sankey-scroll-inner">
                 <canvas id="sankeyChart"></canvas>
