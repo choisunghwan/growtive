@@ -1,3 +1,4 @@
+import { escapeHtml } from '../../ui/modal.js';
 import authStore from '../../store/authStore.js';
 
 function fmtDateTime(v) {
@@ -26,6 +27,7 @@ export default function AdminMembersPage() {
                                     <th>ID</th>
                                     <th>아이디</th>
                                     <th>이름</th>
+                                    <th>닉네임</th>
                                     <th>이메일</th>
                                     <th>권한</th>
                                     <th>최근 접속</th>
@@ -52,9 +54,10 @@ export default function AdminMembersPage() {
                     return `
                         <tr data-id="${u.id}">
                             <td data-label="ID">${u.id}</td>
-                            <td data-label="아이디">${u.username}</td>
-                            <td data-label="이름"><input type="text" class="edit-display-name" value="${u.displayName}"></td>
-                            <td data-label="이메일"><input type="text" class="edit-email" value="${u.email}"></td>
+                            <td data-label="아이디">${escapeHtml(u.username)}</td>
+                            <td data-label="이름"><input type="text" class="edit-display-name" value="${escapeHtml(u.displayName)}"></td>
+                            <td data-label="닉네임">${escapeHtml(u.nickname || '-')}</td>
+                            <td data-label="이메일"><input type="text" class="edit-email" value="${escapeHtml(u.email)}"></td>
                             <td data-label="권한">${u.role === 'ADMIN' ? '<span class="admin-role-badge">ADMIN</span>' : '<span class="user-role-badge">USER</span>'}</td>
                             <td data-label="최근 접속">${fmtDateTime(u.lastLoginAt)}</td>
                             <td data-label="가입일">${fmtDateTime(u.createdAt)}</td>
@@ -68,9 +71,10 @@ export default function AdminMembersPage() {
                 return `
                     <tr data-id="${u.id}">
                         <td data-label="ID">${u.id}</td>
-                        <td data-label="아이디">${u.username}</td>
-                        <td data-label="이름">${u.displayName}</td>
-                        <td data-label="이메일">${u.email}</td>
+                        <td data-label="아이디">${escapeHtml(u.username)}</td>
+                        <td data-label="이름">${escapeHtml(u.displayName)}</td>
+                        <td data-label="닉네임">${escapeHtml(u.nickname || '-')}</td>
+                        <td data-label="이메일">${escapeHtml(u.email)}</td>
                         <td data-label="권한">${u.role === 'ADMIN' ? '<span class="admin-role-badge">ADMIN</span>' : '<span class="user-role-badge">USER</span>'}</td>
                         <td data-label="최근 접속">${fmtDateTime(u.lastLoginAt)}</td>
                         <td data-label="가입일">${fmtDateTime(u.createdAt)}</td>
@@ -83,7 +87,7 @@ export default function AdminMembersPage() {
 
             function renderTable() {
                 if (members.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="8">등록된 회원이 없습니다.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="9">등록된 회원이 없습니다.</td></tr>`;
                     return;
                 }
                 tbody.innerHTML = members.map(renderRow).join('');

@@ -16,6 +16,9 @@ public class User {
     private String password;
 
     private String displayName;
+
+    /** 다른 사람에게 보이는 이름. 없으면(NULL) displayName을 대신 보여준다 */
+    private String nickname;
     private String email;
 
     private String provider;

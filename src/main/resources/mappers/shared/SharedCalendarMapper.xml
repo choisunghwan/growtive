@@ -25,14 +25,14 @@
     </select>
 
     <select id="findInvitableFriends" resultType="com.growtive.shared.dto.InvitableFriendDto">
-        SELECT u.id AS user_id, u.username, u.display_name
+        SELECT u.id AS user_id, u.username, COALESCE(NULLIF(u.nickname, ''), u.display_name) AS display_name
         FROM friend_connection fc
         JOIN users u ON u.id = CASE WHEN fc.requester_id = #{userId} THEN fc.addressee_id ELSE fc.requester_id END
         WHERE fc.status = 'ACCEPTED'
           AND (fc.requester_id = #{userId} OR fc.addressee_id = #{userId})
           AND NOT EXISTS (SELECT 1 FROM shared_calendar_member m
                           WHERE m.calendar_id = #{calendarId} AND m.user_id = u.id)
-        ORDER BY u.display_name
+        ORDER BY display_name
     </select>
 
     <update id="updateOwner">
@@ -59,7 +59,7 @@
     </select>
 
     <sql id="calendarColumns">
-        c.id, c.name, c.owner_id, ou.display_name AS owner_display_name,
+        c.id, c.name, c.owner_id, COALESCE(NULLIF(ou.nickname, ''), ou.display_name) AS owner_display_name,
         (c.owner_id = #{userId}) AS owner,
         (SELECT COUNT(*) FROM shared_calendar_member m2
           WHERE m2.calendar_id = c.id AND m2.status = 'ACCEPTED') AS member_count,
@@ -83,7 +83,7 @@
 
     <select id="findPendingInvitations" resultType="com.growtive.shared.dto.SharedCalendarInvitationDto">
         SELECT c.id AS calendar_id, c.name AS calendar_name,
-               iu.display_name AS invited_by_display_name, m.created_at
+               COALESCE(NULLIF(iu.nickname, ''), iu.display_name) AS invited_by_display_name, m.created_at
         FROM shared_calendar_member m
         JOIN shared_calendar c ON c.id = m.calendar_id
         LEFT JOIN users iu ON iu.id = m.invited_by
@@ -101,7 +101,7 @@
     </delete>
 
     <select id="findMembers" resultType="com.growtive.shared.dto.SharedCalendarMemberDto">
-        SELECT u.id AS user_id, u.username, u.display_name, m.status,
+        SELECT u.id AS user_id, u.username, COALESCE(NULLIF(u.nickname, ''), u.display_name) AS display_name, m.status,
                (c.owner_id = u.id) AS owner, m.invited_by, m.joined_at
         FROM shared_calendar_member m
         JOIN shared_calendar c ON c.id = m.calendar_id

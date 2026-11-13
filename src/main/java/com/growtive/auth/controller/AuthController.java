@@ -49,6 +49,7 @@ public class AuthController {
         session.setAttribute("userId", user.getId());
         session.setAttribute("username", user.getUsername());
         session.setAttribute("displayName", user.getDisplayName());
+        session.setAttribute("nickname", user.getNickname());
         session.setAttribute("role", user.getRole());
         session.setAttribute("provider", user.getProvider());
 
@@ -72,7 +73,8 @@ public class AuthController {
                 user.getUsername(),
                 user.getDisplayName(),
                 user.getRole(),
-                user.getProvider()
+                user.getProvider(),
+                user.getNickname()
         );
     }
 
@@ -90,6 +92,7 @@ public class AuthController {
         String displayName = (String) session.getAttribute("displayName");
         String role = (String) session.getAttribute("role");
         String provider = (String) session.getAttribute("provider");
+        String nickname = (String) session.getAttribute("nickname");
 
         if (userId == null) {
             throw new UnauthorizedException("로그인이 필요합니다.");
@@ -100,7 +103,8 @@ public class AuthController {
                 username,
                 displayName,
                 role,
-                provider
+                provider,
+                nickname
         );
     }
 
@@ -155,8 +159,43 @@ public class AuthController {
                 request.getUsername(),
                 request.getPassword(),
                 request.getDisplayName(),
+                request.getNickname(),
                 request.getEmail()
         );
 
+    }
+
+    /**
+     * 닉네임 사용 가능 여부 (회원가입 화면·마이페이지에서 입력하면서 확인)
+     * 로그인 상태면 내 현재 닉네임은 중복으로 보지 않음
+     */
+    @GetMapping("/nickname/available")
+    public Map<String, Object> nicknameAvailable(@RequestParam String nickname, HttpSession session) {
+        String clean;
+        try {
+            clean = authService.normalizeNickname(nickname);
+        } catch (com.growtive.common.exception.BadRequestException e) {
+            return Map.of("available", false, "message", e.getMessage());
+        }
+        Long userId = (Long) session.getAttribute("userId");
+        boolean available = authService.isNicknameAvailable(clean, userId);
+        return Map.of("available", available, "message", available ? "사용할 수 있는 닉네임이에요." : "이미 사용 중인 닉네임이에요.");
+    }
+
+    /** 내 닉네임 변경 (마이페이지) */
+    @PutMapping("/nickname")
+    public UserResponseDto updateNickname(@RequestBody Map<String, String> body, HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) throw new UnauthorizedException("로그인이 필요합니다.");
+        String saved = authService.updateNickname(userId, body.get("nickname"));
+        session.setAttribute("nickname", saved);
+        return new UserResponseDto(
+                userId,
+                (String) session.getAttribute("username"),
+                (String) session.getAttribute("displayName"),
+                (String) session.getAttribute("role"),
+                (String) session.getAttribute("provider"),
+                saved
+        );
     }
 }

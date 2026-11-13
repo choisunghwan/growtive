@@ -81,6 +81,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         session.setAttribute("userId", user.getId());
         session.setAttribute("username", user.getUsername());
         session.setAttribute("displayName", user.getDisplayName());
+        session.setAttribute("nickname", user.getNickname());
         session.setAttribute("role", user.getRole());
         session.setAttribute("provider", user.getProvider());
 

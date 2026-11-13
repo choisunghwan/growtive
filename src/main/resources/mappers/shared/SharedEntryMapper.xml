@@ -23,7 +23,7 @@
 
     <sql id="txColumns">
         t.id, t.transaction_date, t.type, t.category, t.amount, t.memo, t.is_recurring, t.recurring_origin_id, t.sort_order,
-        t.author_id, u.display_name AS author_display_name
+        t.author_id, COALESCE(NULLIF(u.nickname, ''), u.display_name) AS author_display_name
     </sql>
 
     <select id="findTransactionsByMonth" resultMap="TxMap">
@@ -109,7 +109,7 @@
 
     <sql id="eventColumns">
         e.id, e.start_date, e.end_date, e.event_time, e.title, e.memo, e.color_tag,
-        e.author_id, u.display_name AS author_display_name
+        e.author_id, COALESCE(NULLIF(u.nickname, ''), u.display_name) AS author_display_name
     </sql>
 
     <select id="findEventsOverlapping" resultMap="EventMap">

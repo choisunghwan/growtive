@@ -34,7 +34,10 @@ export function setupAxios() {
             // 세션이 중간에 끊긴 상태로 API를 호출하면(401), 로컬 로그인 상태를 지우고
             // 로그인 화면으로 보낸다. 로그인 화면 자체의 실패(예: 비밀번호 틀림)까지
             // 리다이렉트하면 안 되니 로그인 화면에 있을 때는 건드리지 않는다.
-            if (err.response && err.response.status === 401 && !location.hash.startsWith('#/login')) {
+            // 로그인 없이 볼 수 있는 화면(회원가입·서비스 소개)과, 앱 시작 때의 로그인 여부 확인(/api/auth/me)은 제외
+            const publicPage = ['#/login', '#/register', '#/about'].some(h => location.hash.startsWith(h));
+            const isLoginCheck = (err.config?.url || '').includes('/api/auth/me');
+            if (err.response && err.response.status === 401 && !publicPage && !isLoginCheck) {
                 authStore.clear();
                 location.hash = '#/login';
             }

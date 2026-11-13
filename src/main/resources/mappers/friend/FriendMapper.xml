@@ -12,22 +12,22 @@
     </resultMap>
 
     <select id="findUserBasicByUsername" resultMap="UserBasicMap">
-        SELECT id, username, display_name
+        SELECT id, username, COALESCE(NULLIF(nickname, ''), display_name) AS display_name
         FROM users
         WHERE username = #{username}
     </select>
 
     <select id="searchUsers" resultMap="UserBasicMap">
-        SELECT id, username, display_name
+        SELECT id, username, COALESCE(NULLIF(nickname, ''), display_name) AS display_name
         FROM users
-        WHERE (username LIKE CONCAT('%', #{query}, '%') OR display_name LIKE CONCAT('%', #{query}, '%'))
+        WHERE (username LIKE CONCAT('%', #{query}, '%') OR COALESCE(NULLIF(nickname, ''), display_name) LIKE CONCAT('%', #{query}, '%'))
           AND id != #{excludeUserId}
         ORDER BY display_name
         LIMIT 20
     </select>
 
     <select id="findUserBasicById" resultMap="UserBasicMap">
-        SELECT id, username, display_name
+        SELECT id, username, COALESCE(NULLIF(nickname, ''), display_name) AS display_name
         FROM users
         WHERE id = #{id}
     </select>
@@ -87,7 +87,7 @@
 
     <select id="findIncoming" resultMap="ConnectionDtoMap">
         SELECT fc.id, u.id AS other_user_id, u.username AS other_username,
-               u.display_name AS other_display_name, fc.status,
+               COALESCE(NULLIF(u.nickname, ''), u.display_name) AS other_display_name, fc.status,
                NULL AS my_shares_from, NULL AS my_shares_until,
                NULL AS friend_shares_from, NULL AS friend_shares_until,
                FALSE AS comparison_available, fc.created_at
@@ -99,7 +99,7 @@
 
     <select id="findOutgoing" resultMap="ConnectionDtoMap">
         SELECT fc.id, u.id AS other_user_id, u.username AS other_username,
-               u.display_name AS other_display_name, fc.status,
+               COALESCE(NULLIF(u.nickname, ''), u.display_name) AS other_display_name, fc.status,
                NULL AS my_shares_from, NULL AS my_shares_until,
                NULL AS friend_shares_from, NULL AS friend_shares_until,
                FALSE AS comparison_available, fc.created_at
@@ -113,7 +113,7 @@
         SELECT fc.id,
                CASE WHEN fc.requester_id = #{userId} THEN u2.id ELSE u1.id END AS other_user_id,
                CASE WHEN fc.requester_id = #{userId} THEN u2.username ELSE u1.username END AS other_username,
-               CASE WHEN fc.requester_id = #{userId} THEN u2.display_name ELSE u1.display_name END AS other_display_name,
+               CASE WHEN fc.requester_id = #{userId} THEN COALESCE(NULLIF(u2.nickname, ''), u2.display_name) ELSE COALESCE(NULLIF(u1.nickname, ''), u1.display_name) END AS other_display_name,
                fc.status,
                CASE WHEN fc.requester_id = #{userId} THEN fc.requester_shares_from ELSE fc.addressee_shares_from END AS my_shares_from,
                CASE WHEN fc.requester_id = #{userId} THEN fc.requester_shares_until ELSE fc.addressee_shares_until END AS my_shares_until,

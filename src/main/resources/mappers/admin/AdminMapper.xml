@@ -9,6 +9,7 @@
         <id     column="id"            property="id"/>
         <result column="username"      property="username"/>
         <result column="display_name"  property="displayName"/>
+        <result column="nickname"      property="nickname"/>
         <result column="email"         property="email"/>
         <result column="role"          property="role"/>
         <result column="last_login_at" property="lastLoginAt"/>
@@ -17,13 +18,13 @@
 
     <!-- password는 절대 조회하지 않음 -->
     <select id="findAllUsers" resultMap="AdminUserMap">
-        SELECT id, username, display_name, email, role, last_login_at, created_at
+        SELECT id, username, display_name, nickname, email, role, last_login_at, created_at
         FROM users
         ORDER BY created_at DESC
     </select>
 
     <select id="findUserById" resultMap="AdminUserMap">
-        SELECT id, username, display_name, email, role, last_login_at, created_at
+        SELECT id, username, display_name, nickname, email, role, last_login_at, created_at
         FROM users
         WHERE id = #{id}
     </select>

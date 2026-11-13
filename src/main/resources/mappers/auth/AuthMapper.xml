@@ -53,6 +53,7 @@
             username,
             password,
             display_name,
+            nickname,
             email,
             provider,
             provider_id
@@ -61,6 +62,7 @@
                    #{username},
                    #{password},
                    #{displayName},
+                   #{nickname},
                    #{email},
                    #{provider},
                    #{providerId}
@@ -70,6 +72,18 @@
 
     <update id="updateLastLogin">
         UPDATE users SET last_login_at = NOW() WHERE id = #{userId}
+    </update>
+
+    <!-- 닉네임 중복 확인: 다른 사람의 닉네임, 또는 닉네임이 없는 사람의 이름(그 사람에게 보이는 이름)과 같으면 사용 불가 -->
+    <select id="countNicknameTaken" resultType="int">
+        SELECT COUNT(*) FROM users
+        WHERE id &lt;&gt; #{exceptUserId}
+          AND (nickname = #{nickname}
+               OR ((nickname IS NULL OR nickname = '') AND display_name = #{nickname}))
+    </select>
+
+    <update id="updateNickname">
+        UPDATE users SET nickname = #{nickname} WHERE id = #{userId}
     </update>
 
 </mapper>

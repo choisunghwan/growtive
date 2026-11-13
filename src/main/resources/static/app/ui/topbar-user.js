@@ -43,6 +43,7 @@ export function renderUserPanel() {
 
     const nameEl = document.getElementById('sidebarUserName');
     if (nameEl && authStore.user) {
-        nameEl.textContent = `${authStore.user.displayName}님`;
+        // 다른 사람에게 보이는 이름(닉네임)으로 표시, 아직 닉네임이 없으면 이름
+        nameEl.textContent = `${authStore.user.nickname || authStore.user.displayName}님`;
     }
 }

@@ -29,4 +29,7 @@ public class UserResponseDto {
 
     private String provider;
 
+    /** 닉네임 (없으면 null → 화면에서는 displayName을 대신 사용) */
+    private String nickname;
+
 }

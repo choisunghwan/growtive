@@ -33,4 +33,10 @@ public interface AuthMapper {
     /*로그인 성공 시 최근 접속 시각 갱신*/
     void updateLastLogin(@Param("userId") Long userId);
 
+
+    int countNicknameTaken(@org.apache.ibatis.annotations.Param("nickname") String nickname,
+                           @org.apache.ibatis.annotations.Param("exceptUserId") Long exceptUserId);
+
+    int updateNickname(@org.apache.ibatis.annotations.Param("userId") Long userId,
+                       @org.apache.ibatis.annotations.Param("nickname") String nickname);
 }

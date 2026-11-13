@@ -24,12 +24,19 @@ public class AuthServiceImpl implements AuthService {
     public void register(String username,
                          String password,
                          String displayName,
+                         String nickname,
                          String email) {
 
         User existUser = authMapper.findByUsername(username);
 
         if (existUser != null) {
             throw new BadRequestException("이미 존재하는 아이디입니다.");
+        }
+
+        // 새로 가입하는 사람은 닉네임 필수 (다른 사람에게는 실명 대신 닉네임이 보임)
+        String cleanNickname = normalizeNickname(nickname);
+        if (!isNicknameAvailable(cleanNickname, -1L)) {
+            throw new BadRequestException("이미 사용 중인 닉네임입니다.");
         }
 
         // 🔐 BCrypt 암호화
@@ -40,9 +47,51 @@ public class AuthServiceImpl implements AuthService {
         user.setUsername(username);
         user.setPassword(encodedPassword);   // 🔐 암호화된 비밀번호 저장
         user.setDisplayName(displayName);
+        user.setNickname(cleanNickname);
         user.setEmail(email);
 
-        authMapper.insertUser(user);
+        try {
+            authMapper.insertUser(user);
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            throw new BadRequestException("이미 사용 중인 닉네임입니다.");
+        }
+    }
+
+    /* ======================= 닉네임 ======================= */
+
+    private static final int NICKNAME_MIN = 2;
+    private static final int NICKNAME_MAX = 12;
+
+    @Override
+    public String normalizeNickname(String nickname) {
+        String n = nickname == null ? "" : nickname.strip().replaceAll("\\s+", " ");
+        int len = n.codePointCount(0, n.length());
+        if (len < NICKNAME_MIN || len > NICKNAME_MAX) {
+            throw new BadRequestException("닉네임은 " + NICKNAME_MIN + "~" + NICKNAME_MAX + "자로 입력해주세요.");
+        }
+        if (n.chars().anyMatch(c -> Character.isISOControl(c) || "<>\"'&\\`".indexOf(c) >= 0)) {
+            throw new BadRequestException("닉네임에는 < > \" ' & \\ ` 문자를 쓸 수 없습니다.");
+        }
+        return n;
+    }
+
+    @Override
+    public boolean isNicknameAvailable(String nickname, Long exceptUserId) {
+        return authMapper.countNicknameTaken(nickname, exceptUserId == null ? -1L : exceptUserId) == 0;
+    }
+
+    @Override
+    public String updateNickname(Long userId, String nickname) {
+        String clean = normalizeNickname(nickname);
+        if (!isNicknameAvailable(clean, userId)) {
+            throw new BadRequestException("이미 사용 중인 닉네임입니다.");
+        }
+        try {
+            authMapper.updateNickname(userId, clean);
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            throw new BadRequestException("이미 사용 중인 닉네임입니다.");
+        }
+        return clean;
     }
 
     /**

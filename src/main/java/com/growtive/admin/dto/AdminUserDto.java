@@ -10,6 +10,7 @@ public class AdminUserDto {
     private Long id;
     private String username;
     private String displayName;
+    private String nickname;
     private String email;
     private String role;
     private LocalDateTime lastLoginAt;
