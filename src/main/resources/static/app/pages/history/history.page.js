@@ -8,11 +8,13 @@
  * - [검색] 모달: 기간(단위 선택 모달) / 카테고리(체크박스 모달) / 내용(메모 LIKE 검색)
  * - 본문: 날짜별 박스 하나(최근 날짜가 위) 안에 날짜 → 그날 내역 목록 → 그날 합계
  * - 수정: 가계부 캘린더의 해당 날짜로 이동해서 수정 폼을 바로 열어줌 / 삭제: 이 화면에서 바로 삭제
+ * - 기간 선택 모달의 📌 핀: 고정한 기간이 내역 메뉴 진입 시 기본 기간 (없으면 이번 달)
  * 일정(schedule)은 보여주지 않는다. 데이터는 /api/money/ledger/search 를 사용.
  */
 
 import { categoryIcon } from '../ledger/ledger.page.js';
 import { initTopbarSalaryTicker } from '../../ui/salary-ticker.js';
+import authStore from '../../store/authStore.js';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -89,6 +91,32 @@ function customRangeLabel(from, to) {
     const sameYear = from.slice(0, 4) === to.slice(0, 4);
     return `${dotDate(from)} ~ ${dotDate(to, !sameYear)}`;
 }
+/* ---------------- 📌 기본 기간 핀 (사용자별, 이 브라우저에 저장) ---------------- */
+
+const PIN_KEY_PREFIX = 'growtive-history-pin:';
+function pinKey() { return PIN_KEY_PREFIX + (authStore.getUserId?.() ?? 'guest'); }
+
+/** 저장된 핀: { unit } 또는 사용자 입력이면 { unit: 'CUSTOM', from, to }. 없거나 잘못됐으면 null */
+function loadPin() {
+    try {
+        const pin = JSON.parse(localStorage.getItem(pinKey()) || 'null');
+        if (!pin || !UNITS.some(u => u.key === pin.unit)) return null;
+        if (pin.unit === 'CUSTOM' && !(DATE_RE.test(pin.from) && DATE_RE.test(pin.to) && pin.from <= pin.to)) return null;
+        return pin;
+    } catch {
+        return null;
+    }
+}
+
+function savePin(pin) {
+    try {
+        if (pin) localStorage.setItem(pinKey(), JSON.stringify(pin));
+        else localStorage.removeItem(pinKey());
+    } catch { /* 저장 못 해도 이번 화면 동작엔 지장 없음 */ }
+}
+
+const ICON_PIN = `<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path class="pin-shape" d="M9 3h6l-1 5 3 3v2h-4v6l-1 2-1-2v-6H7v-2l3-3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
+
 function daysBetween(from, to) {
     return Math.round((new Date(to + 'T00:00:00') - new Date(from + 'T00:00:00')) / 86400000) + 1;
 }
@@ -167,6 +195,16 @@ export default function HistoryPage() {
         usedCategories: null,          // 검색 모달용 (처음 열 때 한 번 불러옴)
     };
     let requestSeq = 0;                // 빠르게 ◀▶를 눌렀을 때 늦게 온 예전 응답 무시용
+
+    // 📌 고정한 기간이 있으면 그 기간으로 시작 (전체/연별/주별은 오늘 기준, 사용자 입력은 저장한 날짜)
+    const startPin = loadPin();
+    if (startPin) {
+        state.unit = startPin.unit;
+        if (startPin.unit === 'CUSTOM') {
+            state.customFrom = startPin.from;
+            state.customTo = startPin.to;
+        }
+    }
 
     /* ---------------- 기간 ---------------- */
 
@@ -569,12 +607,17 @@ export default function HistoryPage() {
                     bodyHtml: `
                         <div class="history-option-list">
                             ${UNITS.map(u => `
-                                <button type="button" class="history-option${u.key === current ? ' is-selected' : ''}" data-unit="${u.key}"
-                                        ${u.key === 'CUSTOM' ? `aria-expanded="${current === 'CUSTOM'}" aria-controls="customRangeForm"` : ''}>
-                                    <span class="history-option-label">${u.label}</span>
-                                    <span class="history-option-desc">${u.desc}</span>
-                                </button>`).join('')}
+                                <div class="history-option-row">
+                                    <button type="button" class="history-option${u.key === current ? ' is-selected' : ''}" data-unit="${u.key}"
+                                            ${u.key === 'CUSTOM' ? `aria-expanded="${current === 'CUSTOM'}" aria-controls="customRangeForm"` : ''}>
+                                        <span class="history-option-label">${u.label}</span>
+                                        <span class="history-option-desc" data-desc="${u.key}">${u.desc}</span>
+                                    </button>
+                                    <button type="button" class="history-pin-btn" data-pin="${u.key}" aria-pressed="false"
+                                            title="내역 메뉴를 열 때 이 기간으로 보기">${ICON_PIN}</button>
+                                </div>`).join('')}
                         </div>
+                        <p class="history-pin-help">📌 핀을 꽂은 기간이 내역 메뉴를 열 때 기본으로 보여요. (없으면 이번 달)</p>
                         <div class="history-custom-range" id="customRangeForm"${current === 'CUSTOM' ? '' : ' hidden'}>
                             <div class="history-custom-fields">
                                 <label class="history-custom-field">
@@ -594,6 +637,57 @@ export default function HistoryPage() {
                 const root = modal.el;
                 const form = root.querySelector('#customRangeForm');
                 const customBtn = root.querySelector('[data-unit="CUSTOM"]');
+
+                /* 📌 핀: 한 번에 하나만. 같은 핀을 다시 누르면 해제 */
+                function renderPins() {
+                    const pin = loadPin();
+                    root.querySelectorAll('[data-pin]').forEach(btn => {
+                        const on = pin?.unit === btn.dataset.pin;
+                        btn.classList.toggle('is-pinned', on);
+                        btn.setAttribute('aria-pressed', String(on));
+                        const label = UNITS.find(u => u.key === btn.dataset.pin).label;
+                        btn.setAttribute('aria-label', on ? `${label} 기본 기간 고정 해제` : `${label}을(를) 기본 기간으로 고정`);
+                    });
+                    // 사용자 입력에 핀이 있으면 설명 자리에 고정된 날짜 표시
+                    const desc = root.querySelector('[data-desc="CUSTOM"]');
+                    desc.textContent = pin?.unit === 'CUSTOM'
+                        ? `고정: ${customRangeLabel(pin.from, pin.to)}`
+                        : UNITS.find(u => u.key === 'CUSTOM').desc;
+                }
+                renderPins();
+
+                root.querySelectorAll('[data-pin]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const unit = btn.dataset.pin;
+                        const pin = loadPin();
+                        if (unit !== 'CUSTOM') {
+                            savePin(pin?.unit === unit ? null : { unit });
+                            renderPins();
+                            return;
+                        }
+                        // 사용자 입력: 아래 날짜 칸의 기간을 고정 (같은 기간으로 이미 고정돼 있으면 해제)
+                        form.hidden = false;
+                        customBtn.setAttribute('aria-expanded', 'true');
+                        const range = readCustomRange();
+                        if (!range) return;
+                        const same = pin?.unit === 'CUSTOM' && pin.from === range.from && pin.to === range.to;
+                        savePin(same ? null : { unit: 'CUSTOM', ...range });
+                        renderPins();
+                    });
+                });
+
+                /** 날짜 칸 값을 검사해서 {from, to} (잘못되면 오류 문구 띄우고 null) */
+                function readCustomRange() {
+                    const from = root.querySelector('#customFrom').value;
+                    const to = root.querySelector('#customTo').value;
+                    const errorEl = root.querySelector('#customError');
+                    let error = '';
+                    if (!DATE_RE.test(from) || !DATE_RE.test(to)) error = '시작일과 종료일을 모두 입력해주세요.';
+                    else if (from > to) error = '시작일이 종료일보다 늦어요.';
+                    errorEl.textContent = error;
+                    errorEl.hidden = !error;
+                    return error ? null : { from, to };
+                }
 
                 root.querySelectorAll('[data-unit]').forEach(btn => {
                     btn.addEventListener('click', () => {
@@ -616,18 +710,9 @@ export default function HistoryPage() {
                 });
 
                 root.querySelector('#customApplyBtn').addEventListener('click', () => {
-                    const from = root.querySelector('#customFrom').value;
-                    const to = root.querySelector('#customTo').value;
-                    const errorEl = root.querySelector('#customError');
-                    let error = '';
-                    if (!DATE_RE.test(from) || !DATE_RE.test(to)) error = '시작일과 종료일을 모두 입력해주세요.';
-                    else if (from > to) error = '시작일이 종료일보다 늦어요.';
-                    if (error) {
-                        errorEl.textContent = error;
-                        errorEl.hidden = false;
-                        return;
-                    }
-                    onPick('CUSTOM', { from, to });
+                    const range = readCustomRange();
+                    if (!range) return;
+                    onPick('CUSTOM', range);
                     modal.close();
                 });
             }

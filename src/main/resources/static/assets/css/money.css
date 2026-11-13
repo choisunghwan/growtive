@@ -954,3 +954,32 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
     .history-header .ledger-nav-btn { width: 30px; height: 30px; }
     .history-header h2#periodLabel { font-size: clamp(14px, 4.2vw, 16px); }
 }
+
+/* ----- 내역: 기간 선택 📌 핀 ----- */
+.history-option-row { position: relative; }
+.history-option-row .history-option { padding-right: 52px; }
+.history-pin-btn {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+}
+.history-pin-btn:hover { background: var(--bg); color: var(--text); }
+.history-pin-btn .pin-shape { fill: none; }
+.history-pin-btn.is-pinned { color: var(--brand); background: rgba(37, 99, 235, .14); }
+.history-pin-btn.is-pinned:hover { background: rgba(37, 99, 235, .2); color: var(--brand); }
+.history-pin-btn.is-pinned .pin-shape { fill: var(--brand); }
+.history-pin-btn.is-pinned svg { transform: rotate(-20deg); }
+.history-pin-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.history-pin-help { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
