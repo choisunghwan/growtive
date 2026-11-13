@@ -2,7 +2,7 @@
  * 🧾 재무 대시보드 > 내역
  * 한 달 동안 가계부에 입력한 내역을 달력 없이 날짜별로 한데 모아 보여준다.
  * - 상단: ◀ YYYY년 M월 ▶ (가계부 캘린더와 동일) + 이번 달 수입/지출 요약
- * - 본문: 날짜별 그룹(최근 날짜가 위) → 그날 합계 + 그날 내역 목록
+ * - 본문: 날짜별 박스 하나(최근 날짜가 위) 안에 날짜 → 그날 내역 목록 → 그날 합계
  * - 수정: 가계부 캘린더의 해당 날짜로 이동해서 수정 폼을 바로 열어줌
  * - 삭제: 이 화면에서 바로 삭제
  * 일정(schedule)은 보여주지 않는다. 데이터는 캘린더와 같은 /api/money/ledger 를 사용.
@@ -98,11 +98,9 @@ export default function HistoryPage() {
             const dowClass = dow === 0 ? ' is-sunday' : dow === 6 ? ' is-saturday' : '';
             return `
                 <section class="history-day">
-                    <div class="ledger-day-header history-day-header">
-                        <h3 class="history-day-title${dowClass}">${d.getMonth() + 1}월 ${d.getDate()}일 <span>(${WEEKDAYS[dow]})</span></h3>
-                        <div class="ledger-day-totals">${totalsChipsHtml(sumOf(list))}</div>
-                    </div>
-                    <ul class="ledger-tx-list">${list.map(txItemHtml).join('')}</ul>
+                    <h3 class="history-day-title${dowClass}">${d.getMonth() + 1}월 ${d.getDate()}일 <span>(${WEEKDAYS[dow]})</span></h3>
+                    <ul class="ledger-tx-list history-tx-list">${list.map(txItemHtml).join('')}</ul>
+                    <div class="ledger-day-totals history-day-totals">${totalsChipsHtml(sumOf(list))}</div>
                 </section>`;
         }).join('');
     }
