@@ -735,15 +735,15 @@ export default function LedgerPage(options = {}) {
             /* ---------------- 가계부 내역을 다른 캘린더로 복사 ---------------- */
 
             /**
-             * [복사] → 복사할 캘린더(내 캘린더 / 참여 중인 공유 캘린더, 지금 캘린더 제외)를 여러 개 골라
-             * 같은 날짜(바꿀 수 있음)에 같은 내역을 새로 만든다.
+             * [복사] → 복사할 캘린더(지금 캘린더 / 내 캘린더 / 참여 중인 공유 캘린더)를 여러 개 골라
+             * 같은 날짜(바꿀 수 있음)에 같은 내역을 새로 만든다. 지금 캘린더를 고르면 다른 날짜로 복제할 때 유용.
              * - 각 캘린더의 '추가' API를 그대로 쓰므로 공유 캘린더는 서버가 참여자인지 확인
              * - 복사본은 원본과 독립된 새 내역 (반복 항목도 한 건만), 공유 캘린더에서는 작성자 '나'·순서 맨 뒤
              */
             async function openCopyModal(tx) {
                 const sign = tx.type === 'INCOME' ? '+' : '-';
                 const modal = openModal({
-                    title: '다른 캘린더로 복사',
+                    title: '복사',
                     className: 'ledger-copy-modal',
                     bodyHtml: `<div class="hint">불러오는 중…</div>`,
                 });
@@ -752,12 +752,18 @@ export default function LedgerPage(options = {}) {
                 let targets;
                 try {
                     const { data } = await axios.get('/api/shared-calendars');
+                    const personal = { key: 'personal', name: '내 캘린더', sub: '개인 가계부', url: '/api/money/ledger' };
+                    const shared = (data || []).map(c => ({
+                        key: `shared-${c.id}`, name: c.name, sub: `공유 캘린더 · ${c.memberCount}명`,
+                        url: `/api/shared-calendars/${c.id}/ledger`,
+                    }));
+                    // 지금 보고 있는 캘린더를 맨 위에 (같은 캘린더 안 다른 날짜로 복제할 때)
+                    const currentKey = isShared ? `shared-${sharedId}` : 'personal';
+                    const all = [personal, ...shared];
+                    const current = all.find(t => t.key === currentKey) || (isShared ? null : personal);
                     targets = [
-                        ...(isShared ? [{ key: 'personal', name: '내 캘린더', sub: '개인 가계부', url: '/api/money/ledger' }] : []),
-                        ...(data || []).filter(c => c.id !== sharedId).map(c => ({
-                            key: `shared-${c.id}`, name: c.name, sub: `공유 캘린더 · ${c.memberCount}명`,
-                            url: `/api/shared-calendars/${c.id}/ledger`,
-                        })),
+                        ...(current ? [{ ...current, current: true, sub: '지금 캘린더' }] : []),
+                        ...all.filter(t => t.key !== currentKey),
                     ];
                 } catch (err) {
                     body.innerHTML = `<div class="hint">${esc(err.response?.data?.message || '캘린더 목록을 불러오지 못했어요.')}</div>`;
@@ -771,11 +777,6 @@ export default function LedgerPage(options = {}) {
                         <b class="${tx.type === 'INCOME' ? 'is-income' : 'is-expense'}">${sign}${won(tx.amount)}</b>
                     </div>`;
 
-                if (targets.length === 0) {
-                    body.innerHTML = summary + `<p class="hint" style="margin:12px 0 0;">복사할 다른 캘린더가 없어요. 친구와 공유 캘린더를 만들면 복사할 수 있어요.</p>`;
-                    return;
-                }
-
                 body.innerHTML = `
                     ${summary}
                     <label class="history-search-label" for="copyDate" style="display:block;margin:14px 0 6px;">날짜</label>
@@ -785,7 +786,7 @@ export default function LedgerPage(options = {}) {
                         ${targets.map(t => `
                             <li>
                                 <label class="history-category-item">
-                                    <span><b>${esc(t.name)}</b> <span class="hint">${esc(t.sub)}</span></span>
+                                    <span><b>${esc(t.name)}</b> <span class="hint${t.current ? ' ledger-copy-current' : ''}">${esc(t.sub)}</span></span>
                                     <input type="checkbox" value="${t.key}">
                                 </label>
                             </li>`).join('')}
@@ -814,8 +815,9 @@ export default function LedgerPage(options = {}) {
                     const ok = picked.filter((_, i) => results[i].status === 'fulfilled');
                     const failed = picked.filter((_, i) => results[i].status === 'rejected');
 
-                    // 지금 보고 있는 캘린더에 복사한 건 없지만(목록에서 제외), 개인 가계부에 복사했으면 상단 게이지 갱신
+                    // 개인 가계부에 복사했으면 상단 게이지 갱신, 지금 캘린더에 복사했으면 화면 다시 불러오기
                     if (ok.some(t => t.key === 'personal')) initTopbarSalaryTicker();
+                    if (ok.some(t => t.current)) await refresh();
 
                     if (failed.length === 0) {
                         modal.close();
