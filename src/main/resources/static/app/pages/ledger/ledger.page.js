@@ -5,7 +5,7 @@
  */
 
 import { initTopbarSalaryTicker } from '../../ui/salary-ticker.js';
-import { escapeHtml as esc } from '../../ui/modal.js';
+import { escapeHtml as esc, openModal } from '../../ui/modal.js';
 
 const EXPENSE_CATEGORIES = ['식비', '교통', '카페', '쇼핑', '월세', '주거통신', '의료', '문화', '기타'];
 const INCOME_CATEGORIES = ['월급', '부수입', '용돈', '이자/배당', '기타'];
@@ -493,6 +493,7 @@ export default function LedgerPage(options = {}) {
                     <span class="ledger-tx-memo">${authorHtml(tx)}${esc(tx.memo)}</span>
                     <span class="ledger-tx-actions">
                         <button class="btn btn-xs" data-edit="${tx.id}">수정</button>
+                        <button class="btn btn-xs" data-copy="${tx.id}">복사</button>
                         ${isOrigin ? `<button class="btn btn-xs" data-stop="${tx.id}">반복 중지</button>` : ''}
                         <button class="btn btn-xs btn-danger" data-del="${tx.id}">삭제</button>
                     </span>
@@ -731,6 +732,107 @@ export default function LedgerPage(options = {}) {
                 }
             }
 
+            /* ---------------- 가계부 내역을 다른 캘린더로 복사 ---------------- */
+
+            /**
+             * [복사] → 복사할 캘린더(내 캘린더 / 참여 중인 공유 캘린더, 지금 캘린더 제외)를 여러 개 골라
+             * 같은 날짜(바꿀 수 있음)에 같은 내역을 새로 만든다.
+             * - 각 캘린더의 '추가' API를 그대로 쓰므로 공유 캘린더는 서버가 참여자인지 확인
+             * - 복사본은 원본과 독립된 새 내역 (반복 항목도 한 건만), 공유 캘린더에서는 작성자 '나'·순서 맨 뒤
+             */
+            async function openCopyModal(tx) {
+                const sign = tx.type === 'INCOME' ? '+' : '-';
+                const modal = openModal({
+                    title: '다른 캘린더로 복사',
+                    className: 'ledger-copy-modal',
+                    bodyHtml: `<div class="hint">불러오는 중…</div>`,
+                });
+                const body = modal.el.querySelector('.history-modal-body');
+
+                let targets;
+                try {
+                    const { data } = await axios.get('/api/shared-calendars');
+                    targets = [
+                        ...(isShared ? [{ key: 'personal', name: '내 캘린더', sub: '개인 가계부', url: '/api/money/ledger' }] : []),
+                        ...(data || []).filter(c => c.id !== sharedId).map(c => ({
+                            key: `shared-${c.id}`, name: c.name, sub: `공유 캘린더 · ${c.memberCount}명`,
+                            url: `/api/shared-calendars/${c.id}/ledger`,
+                        })),
+                    ];
+                } catch (err) {
+                    body.innerHTML = `<div class="hint">${esc(err.response?.data?.message || '캘린더 목록을 불러오지 못했어요.')}</div>`;
+                    return;
+                }
+                if (!modal.el.isConnected) return;
+
+                const summary = `
+                    <div class="ledger-copy-summary">
+                        <span>${categoryIcon(tx.category)} <b>${esc(tx.category)}</b>${tx.memo ? ` · ${esc(tx.memo)}` : ''}</span>
+                        <b class="${tx.type === 'INCOME' ? 'is-income' : 'is-expense'}">${sign}${won(tx.amount)}</b>
+                    </div>`;
+
+                if (targets.length === 0) {
+                    body.innerHTML = summary + `<p class="hint" style="margin:12px 0 0;">복사할 다른 캘린더가 없어요. 친구와 공유 캘린더를 만들면 복사할 수 있어요.</p>`;
+                    return;
+                }
+
+                body.innerHTML = `
+                    ${summary}
+                    <label class="history-search-label" for="copyDate" style="display:block;margin:14px 0 6px;">날짜</label>
+                    <input type="date" id="copyDate" class="history-search-input" value="${tx.date}" style="width:100%;">
+                    <div class="history-search-label" style="margin:14px 0 6px;">복사할 캘린더 <span class="hint">(여러 개 선택 가능)</span></div>
+                    <ul class="history-category-list">
+                        ${targets.map(t => `
+                            <li>
+                                <label class="history-category-item">
+                                    <span><b>${esc(t.name)}</b> <span class="hint">${esc(t.sub)}</span></span>
+                                    <input type="checkbox" value="${t.key}">
+                                </label>
+                            </li>`).join('')}
+                    </ul>
+                    ${tx.recurring || tx.recurringOriginId ? '<p class="history-modal-help" style="margin:10px 0 0;">🔁 반복 항목은 이 날짜에 한 건만 복사돼요.</p>' : ''}
+                    <p class="history-custom-error" id="copyError" role="alert" hidden></p>
+                    <div class="modal-actions" style="margin-top:16px;">
+                        <button type="button" class="btn btn-ghost" data-modal-close>닫기</button>
+                        <button type="button" class="btn btn-primary" id="copyDoBtn">복사</button>
+                    </div>`;
+                body.querySelector('[data-modal-close]').onclick = () => modal.close();
+                const errorEl = body.querySelector('#copyError');
+                body.querySelectorAll('input').forEach(i => i.addEventListener('change', () => { errorEl.hidden = true; }));
+
+                body.querySelector('#copyDoBtn').onclick = async () => {
+                    const date = body.querySelector('#copyDate').value;
+                    const picked = [...body.querySelectorAll('input[type=checkbox]:checked')].map(cb => targets.find(t => t.key === cb.value));
+                    const fail = (msg) => { errorEl.textContent = msg; errorEl.hidden = false; };
+                    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail('날짜를 선택해주세요.');
+                    if (picked.length === 0) return fail('복사할 캘린더를 선택해주세요.');
+
+                    const btn = body.querySelector('#copyDoBtn');
+                    btn.disabled = true;
+                    const payload = { date, type: tx.type, category: tx.category, amount: tx.amount, memo: tx.memo || '', recurring: false, hidden: false };
+                    const results = await Promise.allSettled(picked.map(t => axios.post(t.url, payload)));
+                    const ok = picked.filter((_, i) => results[i].status === 'fulfilled');
+                    const failed = picked.filter((_, i) => results[i].status === 'rejected');
+
+                    // 지금 보고 있는 캘린더에 복사한 건 없지만(목록에서 제외), 개인 가계부에 복사했으면 상단 게이지 갱신
+                    if (ok.some(t => t.key === 'personal')) initTopbarSalaryTicker();
+
+                    if (failed.length === 0) {
+                        modal.close();
+                        alert(`${ok.map(t => `'${t.name}'`).join(', ')}에 복사했어요. (${date})`);
+                        return;
+                    }
+                    btn.disabled = false;
+                    const reason = results.find(r => r.status === 'rejected')?.reason?.response?.data?.message;
+                    fail(`${failed.map(t => t.name).join(', ')}에는 복사하지 못했어요.${reason ? ` (${reason})` : ''}`
+                        + (ok.length ? ` ${ok.map(t => t.name).join(', ')}에는 복사됐어요.` : ''));
+                    // 이미 복사된 곳은 다시 복사되지 않도록 체크 해제·잠금
+                    body.querySelectorAll('input[type=checkbox]').forEach(cb => {
+                        if (ok.some(t => t.key === cb.value)) { cb.checked = false; cb.disabled = true; }
+                    });
+                };
+            }
+
             /* ---------------- 공유 가계부: 꾹 눌러 끌어서 순서 바꾸기 ---------------- */
 
             /** 바뀐 순서를 서버에 저장 (모든 멤버에게 같은 순서). 실패하면 다시 불러옴 */
@@ -853,6 +955,12 @@ export default function LedgerPage(options = {}) {
                 });
                 $('dayTxList').querySelectorAll('button[data-edit]').forEach(btn => {
                     btn.onclick = () => startEdit(Number(btn.dataset.edit));
+                });
+                $('dayTxList').querySelectorAll('button[data-copy]').forEach(btn => {
+                    btn.onclick = () => {
+                        const tx = (state.byDate[state.selectedDate] || []).find(t => t.id === Number(btn.dataset.copy));
+                        if (tx) openCopyModal(tx);
+                    };
                 });
                 $('dayTxList').querySelectorAll('button[data-stop]').forEach(btn => {
                     btn.onclick = async () => {

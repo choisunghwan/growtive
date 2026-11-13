@@ -1099,3 +1099,13 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
     box-shadow: 0 10px 24px rgba(37, 99, 235, .22);
     transform: scale(1.02);
 }
+
+/* ----- 가계부 내역 복사 모달 ----- */
+.ledger-copy-summary {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg); font-size: 14px;
+}
+.ledger-copy-summary span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ledger-copy-summary b.is-income, .ledger-copy-summary b.is-expense { flex: none; }
+.history-category-item input:disabled { opacity: .4; }
