@@ -60,11 +60,11 @@ export default function MyPage() {
 
                         <span class="history-search-label payday-label">💵 금액</span>
                         <label class="payday-radio"><input type="radio" name="salaryMode" value="" checked>
-                            <span>설정 안 함 <span class="hint">(가계부의 이번 달 '월급' 내역으로 표시)</span></span></label>
+                            <span>설정 안 함</span></label>
                         <label class="payday-radio"><input type="radio" name="salaryMode" value="FIXED">
-                            <span>고정 금액 <span class="hint">(월급·용돈처럼 매달 받는 돈)</span></span></label>
+                            <span>고정 금액</span></label>
                         <label class="payday-radio"><input type="radio" name="salaryMode" value="BUDGET">
-                            <span>한 달 예산 <span class="hint">(이번 기간에 쓸 한도)</span></span></label>
+                            <span>한 달 예산</span></label>
                         <input type="text" id="salaryAmount" inputmode="numeric" placeholder="예: 300,000" hidden>
 
                         <div class="gauge-auto" id="autoRecordRow" hidden>
