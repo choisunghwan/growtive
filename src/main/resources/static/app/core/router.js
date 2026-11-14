@@ -19,8 +19,6 @@ import AdminMembersPage from '../pages/admin/members.page.js';
 /*친구*/
 import FriendsPage from '../pages/friends/friends.page.js';
 
-/*친구 캘린더 비교*/
-import ComparePage from '../pages/compare/compare.page.js';
 
 /*서비스 소개*/
 import AboutPage from '../pages/about/about.page.js';
@@ -47,7 +45,6 @@ const routes = {
     '#/admin/members': AdminMembersPage,
     /*친구*/
     '#/friends': FriendsPage,
-    '#/compare': ComparePage,
     /*서비스 소개 - 로그인 없이도 볼 수 있음*/
     '#/about': AboutPage,
     /*마이페이지*/
@@ -68,7 +65,6 @@ const authRequiredRoutes = [
     '#/money/dashboard',
     '#/admin/members',
     '#/friends',
-    '#/compare',
     '#/mypage',
     '#/shared',
 ];
@@ -76,6 +72,8 @@ const authRequiredRoutes = [
 export function navigate() {
     const hash = location.hash || '#/login';
     const base = hash.split('?')[0];
+    // 없어진 '친구 캘린더 비교' 주소(예전 즐겨찾기)는 친구 화면으로
+    if (base === '#/compare') { location.replace('#/friends'); return; }
     const Page = routes[base] || NotFound;
 
     const needAuth = authRequiredRoutes.includes(base);

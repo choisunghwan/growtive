@@ -1,10 +1,8 @@
 package com.growtive.friend.controller;
 
 import com.growtive.common.exception.UnauthorizedException;
-import com.growtive.friend.dto.FriendCalendarSummaryDto;
 import com.growtive.friend.dto.FriendConnectionDto;
 import com.growtive.friend.dto.FriendRequestCreateDto;
-import com.growtive.friend.dto.SharesRangeUpdateDto;
 import com.growtive.friend.service.FriendService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -60,18 +58,4 @@ public class FriendController {
         service.remove(getUserId(session), id);
     }
 
-    @PutMapping("/{id}/shares-range")
-    public void setSharesRange(@PathVariable Long id,
-                                @RequestBody SharesRangeUpdateDto request,
-                                HttpSession session) {
-        service.setSharesRange(getUserId(session), id, request.getSharesFrom(), request.getSharesUntil());
-    }
-
-    @GetMapping("/{id}/calendar")
-    public FriendCalendarSummaryDto getCalendar(@PathVariable Long id,
-                                                 @RequestParam int year,
-                                                 @RequestParam int month,
-                                                 HttpSession session) {
-        return service.getFriendCalendar(getUserId(session), id, year, month);
-    }
 }

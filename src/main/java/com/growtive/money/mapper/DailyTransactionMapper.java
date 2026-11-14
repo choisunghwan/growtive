@@ -59,10 +59,4 @@ public interface DailyTransactionMapper {
     /** 가장 이른 반복 원본 날짜 (전체 기간 검색 시 반복 occurrence 보장 시작점) */
     LocalDate findEarliestRecurringOriginDate(@Param("userId") Long userId);
 
-    /** 친구 캘린더 비교용: 숨긴 항목 제외, sinceDate~untilDate 범위 내만 */
-    List<DailyTransactionDto> findVisibleByMonth(@Param("userId") Long userId,
-                                                 @Param("year") int year,
-                                                 @Param("month") int month,
-                                                 @Param("sinceDate") LocalDate sinceDate,
-                                                 @Param("untilDate") LocalDate untilDate);
 }

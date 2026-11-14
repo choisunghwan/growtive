@@ -1,10 +1,8 @@
 package com.growtive.friend.service;
 
-import com.growtive.friend.dto.FriendCalendarSummaryDto;
 import com.growtive.friend.dto.FriendConnectionDto;
 import com.growtive.friend.mapper.UserBasic;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public interface FriendService {
@@ -24,7 +22,5 @@ public interface FriendService {
 
     void remove(Long userId, Long connectionId);
 
-    void setSharesRange(Long userId, Long connectionId, LocalDate sharesFrom, LocalDate sharesUntil);
 
-    FriendCalendarSummaryDto getFriendCalendar(Long viewerId, Long connectionId, int year, int month);
 }

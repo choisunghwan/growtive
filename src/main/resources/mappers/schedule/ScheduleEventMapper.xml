@@ -43,30 +43,12 @@
             event_time = #{dto.time},
             title = #{dto.title},
             memo = #{dto.memo},
-            color_tag = #{dto.colorTag},
-            is_hidden = #{dto.hidden}
+            color_tag = #{dto.colorTag}
         WHERE id = #{id} AND user_id = #{userId}
     </update>
 
     <delete id="delete">
         DELETE FROM schedule_event WHERE id = #{id} AND user_id = #{userId}
     </delete>
-
-    <!-- 친구 캘린더 비교용: 숨긴 항목 제외, sinceDate~untilDate 범위 내만 -->
-    <select id="findVisibleOverlapping" resultMap="ScheduleEventMap">
-        SELECT id, start_date, end_date, event_time, title, memo, color_tag, is_hidden
-        FROM schedule_event
-        WHERE user_id = #{userId}
-          AND start_date &lt;= #{monthEnd}
-          AND end_date &gt;= #{monthStart}
-          AND is_hidden = FALSE
-          <if test="sinceDate != null">
-              AND end_date &gt;= #{sinceDate}
-          </if>
-          <if test="untilDate != null">
-              AND start_date &lt;= #{untilDate}
-          </if>
-        ORDER BY start_date, event_time IS NULL, event_time, id
-    </select>
 
 </mapper>

@@ -130,16 +130,4 @@
         ORDER BY fc.created_at DESC
     </select>
 
-    <update id="updateRequesterSharesRange">
-        UPDATE friend_connection
-        SET requester_shares_from = #{sharesFrom}, requester_shares_until = #{sharesUntil}
-        WHERE id = #{id}
-    </update>
-
-    <update id="updateAddresseeSharesRange">
-        UPDATE friend_connection
-        SET addressee_shares_from = #{sharesFrom}, addressee_shares_until = #{sharesUntil}
-        WHERE id = #{id}
-    </update>
-
 </mapper>

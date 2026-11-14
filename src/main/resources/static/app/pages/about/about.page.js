@@ -69,14 +69,6 @@ export default function AboutPage() {
 
           <div class="card about-feature">
             <div class="about-feature-text">
-              <h3>👫 친구 캘린더 비교</h3>
-              <p>친구를 아이디나 닉네임으로 찾아 연결하고, 서로의 캘린더를 나란히 놓고 비교해보세요. 양쪽이 각자 공유 기간을 지정해야만 비교가 가능해서 사생활은 안전하게 지켜집니다. 항목별로 숨기기도 가능합니다.</p>
-            </div>
-            <img src="/assets/img/intro/intro-compare.png?v=2" alt="친구 캘린더 비교 화면" class="about-feature-img about-feature-img--wide">
-          </div>
-
-          <div class="card about-feature">
-            <div class="about-feature-text">
               <h3>✨ 편의 기능</h3>
               <ul class="about-list">
                 <li><b>📋 복사</b> — 가계부 내역·일정을 [복사] 한 번으로 내 캘린더·공유 캘린더 여러 곳에, 원하는 날짜로 똑같이 만들어요.</li>

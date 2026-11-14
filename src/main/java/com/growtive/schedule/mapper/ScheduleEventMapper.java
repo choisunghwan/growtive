@@ -24,10 +24,4 @@ public interface ScheduleEventMapper {
 
     int delete(@Param("id") Long id, @Param("userId") Long userId);
 
-    /** 친구 캘린더 비교용: 숨긴 항목 제외, sinceDate~untilDate 범위 내만 */
-    List<ScheduleEventDto> findVisibleOverlapping(@Param("userId") Long userId,
-                                                  @Param("monthStart") LocalDate monthStart,
-                                                  @Param("monthEnd") LocalDate monthEnd,
-                                                  @Param("sinceDate") LocalDate sinceDate,
-                                                  @Param("untilDate") LocalDate untilDate);
 }

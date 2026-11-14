@@ -31,7 +31,7 @@ export function authVisualHtml() {
 
                 <h1 class="auth-headline">캘린더 하나로<br>일정과 가계부를 함께</h1>
                 <p class="auth-sub">
-                    실시간 급여 확인부터 친구와의 비교까지,<br>
+                    실시간 급여 확인부터 함께 쓰는 공유 캘린더까지,<br>
                     목표에 맞는 자산 관리를 시작하세요.
                 </p>
 
@@ -64,8 +64,8 @@ export function authVisualHtml() {
                     <div class="auth-feature">
                         <div class="auth-feature-icon">👫</div>
                         <div>
-                            <div class="auth-feature-title">친구와 비교·공유</div>
-                            <div class="auth-feature-desc">친구를 추가하고 서로의 일정과 가계부를 비교해보세요</div>
+                            <div class="auth-feature-title">공유 캘린더</div>
+                            <div class="auth-feature-desc">가족·친구와 가계부와 일정을 함께 써보세요</div>
                         </div>
                     </div>
                 </div>

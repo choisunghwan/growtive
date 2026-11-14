@@ -4,7 +4,6 @@ import com.growtive.friend.dto.FriendConnectionDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Mapper
@@ -39,11 +38,5 @@ public interface FriendMapper {
     /** 수락된 연결 (상대방 = 나 아닌 쪽) */
     List<FriendConnectionDto> findAccepted(@Param("userId") Long userId);
 
-    int updateRequesterSharesRange(@Param("id") Long id,
-                                    @Param("sharesFrom") LocalDate sharesFrom,
-                                    @Param("sharesUntil") LocalDate sharesUntil);
 
-    int updateAddresseeSharesRange(@Param("id") Long id,
-                                    @Param("sharesFrom") LocalDate sharesFrom,
-                                    @Param("sharesUntil") LocalDate sharesUntil);
 }

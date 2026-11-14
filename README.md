@@ -16,10 +16,6 @@
 |:---:|:---:|:---:|
 | ![자산 흐름](src/main/resources/static/assets/img/intro/intro-dashboard.png) | ![자산 내역](src/main/resources/static/assets/img/intro/intro-history.png) | ![복사](src/main/resources/static/assets/img/intro/intro-copy.png) |
 
-| 친구 캘린더 비교 |
-|:---:|
-| ![캘린더 비교](src/main/resources/static/assets/img/intro/intro-compare.png) |
-
 > 스크린샷은 테스트용 가짜 데이터로 찍었습니다.
 
 ## Features
@@ -30,7 +26,7 @@
 - 👨‍👩‍👧 **공유 캘린더** — 가족·연인과 가계부·일정을 함께 쓰는 캘린더. 초대·수락, 작성자 표시, 꾹 눌러 순서 바꾸기, 👑 관리자(멤버 관리·이름 변경·삭제·권한 넘기기), 나가기, 개인 통계와 분리
 - 📈 **자산 흐름** — 흐름(Sankey) 차트로 이번 달 수입 → 지출을 시각화, 총수입·총지출·잔액 요약
 - 🧾 **자산 내역** — 날짜별 한 줄 목록(누르면 수정·삭제), 전체/수입/지출 보기, 검색(기간: 전체·연별·월별·주별·직접 입력 / 카테고리 / 메모), 📌 기본 기간 핀(기기 간 유지)
-- 👫 **친구 캘린더 비교** — 아이디·닉네임으로 친구를 연결하고 캘린더를 비교. 양쪽이 각자 공유 기간을 지정해야만 비교 가능(사생활 보호), 항목별 숨기기 지원
+- 👫 **친구** — 아이디·닉네임으로 친구를 찾아 연결하고, 친구와 바로 공유 캘린더 만들기
 - 📋 **복사** — 가계부 내역·일정을 내 캘린더/공유 캘린더 여러 곳에 원하는 날짜로 복사
 - 🙂 **닉네임** — 다른 사람에게는 실명 대신 닉네임 표시, 마이페이지에서 변경
 - 📲 **홈 화면 설치(PWA)** — 모바일에서 앱처럼 설치해 전체 화면으로 실행
@@ -58,7 +54,7 @@ Page (SPA) → Axios → Spring Controller → Service → MyBatis → MariaDB
 
 - 세션 기반 인증(HttpSession), 카카오 로그인은 Spring Security OAuth2 Client로 연동 후 동일한 세션 체계에 편입
 - 가계부/일정은 `daily_transaction` / `schedule_event` 단일 테이블 기반, 반복 항목은 origin-occurrence 방식으로 자동 생성
-- 친구 비교는 `friend_connection` 테이블의 양방향 공유 기간이 모두 채워졌을 때만 활성화
+- 공유 캘린더는 `shared_calendar` / 멤버 테이블 기반, 친구 연결(`friend_connection`)로 초대
 
 ---
 

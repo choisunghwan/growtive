@@ -115,7 +115,7 @@ function parseAmountInput(el) {
  * @param {object} [options]
  * @param {number} [options.sharedCalendarId] 공유 캘린더 id — 주면 공유 캘린더 모드
  *   (같은 화면을 쓰되 데이터는 /api/shared-calendars/{id}/ledger, /schedule 에서 읽고 쓰며
- *    작성자 이름을 보여주고, 개인 전용 기능(친구에게 숨기기, 상단 급여 게이지 갱신)은 뺀다)
+ *    작성자 이름을 보여주고, 개인 전용 기능(상단 급여 게이지 갱신)은 뺀다)
  */
 export default function LedgerPage(options = {}) {
 
@@ -484,7 +484,7 @@ export default function LedgerPage(options = {}) {
             return `
             <li class="ledger-tx-item" data-id="${tx.id}">
                 <div class="ledger-tx-main">
-                    <span class="ledger-tx-category">${categoryIcon(tx.category)} ${esc(tx.category)}${isRecurringRelated ? ' <span class="ledger-tx-recurring-badge" title="매달 반복">🔁</span>' : ''}${tx.hidden ? ' <span class="ledger-tx-recurring-badge" title="친구에게 숨김">🙈</span>' : ''}</span>
+                    <span class="ledger-tx-category">${categoryIcon(tx.category)} ${esc(tx.category)}${isRecurringRelated ? ' <span class="ledger-tx-recurring-badge" title="매달 반복">🔁</span>' : ''}</span>
                     <span class="ledger-tx-amount ${tx.type === 'INCOME' ? 'is-income' : 'is-expense'}">
                         ${tx.type === 'INCOME' ? '+' : '-'}${won(tx.amount)}
                     </span>
@@ -524,7 +524,7 @@ export default function LedgerPage(options = {}) {
         return `<ul class="ledger-tx-list">${list.map(ev => `
             <li class="ledger-tx-item">
                 <div class="ledger-tx-main">
-                    <span class="ledger-tx-category"><span class="ledger-event-dot" style="background:${colorTagHex(ev.colorTag)}"></span> ${esc(ev.title)}${eventRangeBadge(ev)}${ev.hidden ? ' <span class="ledger-tx-recurring-badge" title="친구에게 숨김">🙈</span>' : ''}</span>
+                    <span class="ledger-tx-category"><span class="ledger-event-dot" style="background:${colorTagHex(ev.colorTag)}"></span> ${esc(ev.title)}${eventRangeBadge(ev)}</span>
                     ${ev.time ? `<span class="ledger-event-time">${ev.time.slice(0, 5)}</span>` : ''}
                 </div>
                 <div class="ledger-tx-sub">
@@ -557,9 +557,6 @@ export default function LedgerPage(options = {}) {
                 <label class="ledger-recurring-label" id="txRecurringLabel">
                     <input type="checkbox" id="txRecurring"> 매달 반복 (월급/월세 등 고정 항목)
                 </label>
-                ${isShared ? '' : `<label class="ledger-recurring-label">
-                    <input type="checkbox" id="txHidden"> 🙈 친구에게 숨기기
-                </label>`}
                 <div class="btn-row">
                     <button type="submit" id="txSubmitBtn" class="btn btn-primary">추가</button>
                     <button type="button" id="txCancelBtn" class="btn btn-ghost" style="display:none;">취소</button>
@@ -583,9 +580,6 @@ export default function LedgerPage(options = {}) {
                 <input id="evtMemo" type="text" placeholder="메모 (선택)">
                 <input type="hidden" id="evtColorTag" value="blue">
                 <div class="ledger-color-picker" id="evtColorPicker">${swatches}</div>
-                ${isShared ? '' : `<label class="ledger-recurring-label">
-                    <input type="checkbox" id="evtHidden"> 🙈 친구에게 숨기기
-                </label>`}
                 <div class="btn-row">
                     <button type="submit" id="evtSubmitBtn" class="btn btn-primary">추가</button>
                     <button type="button" id="evtCancelBtn" class="btn btn-ghost" style="display:none;">취소</button>
@@ -840,8 +834,8 @@ export default function LedgerPage(options = {}) {
                     btn.disabled = true;
                     const payload = isEvent
                         ? { startDate: date, endDate: addDaysYmd(date, spanDays - 1), time: item.time || null,
-                            title: item.title, memo: item.memo || '', colorTag: item.colorTag || 'blue', hidden: false }
-                        : { date, type: tx.type, category: tx.category, amount: tx.amount, memo: tx.memo || '', recurring: false, hidden: false };
+                            title: item.title, memo: item.memo || '', colorTag: item.colorTag || 'blue' }
+                        : { date, type: tx.type, category: tx.category, amount: tx.amount, memo: tx.memo || '', recurring: false };
                     const results = await Promise.allSettled(picked.map(t => axios.post(t.url, payload)));
                     const ok = picked.filter((_, i) => results[i].status === 'fulfilled');
                     const failed = picked.filter((_, i) => results[i].status === 'rejected');
@@ -1067,7 +1061,6 @@ export default function LedgerPage(options = {}) {
 
                 $('txAmount').value = Number(tx.amount).toLocaleString('ko-KR');
                 $('txMemo').value = tx.memo || '';
-                if ($('txHidden')) $('txHidden').checked = !!tx.hidden;
 
                 $('txSubmitBtn').textContent = '수정 완료';
                 $('txCancelBtn').style.display = '';
@@ -1110,8 +1103,7 @@ export default function LedgerPage(options = {}) {
                     }
 
                     const recurring = state.editingId ? state.editingOriginalRecurring : $('txRecurring').checked;
-                    const hidden = $('txHidden')?.checked ?? false;
-                    const payload = { date: state.selectedDate, type, category, amount, memo, recurring, hidden };
+                    const payload = { date: state.selectedDate, type, category, amount, memo, recurring };
 
                     if (state.editingId) {
                         await axios.put(`${API.ledger}/${state.editingId}`, payload);
@@ -1157,7 +1149,6 @@ export default function LedgerPage(options = {}) {
                 $('evtMemo').value = ev.memo || '';
                 $('evtColorTag').value = ev.colorTag || 'blue';
                 updateColorSwatchSelection(ev.colorTag || 'blue');
-                if ($('evtHidden')) $('evtHidden').checked = !!ev.hidden;
 
                 $('evtSubmitBtn').textContent = '수정 완료';
                 $('evtCancelBtn').style.display = '';
@@ -1193,8 +1184,7 @@ export default function LedgerPage(options = {}) {
                     const time = $('evtTime').value || null;
                     const memo = $('evtMemo').value.trim() || null;
                     const colorTag = $('evtColorTag').value || 'blue';
-                    const hidden = $('evtHidden')?.checked ?? false;
-                    const payload = { startDate, endDate, time, title, memo, colorTag, hidden };
+                    const payload = { startDate, endDate, time, title, memo, colorTag };
 
                     if (state.editingEventId) {
                         await axios.put(`${API.schedule}/${state.editingEventId}`, payload);

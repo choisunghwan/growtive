@@ -112,13 +112,6 @@ export default function FriendsPage() {
                 });
             }
 
-            function friendShareStatusText(c) {
-                if (c.friendSharesFrom && c.friendSharesUntil) {
-                    return `${escapeHtml(c.otherDisplayName)}님의 공유 기간: ${c.friendSharesFrom} ~ ${c.friendSharesUntil}`;
-                }
-                return `${escapeHtml(c.otherDisplayName)}님이 아직 공유 기간을 설정하지 않았습니다.`;
-            }
-
             function renderFriends(list) {
                 if (list.length === 0) {
                     $('friendsList').innerHTML = emptyHint('아직 친구가 없습니다.');
@@ -129,21 +122,7 @@ export default function FriendsPage() {
                         <div class="friend-item-row">
                             <span><b>${escapeHtml(c.otherDisplayName)}</b> <span class="hint">(${escapeHtml(c.otherUsername)})</span></span>
                             <span class="ledger-tx-actions">
-                                ${c.comparisonAvailable
-                                    ? `<a class="btn btn-xs btn-primary" href="#/compare?id=${c.id}">캘린더 비교</a>`
-                                    : `<button class="btn btn-xs" disabled title="두 사람 모두 공유 기간을 설정해야 비교할 수 있습니다">캘린더 비교</button>`}
                                 <button class="btn btn-xs" data-create-shared="${c.otherUserId}" data-friend-name="${escapeHtml(c.otherDisplayName)}">공유 캘린더 생성</button>
-                            </span>
-                        </div>
-                        <div class="friend-item-row friend-share-row" style="flex-direction:column; align-items:stretch; gap:8px;">
-                            <span class="hint">${friendShareStatusText(c)}</span>
-                            <span class="friend-share-controls">
-                                <span class="hint">내가 공유할 기간</span>
-                                <input type="date" class="share-from-input" value="${c.mySharesFrom || ''}" data-id="${c.id}">
-                                <span class="hint">~</span>
-                                <input type="date" class="share-until-input" value="${c.mySharesUntil || ''}" data-id="${c.id}">
-                                <button class="btn btn-xs" data-save-share="${c.id}">저장</button>
-                                ${c.mySharesFrom ? `<button class="btn btn-xs btn-danger" data-clear-share="${c.id}">공유 취소</button>` : ''}
                             </span>
                         </div>
                         <div class="friend-item-row friend-unfriend-row">
@@ -158,7 +137,7 @@ export default function FriendsPage() {
 
                 $('friendsList').querySelectorAll('button[data-unfriend]').forEach(btn => {
                     btn.onclick = async () => {
-                        if (!confirm('이 친구를 해제할까요? 공유 설정도 함께 사라집니다.')) return;
+                        if (!confirm('이 친구를 해제할까요?')) return;
                         try {
                             await axios.delete(`/api/friends/${btn.dataset.unfriend}`);
                             await refresh();
@@ -168,37 +147,6 @@ export default function FriendsPage() {
                     };
                 });
 
-                $('friendsList').querySelectorAll('button[data-save-share]').forEach(btn => {
-                    btn.onclick = async () => {
-                        const id = btn.dataset.saveShare;
-                        const fromInput = $('friendsList').querySelector(`input.share-from-input[data-id="${id}"]`);
-                        const untilInput = $('friendsList').querySelector(`input.share-until-input[data-id="${id}"]`);
-                        if (!fromInput.value || !untilInput.value) {
-                            alert('공유 시작일과 종료일을 모두 입력해주세요.');
-                            return;
-                        }
-                        try {
-                            await axios.put(`/api/friends/${id}/shares-range`, {
-                                sharesFrom: fromInput.value,
-                                sharesUntil: untilInput.value
-                            });
-                            await refresh();
-                        } catch (e) {
-                            alert(e.response?.data?.message || '설정 저장에 실패했습니다.');
-                        }
-                    };
-                });
-
-                $('friendsList').querySelectorAll('button[data-clear-share]').forEach(btn => {
-                    btn.onclick = async () => {
-                        try {
-                            await axios.put(`/api/friends/${btn.dataset.clearShare}/shares-range`, { sharesFrom: null, sharesUntil: null });
-                            await refresh();
-                        } catch (e) {
-                            alert(e.response?.data?.message || '설정 저장에 실패했습니다.');
-                        }
-                    };
-                });
             }
 
             async function refresh() {

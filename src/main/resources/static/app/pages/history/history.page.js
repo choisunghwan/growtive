@@ -350,7 +350,7 @@ export default function HistoryPage() {
         const isRecurringRelated = tx.recurring || tx.recurringOriginId;
         return `
             <li class="ledger-list-item history-row" data-tx="${tx.id}" role="button" tabindex="0">
-                <span class="ledger-list-item-category">${categoryIcon(tx.category)} ${escapeHtml(tx.category)}${isRecurringRelated ? ' <span class="ledger-tx-recurring-badge" title="매달 반복">🔁</span>' : ''}${tx.hidden ? ' <span class="ledger-tx-recurring-badge" title="친구에게 숨김">🙈</span>' : ''}</span>
+                <span class="ledger-list-item-category">${categoryIcon(tx.category)} ${escapeHtml(tx.category)}${isRecurringRelated ? ' <span class="ledger-tx-recurring-badge" title="매달 반복">🔁</span>' : ''}</span>
                 <span class="ledger-list-item-memo">${tx.memo ? escapeHtml(tx.memo) : ''}</span>
                 <span class="ledger-list-item-amount ${tx.type === 'INCOME' ? 'is-income' : 'is-expense'}">${tx.type === 'INCOME' ? '+' : '-'}${won(tx.amount)}</span>
             </li>`;
