@@ -11,8 +11,9 @@
  * - 관리자가 나가면 남은 참여자 중 한 명에게 관리자를 넘김 (기본: 가장 먼저 참여한 사람)
  * - 참여자가 0명이 되면 캘린더 자동 삭제
  *
- * [💸 정산] 그 달 지출을 작성자(낸 사람)별로 모아 똑같이 나눴을 때 누가 누구에게 얼마 보내면 되는지 계산
- * - 지출만 계산 (수입은 제외), 기존 내역으로 계산만 하고 아무것도 저장하지 않음
+ * [💸 정산] 캘린더 위 버튼 → 달력에서 정산할 날짜를 골라(여러 달 가능) [정산하기]
+ * - 고른 날들의 지출을 작성자(낸 사람)별로 모아 똑같이 나눴을 때 누가 누구에게 얼마 보내면 되는지 계산
+ * - 지출만 계산 (수입은 제외), 기존 내역으로 계산만 하고 아무것도 저장하지 않음 (고른 날짜도 저장 안 함)
  */
 
 import { escapeHtml, openModal } from '../../ui/modal.js';
@@ -24,7 +25,7 @@ const CROWN = '<span class="shared-crown" title="관리자" aria-label="관리�
 
 export default function SharedCalendarPage() {
     const calendarId = Number(new URLSearchParams(location.hash.split('?')[1] || '').get('id')) || null;
-    const ledger = calendarId ? LedgerPage({ sharedCalendarId: calendarId }) : null;
+    const ledger = calendarId ? LedgerPage({ sharedCalendarId: calendarId, onSettle: openSettleResult }) : null;
     let detail = null;               // { calendar, members }
 
     const meId = () => authStore.getUserId?.();
@@ -65,17 +66,13 @@ export default function SharedCalendarPage() {
                             </li>`).join('')}
                         ${pending.length ? `<li class="shared-member-chip shared-member-chip--pending" title="${escapeHtml(pending.map(m => m.displayName).join(', '))}">초대 대기 ${pending.length}명</li>` : ''}
                     </ul>
-                    <div class="shared-header-btns">
-                    <button type="button" class="btn btn-sm btn-pill shared-manage-btn" id="openSettleBtn">💸 정산</button>
                     <button type="button" class="btn btn-sm btn-pill shared-manage-btn" id="openMembersBtn">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
                         멤버 관리
                     </button>
-                    </div>
                 </div>
             </div>`;
         document.getElementById('openMembersBtn').onclick = openMembersModal;
-        document.getElementById('openSettleBtn').onclick = openSettleModal;
     }
 
     /* ---------------- 💸 정산 ---------------- */
@@ -128,20 +125,25 @@ export default function SharedCalendarPage() {
         return { total, unknown, share, people: list, transfers };
     }
 
-    function settleBodyHtml(year, month, result) {
+    /** 고른 날짜 표시: 11/9, 11/13, 11/20 … (많으면 앞 8개 + 외 N일) */
+    function datesLabel(dates) {
+        const md = dates.map(d => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`);
+        return md.length > 8 ? `${md.slice(0, 8).join(', ')} 외 ${md.length - 8}일` : md.join(', ');
+    }
+
+    function settleBodyHtml(dates, result) {
         const { total, unknown, share, people, transfers } = result;
         const nameOf = (p) => `${escapeHtml(p.name)}${p.id === meId() ? ' <span class="shared-me">나</span>' : ''}${p.left && !detail.members.some(m => m.userId === p.id && m.status === 'ACCEPTED') ? ' <span class="hint">(나감)</span>' : ''}`;
-        const nav = `
-            <div class="settle-nav">
-                <button type="button" class="ledger-nav-btn" data-settle-move="-1" aria-label="이전 달">◀</button>
-                <b>${year}년 ${month}월</b>
-                <button type="button" class="ledger-nav-btn" data-settle-move="1" aria-label="다음 달">▶</button>
+        const head = `
+            <div class="settle-dates">
+                <span class="hint">고른 날짜 ${dates.length}일</span>
+                <b>${datesLabel(dates)}</b>
             </div>`;
         if (total === 0) {
-            return nav + `<div class="hint settle-empty">이 달에는 정산할 지출이 없어요.</div>`
+            return head + `<div class="hint settle-empty">고른 날짜에는 정산할 지출이 없어요.</div>`
                 + (unknown ? `<p class="hint">작성자를 알 수 없는 지출 ${won(unknown)}은 계산에서 뺐어요.</p>` : '');
         }
-        return nav + `
+        return head + `
             <div class="settle-summary">
                 <div><span class="hint">총 지출</span><b class="is-expense">${won(total)}</b></div>
                 <div><span class="hint">${people.length}명이 나누면 1인당</span><b>${won(share)}</b></div>
@@ -159,47 +161,17 @@ export default function SharedCalendarPage() {
                 ${transfers.map(t => `
                     <li><b>${escapeHtml(t.from.name)}</b> → <b>${escapeHtml(t.to.name)}</b><span class="settle-amount">${won(t.amount)}</span></li>`).join('')}
             </ul>` : '<div class="hint">보낼 돈이 없어요. 모두 똑같이 냈어요 🎉</div>'}
-            <p class="hint settle-note">공유 가계부의 <b>지출</b>을 작성자가 낸 돈으로 보고 똑같이 나눈 금액이에요. 수입은 빼고 계산해요.${unknown ? ` 작성자를 알 수 없는 지출 ${won(unknown)}은 뺐어요.` : ''}</p>`;
+            <p class="hint settle-note">고른 날짜의 공유 가계부 <b>지출</b>을 작성자가 낸 돈으로 보고 똑같이 나눈 금액이에요. 수입은 빼고 계산해요.${unknown ? ` 작성자를 알 수 없는 지출 ${won(unknown)}은 뺐어요.` : ''}</p>`;
     }
 
-    function openSettleModal() {
-        // 기본: 아래 캘린더에서 보고 있는 달
-        const label = document.getElementById('monthLabel')?.textContent || '';
-        const m = label.match(/(\d{4})년\s*(\d{1,2})월/);
-        const now = new Date();
-        let year = m ? Number(m[1]) : now.getFullYear();
-        let month = m ? Number(m[2]) : now.getMonth() + 1;
-
-        const modal = openModal({
+    /** [정산하기] → 고른 날짜의 지출로 계산한 결과 창 (닫으면 다시 날짜를 고치거나 [끝내기]) */
+    function openSettleResult({ dates, transactions }) {
+        openModal({
             title: '💸 정산',
             className: 'shared-settle-modal',
-            bodyHtml: '<div class="hint">계산하는 중…</div>',
+            bodyHtml: settleBodyHtml(dates, calcSettlement(transactions)),
             actionsHtml: '<button type="button" class="btn btn-ghost" data-modal-close>닫기</button>',
         });
-        const body = modal.el.querySelector('.history-modal-body');
-        let seq = 0;
-
-        async function draw() {
-            const mySeq = ++seq;
-            try {
-                const { data } = await axios.get(api('/ledger'), { params: { year, month } });
-                if (mySeq !== seq) return; // 달을 빨리 넘긴 경우 마지막 것만 그림
-                body.innerHTML = settleBodyHtml(year, month, calcSettlement(data || []));
-            } catch (err) {
-                if (mySeq !== seq) return;
-                body.innerHTML = `<div class="hint">${escapeHtml(errMsg(err, '정산 내역을 불러오지 못했어요.'))}</div>`;
-            }
-        }
-
-        body.addEventListener('click', (e) => {
-            const btn = e.target.closest('[data-settle-move]');
-            if (!btn) return;
-            month += Number(btn.dataset.settleMove);
-            if (month < 1) { month = 12; year--; }
-            if (month > 12) { month = 1; year++; }
-            draw();
-        });
-        draw();
     }
 
     /** 변경 후: 상세 다시 불러와 헤더/사이드바/열린 모달 갱신 */

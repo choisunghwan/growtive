@@ -155,6 +155,8 @@ export default function LedgerPage(options = {}) {
         editingEventId: null,
         viewMode: localStorage.getItem(VIEW_MODE_KEY) === 'list' ? 'list' : 'calendar',
         mode: localStorage.getItem(MODE_KEY) === 'schedule' ? 'schedule' : 'money',
+        // 💸 정산 날짜 선택 (공유 캘린더 전용, 저장하지 않음)
+        settle: { active: false, picked: new Map() }, // picked: { 'YYYY-MM-DD': [그날 지출 tx] }
     };
 
     // 🔗 다른 화면(재무 대시보드 > 자산 내역)에서 '#/calendar?date=YYYY-MM-DD&edit=ID'로 들어오면
@@ -274,6 +276,7 @@ export default function LedgerPage(options = {}) {
         if (isSelected) classes.push('ledger-cell--selected');
         if (inSelectedRange) classes.push('ledger-cell--range-selected');
         if (isToday) classes.push('ledger-cell--today');
+        if (state.settle.active && state.settle.picked.has(dateStr)) classes.push('ledger-cell--settle-picked');
         if (holidayName) classes.push('ledger-cell--holiday');
         else if (weekday === 0) classes.push('ledger-cell--sunday');
         else if (weekday === 6) classes.push('ledger-cell--saturday');
@@ -389,7 +392,7 @@ export default function LedgerPage(options = {}) {
             else if (weekday === 6) dateClasses.push('ledger-list-date--saturday');
 
             return `
-            <div class="ledger-list-group${isSelected ? ' is-selected' : ''}" data-date="${dateStr}">
+            <div class="ledger-list-group${isSelected ? ' is-selected' : ''}${state.settle.active && state.settle.picked.has(dateStr) ? ' is-settle-picked' : ''}" data-date="${dateStr}">
                 <div class="ledger-list-date-row">
                     <span class="${dateClasses.join(' ')}">${dayNum}일 (${weekdayName})${holidayName ? ` · ${holidayName}` : ''}</span>
                     <span class="ledger-list-date-total">
@@ -593,6 +596,20 @@ export default function LedgerPage(options = {}) {
         render() {
             return `
             <section class="ledger-page">
+                ${isShared ? `
+                <div class="settle-start-row">
+                    <button type="button" class="btn btn-sm btn-pill" id="settleStartBtn">💸 정산</button>
+                </div>
+                <div class="settle-bar" id="settleBar" hidden>
+                    <div class="settle-bar-text">
+                        <b>정산할 날짜를 골라주세요</b>
+                        <span id="settleBarInfo">0일 선택</span>
+                    </div>
+                    <div class="settle-bar-btns">
+                        <button type="button" class="btn btn-ghost btn-sm" id="settleCancelBtn">끝내기</button>
+                        <button type="button" class="btn btn-primary btn-sm" id="settleRunBtn" disabled>정산하기</button>
+                    </div>
+                </div>` : ''}
                 <div class="card">
                     <div class="ledger-header">
                         <div class="ledger-month-nav">
@@ -722,9 +739,67 @@ export default function LedgerPage(options = {}) {
                     });
                 } else {
                     container.querySelectorAll('[data-date]').forEach(el => {
-                        el.addEventListener('click', () => selectDate(el.dataset.date));
+                        el.addEventListener('click', () => {
+                            if (state.settle.active) toggleSettleDate(el.dataset.date);
+                            else selectDate(el.dataset.date);
+                        });
                     });
                 }
+            }
+
+            /* ---------------- 💸 정산 날짜 선택 (공유 캘린더) ---------------- */
+
+            const expensesOn = (dateStr) => (state.byDate[dateStr] || []).filter(tx => tx.type === 'EXPENSE');
+
+            function updateSettleBar() {
+                if (!isShared) return;
+                const { active, picked } = state.settle;
+                $('settleBar').hidden = !active;
+                $('settleStartBtn').hidden = active;
+                document.body.classList.toggle('is-settle-selecting', active);
+                if (!active) return;
+                let total = 0;
+                picked.forEach(list => list.forEach(tx => { total += Number(tx.amount) || 0; }));
+                $('settleBarInfo').innerHTML = picked.size
+                    ? `${picked.size}일 선택 · 지출 <b class="is-expense">${won(total)}</b>`
+                    : '0일 선택';
+                $('settleRunBtn').disabled = picked.size === 0;
+            }
+
+            function toggleSettleDate(dateStr) {
+                const { picked } = state.settle;
+                if (picked.has(dateStr)) picked.delete(dateStr);
+                else picked.set(dateStr, expensesOn(dateStr));
+                renderCalendar();
+                updateSettleBar();
+            }
+
+            function startSettle() {
+                // 정산은 가계부 기준 → 일정 보기였으면 가계부로
+                if (isSchedule()) $('modeSwitch').querySelector('button[data-mode="money"]').click();
+                state.settle.active = true;
+                state.settle.picked = new Map();
+                renderCalendar();
+                updateSettleBar();
+            }
+
+            function endSettle() {
+                state.settle.active = false;
+                state.settle.picked = new Map();
+                renderCalendar();
+                updateSettleBar();
+            }
+
+            if (isShared) {
+                $('settleStartBtn').addEventListener('click', startSettle);
+                $('settleCancelBtn').addEventListener('click', endSettle);
+                $('settleRunBtn').addEventListener('click', () => {
+                    const dates = [...state.settle.picked.keys()].sort();
+                    const transactions = dates.flatMap(d => state.settle.picked.get(d));
+                    options.onSettle?.({ dates, transactions });
+                });
+                // 다른 화면으로 나가면 선택 모드 표시(하단 바 여백) 해제
+                window.addEventListener('hashchange', () => document.body.classList.remove('is-settle-selecting'), { once: true });
             }
 
             /* ---------------- 가계부 내역을 다른 캘린더로 복사 ---------------- */
@@ -1219,6 +1294,12 @@ export default function LedgerPage(options = {}) {
 
             async function refresh() {
                 await Promise.all([loadMonth(), loadEvents()]);
+                // 정산 선택 중이면 지금 달에 고른 날짜의 지출을 최신 내역으로 갱신
+                const monthPrefix = `${state.year}-${pad2(state.month)}-`;
+                state.settle.picked.forEach((_, d) => {
+                    if (d.startsWith(monthPrefix)) state.settle.picked.set(d, expensesOn(d));
+                });
+                if (state.settle.active) updateSettleBar();
                 renderMonthSummary();
                 renderCalendar();
                 renderDayPanel();
@@ -1259,6 +1340,11 @@ export default function LedgerPage(options = {}) {
                 btn.addEventListener('click', () => {
                     const next = btn.dataset.mode === 'schedule' ? 'schedule' : 'money';
                     if (state.mode === next) return;
+                    if (state.settle.active && next === 'schedule') {
+                        state.settle.active = false;
+                        state.settle.picked = new Map();
+                        updateSettleBar();
+                    }
                     state.mode = next;
                     state.selectedRangeStart = null;
                     state.selectedRangeEnd = null;

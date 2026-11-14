@@ -1007,10 +1007,30 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
 .shared-members-modal { width: min(460px, 94vw); }
 
 /* 💸 정산 */
-.shared-header-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.settle-start-row { display: flex; justify-content: flex-end; margin-bottom: -8px; }
+.settle-bar {
+    position: fixed; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+    z-index: 60; width: min(560px, calc(100vw - 24px));
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 12px 10px 16px; border-radius: 14px;
+    background: var(--bg-elevated); border: 1px solid var(--brand); box-shadow: var(--shadow-md);
+}
+.settle-bar[hidden] { display: none; }
+.settle-bar-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 13px; }
+.settle-bar-text > b { font-size: 13.5px; }
+.settle-bar-btns { display: flex; gap: 6px; flex: none; }
+body.is-settle-selecting .ledger-page { padding-bottom: 80px; }
+.ledger-cell--settle-picked, .ledger-list-group.is-settle-picked {
+    position: relative; background: rgba(22, 163, 74, .12); border-color: #16a34a; box-shadow: 0 0 0 1px #16a34a inset;
+}
+.ledger-cell--settle-picked::after {
+    content: '✔'; position: absolute; top: 3px; right: 4px; font-size: 11px; font-weight: 800; color: #16a34a;
+}
+html.dark .ledger-cell--settle-picked, html.dark .ledger-list-group.is-settle-picked { background: rgba(22, 163, 74, .22); }
+.settle-dates { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg); font-size: 13.5px; word-break: keep-all; }
+.settle-dates .hint { font-size: 12px; }
 .shared-settle-modal { width: min(460px, 94vw); }
 .shared-settle-modal .history-modal-body { max-height: min(66vh, 600px); overflow-y: auto; }
-.settle-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 12px; font-size: 15px; }
 .settle-empty { text-align: center; padding: 18px 0; }
 .settle-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
 .settle-summary > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg); }
