@@ -47,6 +47,18 @@ public class DailyTransactionController {
         return service.search(getUserId(session), from, to, categories, keyword);
     }
 
+    /**
+     * 기간 내역 조회 — 읽기 전용 (상단 급여 게이지가 월급날~월급날 기간을 계산할 때 사용)
+     * - 반복 항목을 새로 만들지 않고 저장된 내역만 돌려준다
+     */
+    @GetMapping("/range")
+    public List<DailyTransactionDto> range(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            HttpSession session) {
+        return service.findRange(getUserId(session), from, to);
+    }
+
     /** 사용자가 지금까지 사용한 카테고리 목록 (검색 모달용) */
     @GetMapping("/categories")
     public List<String> categories(HttpSession session) {

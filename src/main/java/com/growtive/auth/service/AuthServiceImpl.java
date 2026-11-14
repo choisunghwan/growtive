@@ -168,7 +168,32 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void updateWorkSchedule(Long userId, LocalTime workStartTime, LocalTime workEndTime, String workDays) {
-        authMapper.updateWorkSchedule(userId, workStartTime, workEndTime, workDays);
+    public void updateWorkSchedule(Long userId, com.growtive.auth.dto.WorkScheduleDto s) {
+        // 월급날 규칙 확인 (맞지 않는 값은 저장하지 않음)
+        String rule = s.getPayRule() == null || s.getPayRule().isBlank() ? null : s.getPayRule();
+        if (rule != null && !java.util.Set.of("DAY", "LAST_DAY", "NTH_WEEKDAY").contains(rule)) {
+            throw new BadRequestException("월급날 방식을 다시 선택해주세요.");
+        }
+        Integer payDay = null, payWeek = null, payWeekday = null;
+        if ("DAY".equals(rule)) {
+            payDay = s.getPayDay();
+            if (payDay == null || payDay < 1 || payDay > 31) throw new BadRequestException("월급 날짜(1~31일)를 선택해주세요.");
+        } else if ("NTH_WEEKDAY".equals(rule)) {
+            payWeek = s.getPayWeek();
+            payWeekday = s.getPayWeekday();
+            if (payWeek == null || !(payWeek == -1 || (payWeek >= 1 && payWeek <= 4))) throw new BadRequestException("몇째 주인지 선택해주세요.");
+            if (payWeekday == null || payWeekday < 0 || payWeekday > 6) throw new BadRequestException("요일을 선택해주세요.");
+        }
+        String adjust = rule == null ? null
+                : (java.util.Set.of("BEFORE", "AFTER", "KEEP").contains(String.valueOf(s.getPayAdjust())) ? s.getPayAdjust() : "BEFORE");
+
+        String mode = "FIXED".equals(s.getSalaryMode()) ? "FIXED" : "LEDGER";
+        Long amount = null;
+        if ("FIXED".equals(mode)) {
+            amount = s.getSalaryAmount();
+            if (amount == null || amount <= 0 || amount > 10_000_000_000L) throw new BadRequestException("월급 금액을 입력해주세요.");
+        }
+        authMapper.updateWorkSchedule(userId, s.getWorkStartTime(), s.getWorkEndTime(), s.getWorkDays(),
+                rule, payDay, payWeek, payWeekday, adjust, mode, amount);
     }
 }

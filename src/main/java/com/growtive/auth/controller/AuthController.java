@@ -137,6 +137,13 @@ public class AuthController {
         dto.setWorkStartTime(user.getWorkStartTime());
         dto.setWorkEndTime(user.getWorkEndTime());
         dto.setWorkDays(user.getWorkDays());
+        dto.setPayRule(user.getPayRule());
+        dto.setPayDay(user.getPayDay());
+        dto.setPayWeek(user.getPayWeek());
+        dto.setPayWeekday(user.getPayWeekday());
+        dto.setPayAdjust(user.getPayAdjust());
+        dto.setSalaryMode(user.getSalaryMode());
+        dto.setSalaryAmount(user.getSalaryAmount());
         return dto;
     }
 
@@ -145,7 +152,7 @@ public class AuthController {
         Long userId = (Long) session.getAttribute("userId");
         if (userId == null) throw new UnauthorizedException("로그인이 필요합니다.");
 
-        authService.updateWorkSchedule(userId, request.getWorkStartTime(), request.getWorkEndTime(), request.getWorkDays());
+        authService.updateWorkSchedule(userId, request);
     }
     @PostMapping("/logout")
     public void logout(HttpSession session) {

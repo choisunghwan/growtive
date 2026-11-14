@@ -112,6 +112,13 @@ public class DailyTransactionServiceImpl implements DailyTransactionService {
     }
 
     @Override
+    public List<DailyTransactionDto> findRange(Long userId, LocalDate from, LocalDate to) {
+        if (from == null || to == null || from.isAfter(to)) throw new BadRequestException("기간을 확인해주세요.");
+        if (from.plusDays(400).isBefore(to)) throw new BadRequestException("기간이 너무 깁니다.");
+        return mapper.search(userId, from, to, null, null);
+    }
+
+    @Override
     @Transactional
     public DailyTransactionDto create(Long userId, DailyTransactionDto dto) {
         mapper.insert(userId, dto);

@@ -1,9 +1,10 @@
 // resources/static/app/ui/salary-ticker.js
 // 상단바에 항상 떠 있는 실시간 급여 카운터.
-// 이번 달 "월급"(INCOME) 항목과 마이페이지의 근무 스케줄을 기반으로
+// 월급(마이페이지 고정 금액 또는 가계부 "월급" 내역)과 근무 스케줄·월급날 설정을 기반으로
 // 근무 요일/시간에만 초 단위로 금액이 올라간다.
 
 import authStore from '../store/authStore.js';
+import { hasPayRule, payPeriod, ymdOf, formatPayday } from '../core/payday.js';
 
 let intervalId = null;
 
@@ -44,15 +45,52 @@ export async function initTopbarSalaryTicker() {
         return; // 실패하면 조용히 숨김 (topbar를 방해하지 않도록)
     }
 
-    const salaryTx = transactions.find(tx => tx.type === "INCOME" && tx.category === "월급");
-    if (!salaryTx) return; // 이번 달 월급이 없으면 표시 안 함
+    // 📅 게이지 기간: 월급날을 정했으면 '지난 월급날 ~ 다음 월급날', 아니면 이번 달 1일~말일
+    const usePayday = hasPayRule(schedule);
+    const period = usePayday
+        ? payPeriod(now, schedule)
+        : { start: new Date(now.getFullYear(), now.getMonth(), 1), end: new Date(now.getFullYear(), now.getMonth() + 1, 1) };
+    const fromYmd = ymdOf(period.start);
+    const toYmd = ymdOf(new Date(period.end.getFullYear(), period.end.getMonth(), period.end.getDate() - 1));
 
-    const salaryAmount = Number(salaryTx.amount);
-    // 월급 외 수입/지출은 시간에 걸쳐 쌓이는 게 아니라 등록하는 즉시 게이지에 반영된다.
-    const otherIncomeAmount = transactions
+    if (usePayday) {
+        // 기간이 지난달에 걸치거나, 최근 '월급' 내역을 찾으려면 이번 달 밖의 내역도 필요 → 읽기 전용으로 조회
+        const lookback = new Date(period.start.getFullYear(), period.start.getMonth() - 2, 1);
+        try {
+            const { data } = await axios.get("/api/money/ledger/range", { params: { from: ymdOf(lookback), to: toYmd } });
+            const seen = new Set(transactions.map(tx => tx.id));
+            transactions = transactions.concat((data || []).filter(tx => !seen.has(tx.id)));
+        } catch (e) {
+            return;
+        }
+    }
+
+    // 💰 월급 금액: 고정 금액 / 가계부의 '월급' 내역
+    let salaryAmount;
+    if (schedule.salaryMode === "FIXED" && Number(schedule.salaryAmount) > 0) {
+        salaryAmount = Number(schedule.salaryAmount);
+    } else if (usePayday) {
+        // 오늘까지 등록된 '월급' 중 가장 최근 것 (매달 금액이 달라도 가장 최근 월급 기준)
+        const todayYmd = ymdOf(now);
+        const latest = transactions
+            .filter(tx => tx.type === "INCOME" && tx.category === "월급" && tx.date <= todayYmd)
+            .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id))[0]
+            // 아직 한 번도 안 받았으면 이번 기간에 미리 적어둔 월급이라도
+            || transactions.find(tx => tx.type === "INCOME" && tx.category === "월급");
+        salaryAmount = latest ? Number(latest.amount) : 0;
+    } else {
+        // 예전 방식 그대로: 이번 달 '월급' 내역
+        const salaryTx = transactions.find(tx => tx.type === "INCOME" && tx.category === "월급");
+        salaryAmount = salaryTx ? Number(salaryTx.amount) : 0;
+    }
+    if (!salaryAmount) return; // 월급을 알 수 없으면 표시 안 함
+
+    // 월급 외 수입/지출은 시간에 걸쳐 쌓이는 게 아니라 등록하는 즉시 게이지에 반영된다. (게이지 기간 안의 내역만)
+    const inPeriod = transactions.filter(tx => tx.date >= fromYmd && tx.date <= toYmd);
+    const otherIncomeAmount = inPeriod
         .filter(tx => tx.type === "INCOME" && tx.category !== "월급")
         .reduce((sum, tx) => sum + Number(tx.amount), 0);
-    const expenseAmount = transactions
+    const expenseAmount = inPeriod
         .filter(tx => tx.type === "EXPENSE")
         .reduce((sum, tx) => sum + Number(tx.amount), 0);
 
@@ -66,12 +104,9 @@ export async function initTopbarSalaryTicker() {
         return Math.max(0, (weH * 3600 + weM * 60) - (wsH * 3600 + wsM * 60));
     };
 
-    // 게이지는 월급날이 아니라 달력 기준(1일~말일)으로 리셋된다.
-    const periodBounds = (refDate) => {
-        const start = new Date(refDate.getFullYear(), refDate.getMonth(), 1, 0, 0, 0);
-        const end = new Date(refDate.getFullYear(), refDate.getMonth() + 1, 1, 0, 0, 0);
-        return { start, end };
-    };
+    // 게이지 기간: 월급날을 정했으면 월급날 ~ 다음 월급날, 아니면 달력 기준(1일~말일)
+    // (기간이 바뀌면 — 월급날이 지나면 — 내역을 다시 불러와서 0부터 새로 시작)
+    const periodBounds = () => period;
 
     const totalWorkSeconds = (periodStart, periodEnd) => {
         let total = 0;
@@ -123,7 +158,8 @@ export async function initTopbarSalaryTicker() {
             return;
         }
         const nowTick = new Date();
-        const { start, end } = periodBounds(nowTick);
+        if (nowTick >= period.end) { initTopbarSalaryTicker(); return; }
+        const { start, end } = periodBounds();
         const total = totalWorkSeconds(start, end);
         const elapsed = Math.min(elapsedWorkSeconds(start, nowTick), total);
         const accruedSalary = total > 0 ? Math.floor(salaryAmount * (elapsed / total)) : 0;
@@ -146,7 +182,8 @@ export async function initTopbarSalaryTicker() {
         }
         const statusWrap = document.getElementById("topbarSalaryStatus");
         if (statusWrap) {
-            statusWrap.title = workingNow ? "근무 중" : (todayIsWorkDay ? "근무 시간 아님" : "휴무일");
+            const base = workingNow ? "근무 중" : (todayIsWorkDay ? "근무 시간 아님" : "휴무일");
+            statusWrap.title = usePayday ? `${base} · 다음 월급날 ${formatPayday(period.end)}` : base;
         }
 
         const gauge = document.getElementById("topbar-gauge");

@@ -19,7 +19,14 @@ public interface AuthMapper {
     void updateWorkSchedule(@Param("userId") Long userId,
                              @Param("workStartTime") LocalTime workStartTime,
                              @Param("workEndTime") LocalTime workEndTime,
-                             @Param("workDays") String workDays);
+                             @Param("workDays") String workDays,
+                             @Param("payRule") String payRule,
+                             @Param("payDay") Integer payDay,
+                             @Param("payWeek") Integer payWeek,
+                             @Param("payWeekday") Integer payWeekday,
+                             @Param("payAdjust") String payAdjust,
+                             @Param("salaryMode") String salaryMode,
+                             @Param("salaryAmount") Long salaryAmount);
 
     /*소셜 로그인 - provider + providerId로 기존 회원 조회*/
     User findByProviderAndProviderId(@Param("provider") String provider, @Param("providerId") String providerId);

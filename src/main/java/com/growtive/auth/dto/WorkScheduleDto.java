@@ -16,4 +16,14 @@ public class WorkScheduleDto {
     private LocalTime workEndTime;
     private String workDays; // 예: "MON,TUE,WED,THU,FRI"
 
+    /** 월급날 규칙: null(설정 안 함) / DAY / LAST_DAY / NTH_WEEKDAY */
+    private String payRule;
+    private Integer payDay;      // DAY: 1~31
+    private Integer payWeek;     // NTH_WEEKDAY: 1~4, -1 = 마지막 주
+    private Integer payWeekday;  // NTH_WEEKDAY: 0=일 ~ 6=토
+    private String payAdjust;    // BEFORE / AFTER / KEEP
+    /** 월급 금액: LEDGER(가계부 최근 '월급' 내역) / FIXED(고정 금액) */
+    private String salaryMode;
+    private Long salaryAmount;
+
 }

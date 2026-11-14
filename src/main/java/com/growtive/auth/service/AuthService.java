@@ -18,7 +18,7 @@ public interface AuthService {
     /*실시간 급여 카운터용 근무 스케줄 조회*/
     User getUserById(Long userId);
     /*실시간 급여 카운터용 근무 스케줄 저장*/
-    void updateWorkSchedule(Long userId, LocalTime workStartTime, LocalTime workEndTime, String workDays);
+    void updateWorkSchedule(Long userId, com.growtive.auth.dto.WorkScheduleDto schedule);
 
     /*닉네임 규칙 검사 + 다듬기 (2~12자 등). 어기면 BadRequestException*/
     String normalizeNickname(String nickname);

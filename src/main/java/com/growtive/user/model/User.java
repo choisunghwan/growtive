@@ -41,4 +41,14 @@ public class User {
     private LocalTime workEndTime;
     private String workDays; // 예: "MON,TUE,WED,THU,FRI"
 
+    /** 월급날 규칙 (null이면 매달 1일~말일 기준) — UserPaydayColumnInitializer 참고 */
+    private String payRule;
+    private Integer payDay;
+    private Integer payWeek;
+    private Integer payWeekday;
+    private String payAdjust;
+    /** 월급 금액 방식: LEDGER(가계부 최근 '월급' 내역) / FIXED(고정 금액), null이면 LEDGER */
+    private String salaryMode;
+    private Long salaryAmount;
+
 }

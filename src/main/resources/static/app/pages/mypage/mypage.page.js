@@ -2,6 +2,8 @@ import authStore from '../../store/authStore.js';
 import { escapeHtml } from '../../ui/modal.js';
 import { renderUserPanel } from '../../ui/topbar-user.js';
 import { renderSharedMenu } from '../../ui/shared-menu.js';
+import { initTopbarSalaryTicker } from '../../ui/salary-ticker.js';
+import { hasPayRule, payPeriod, formatPayday } from '../../core/payday.js';
 
 export default function MyPage() {
     return {
@@ -24,7 +26,7 @@ export default function MyPage() {
 
                 <div class="card" style="margin-top:20px;">
                     <h3>⏱️ 근무 시간 설정</h3>
-                    <p class="subtitle" style="margin-top:6px;">재무 대시보드의 실시간 급여 카운터가 이 설정에 맞춰 움직여요. 근무하지 않는 요일/시간에는 멈춰있습니다.</p>
+                    <p class="subtitle" style="margin-top:6px;">상단 실시간 급여 게이지가 이 설정에 맞춰 움직여요. 근무하지 않는 요일/시간에는 멈춰 있고, 월급날을 정하면 월급날마다 0부터 다시 시작해요.</p>
                     <form id="workScheduleForm" class="form" style="margin-top:14px; max-width:420px;">
                         <div class="ledger-daterange">
                             <input type="time" id="workStartTime" required>
@@ -39,6 +41,46 @@ export default function MyPage() {
                                 </label>
                             `).join('')}
                         </div>
+
+                        <div class="payday-setting">
+                            <label class="history-search-label" for="payRule">💰 월급날</label>
+                            <select id="payRule">
+                                <option value="">설정 안 함 (매달 1일~말일 기준)</option>
+                                <option value="DAY">매달 정해진 날짜</option>
+                                <option value="LAST_DAY">매달 말일</option>
+                                <option value="NTH_WEEKDAY">매달 몇째 주 무슨 요일</option>
+                            </select>
+                            <div class="payday-row" id="payDayRow" hidden>
+                                매달 <select id="payDay">${Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}">${i + 1}일</option>`).join('')}</select>
+                            </div>
+                            <div class="payday-row" id="payWeekRow" hidden>
+                                매달
+                                <select id="payWeek">
+                                    <option value="1">첫째</option><option value="2">둘째</option><option value="3">셋째</option>
+                                    <option value="4">넷째</option><option value="-1">마지막</option>
+                                </select> 주
+                                <select id="payWeekday">
+                                    ${['일', '월', '화', '수', '목', '금', '토'].map((d, i) => `<option value="${i}"${i === 5 ? ' selected' : ''}>${d}요일</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="payday-row" id="payAdjustRow" hidden>
+                                주말·공휴일이면
+                                <select id="payAdjust">
+                                    <option value="BEFORE">전 평일에 받아요</option>
+                                    <option value="AFTER">다음 평일에 받아요</option>
+                                    <option value="KEEP">그날 그대로</option>
+                                </select>
+                            </div>
+                            <p class="hint payday-preview" id="paydayPreview"></p>
+
+                            <span class="history-search-label">💵 월급 금액</span>
+                            <label class="payday-radio"><input type="radio" name="salaryMode" value="LEDGER" checked>
+                                가계부의 '월급' 내역 금액 (매달 다를 때)</label>
+                            <label class="payday-radio"><input type="radio" name="salaryMode" value="FIXED">
+                                고정 금액</label>
+                            <input type="text" id="salaryAmount" inputmode="numeric" placeholder="예: 3,000,000" hidden>
+                        </div>
+
                         <button type="submit" class="btn btn-primary">저장</button>
                     </form>
                     <div id="workScheduleStatus" style="margin-top:8px; font-size:13px; color:var(--text-muted);"></div>
@@ -124,9 +166,57 @@ export default function MyPage() {
                     : `<a href="/api/auth/link/kakao" class="kakao-login-btn" style="max-width:260px; height:40px; font-size:14px;">💬 카카오 계정 연결하기</a>`;
             }
 
+            /* ---------- 💰 월급날 / 월급 금액 ---------- */
+            function readPayRule() {
+                return {
+                    payRule: $('payRule').value || null,
+                    payDay: Number($('payDay').value),
+                    payWeek: Number($('payWeek').value),
+                    payWeekday: Number($('payWeekday').value),
+                    payAdjust: $('payAdjust').value,
+                };
+            }
+
+            function updatePaydayForm() {
+                const rule = $('payRule').value;
+                $('payDayRow').hidden = rule !== 'DAY';
+                $('payWeekRow').hidden = rule !== 'NTH_WEEKDAY';
+                $('payAdjustRow').hidden = !rule;
+                const r = readPayRule();
+                if (hasPayRule(r)) {
+                    const { start, end } = payPeriod(new Date(), r);
+                    const lastDay = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 1);
+                    $('paydayPreview').textContent = `다음 월급날 ${formatPayday(end)} · 지금 게이지 기간 ${start.getMonth() + 1}/${start.getDate()} ~ ${lastDay.getMonth() + 1}/${lastDay.getDate()}`;
+                } else {
+                    $('paydayPreview').textContent = '상단 게이지가 매달 1일에 0부터 다시 시작해요.';
+                }
+                const fixed = document.querySelector('input[name="salaryMode"]:checked')?.value === 'FIXED';
+                $('salaryAmount').hidden = !fixed;
+            }
+
+            ['payRule', 'payDay', 'payWeek', 'payWeekday', 'payAdjust'].forEach(id => $(id).addEventListener('change', updatePaydayForm));
+            document.querySelectorAll('input[name="salaryMode"]').forEach(r => r.addEventListener('change', () => {
+                updatePaydayForm();
+                if (r.value === 'FIXED' && r.checked) $('salaryAmount').focus();
+            }));
+            $('salaryAmount').addEventListener('input', () => {
+                const digits = $('salaryAmount').value.replace(/[^0-9]/g, '');
+                $('salaryAmount').value = digits ? Number(digits).toLocaleString('ko-KR') : '';
+            });
+
             async function loadWorkSchedule() {
                 const res = await axios.get('/api/auth/work-schedule');
                 const { workStartTime, workEndTime, workDays } = res.data;
+                const d = res.data;
+                $('payRule').value = d.payRule || '';
+                if (d.payDay) $('payDay').value = String(d.payDay);
+                if (d.payWeek) $('payWeek').value = String(d.payWeek);
+                if (d.payWeekday != null) $('payWeekday').value = String(d.payWeekday);
+                $('payAdjust').value = d.payAdjust || 'BEFORE';
+                const mode = d.salaryMode === 'FIXED' ? 'FIXED' : 'LEDGER';
+                document.querySelector(`input[name="salaryMode"][value="${mode}"]`).checked = true;
+                $('salaryAmount').value = d.salaryAmount ? Number(d.salaryAmount).toLocaleString('ko-KR') : '';
+                updatePaydayForm();
                 $('workStartTime').value = (workStartTime || '09:00:00').slice(0, 5);
                 $('workEndTime').value = (workEndTime || '18:00:00').slice(0, 5);
                 const days = (workDays || 'MON,TUE,WED,THU,FRI').split(',');
@@ -143,13 +233,24 @@ export default function MyPage() {
                     alert('근무 요일을 최소 하루는 선택해주세요.');
                     return;
                 }
+                const salaryMode = document.querySelector('input[name="salaryMode"]:checked')?.value || 'LEDGER';
+                const salaryAmount = Number($('salaryAmount').value.replace(/[^0-9]/g, '')) || null;
+                if (salaryMode === 'FIXED' && !salaryAmount) {
+                    alert('고정 월급 금액을 입력해주세요.');
+                    $('salaryAmount').focus();
+                    return;
+                }
                 try {
                     await axios.put('/api/auth/work-schedule', {
                         workStartTime: $('workStartTime').value,
                         workEndTime: $('workEndTime').value,
-                        workDays
+                        workDays,
+                        ...readPayRule(),
+                        salaryMode,
+                        salaryAmount: salaryMode === 'FIXED' ? salaryAmount : null,
                     });
                     $('workScheduleStatus').textContent = '저장했습니다.';
+                    initTopbarSalaryTicker(); // 상단 게이지에 바로 반영
                 } catch (err) {
                     alert(err.response?.data?.message || '저장에 실패했습니다.');
                 }

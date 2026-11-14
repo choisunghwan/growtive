@@ -27,7 +27,14 @@
         UPDATE users
         SET work_start_time = #{workStartTime},
             work_end_time = #{workEndTime},
-            work_days = #{workDays}
+            work_days = #{workDays},
+            pay_rule = #{payRule},
+            pay_day = #{payDay},
+            pay_week = #{payWeek},
+            pay_weekday = #{payWeekday},
+            pay_adjust = #{payAdjust},
+            salary_mode = #{salaryMode},
+            salary_amount = #{salaryAmount}
         WHERE id = #{userId}
     </update>
 
