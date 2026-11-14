@@ -34,7 +34,9 @@
             pay_weekday = #{payWeekday},
             pay_adjust = #{payAdjust},
             salary_mode = #{salaryMode},
-            salary_amount = #{salaryAmount}
+            salary_amount = #{salaryAmount},
+            income_type = #{incomeType},
+            income_category = #{incomeCategory}
         WHERE id = #{userId}
     </update>
 

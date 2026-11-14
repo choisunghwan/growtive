@@ -31,7 +31,9 @@ public class UserPaydayColumnInitializer implements ApplicationRunner {
         COLUMNS.put("pay_weekday", "TINYINT NULL");        // NTH_WEEKDAY: 0=일 ~ 6=토
         COLUMNS.put("pay_adjust", "VARCHAR(10) NULL");     // 주말·공휴일이면: BEFORE(전 평일) / AFTER(다음 평일) / KEEP(그대로)
         COLUMNS.put("salary_mode", "VARCHAR(10) NULL");    // LEDGER(가계부 최근 '월급' 내역) / FIXED(고정 금액)
-        COLUMNS.put("salary_amount", "BIGINT NULL");       // FIXED일 때 금액
+        COLUMNS.put("salary_amount", "BIGINT NULL");       // FIXED일 때 금액 (BUDGET이면 한 달 예산)
+        COLUMNS.put("income_type", "VARCHAR(10) NULL");    // SALARY(월급·근무) / ALLOWANCE(용돈·정기 수입) / BUDGET(수입 없음·예산), NULL = SALARY
+        COLUMNS.put("income_category", "VARCHAR(20) NULL"); // ALLOWANCE + LEDGER일 때 금액을 가져올 수입 카테고리 (기본 '용돈')
     }
 
     private final JdbcTemplate jdbcTemplate;

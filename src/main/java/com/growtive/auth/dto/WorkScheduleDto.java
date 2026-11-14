@@ -25,5 +25,9 @@ public class WorkScheduleDto {
     /** 월급 금액: LEDGER(가계부 최근 '월급' 내역) / FIXED(고정 금액) */
     private String salaryMode;
     private Long salaryAmount;
+    /** 수입 형태: SALARY / ALLOWANCE / BUDGET */
+    private String incomeType;
+    /** ALLOWANCE + LEDGER: 금액을 가져올 수입 카테고리 (기본 '용돈') */
+    private String incomeCategory;
 
 }

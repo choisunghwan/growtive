@@ -53,7 +53,9 @@ export async function initTopbarSalaryTicker() {
     const fromYmd = ymdOf(period.start);
     const toYmd = ymdOf(new Date(period.end.getFullYear(), period.end.getMonth(), period.end.getDate() - 1));
 
-    if (usePayday) {
+    const incomeType = schedule.incomeType || "SALARY";
+
+    if (usePayday || incomeType !== "SALARY") {
         // 기간이 지난달에 걸치거나, 최근 '월급' 내역을 찾으려면 이번 달 밖의 내역도 필요 → 읽기 전용으로 조회
         const lookback = new Date(period.start.getFullYear(), period.start.getMonth() - 2, 1);
         try {
@@ -82,6 +84,10 @@ export async function initTopbarSalaryTicker() {
         // 예전 방식 그대로: 이번 달 '월급' 내역
         const salaryTx = transactions.find(tx => tx.type === "INCOME" && tx.category === "월급");
         salaryAmount = salaryTx ? Number(salaryTx.amount) : 0;
+    }
+    if (incomeType !== "SALARY") {
+        renderBalanceGauge(el, { incomeType, schedule, transactions, period, usePayday, now });
+        return;
     }
     if (!salaryAmount) return; // 월급을 알 수 없으면 표시 안 함
 
@@ -201,4 +207,79 @@ export async function initTopbarSalaryTicker() {
 
     tick();
     intervalId = setInterval(tick, 1000);
+}
+
+/**
+ * 🎒 용돈·정기 수입(ALLOWANCE) / 💳 예산(BUDGET) 게이지
+ * - 근무 시간으로 쌓이는 게 아니라 '받은 돈(또는 예산)에서 얼마 남았나'를 보여준다
+ * - 왼쪽(초록) = 남은 비율, 오른쪽(빨강) = 쓴 비율
+ * - 글자: 💰 남은 돈 · 하루에 쓸 수 있는 돈 (= 남은 돈 ÷ 다음 받는 날까지 남은 일수), 상태: D-n
+ */
+function renderBalanceGauge(el, { incomeType, schedule, transactions, period, usePayday, now }) {
+    const isBudget = incomeType === "BUDGET";
+    const category = schedule.incomeCategory || "용돈";
+    const fromYmd = ymdOf(period.start);
+    const toYmd = ymdOf(new Date(period.end.getFullYear(), period.end.getMonth(), period.end.getDate() - 1));
+    const todayYmd = ymdOf(now);
+
+    let amount = 0;
+    if (isBudget || schedule.salaryMode === "FIXED") {
+        amount = Number(schedule.salaryAmount) || 0;
+    } else {
+        const list = transactions.filter(tx => tx.type === "INCOME" && tx.category === category);
+        const latest = list.filter(tx => tx.date <= todayYmd)
+            .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id))[0] || list[0];
+        amount = latest ? Number(latest.amount) : 0;
+    }
+    if (!amount) return; // 금액을 알 수 없으면 표시 안 함
+
+    const inPeriod = transactions.filter(tx => tx.date >= fromYmd && tx.date <= toYmd);
+    const expense = inPeriod.filter(tx => tx.type === "EXPENSE").reduce((sum, tx) => sum + Number(tx.amount), 0);
+    // 용돈 방식: 용돈 외에 기간 안에 들어온 다른 수입은 남은 돈에 더함 (예산 방식은 지출 한도만 봄)
+    const otherIncome = isBudget ? 0 : inPeriod
+        .filter(tx => tx.type === "INCOME" && tx.category !== category)
+        .reduce((sum, tx) => sum + Number(tx.amount), 0);
+    const total = amount + otherIncome;
+    const remaining = total - expense;
+    const label = isBudget ? "남은 예산" : (category === "용돈" ? "남은 용돈" : "남은 돈");
+    const nextLabel = isBudget ? "새 예산 시작" : "다음 받는 날";
+
+    el.innerHTML = `
+        <span class="topbar-salary-status" id="topbarSalaryStatus">
+            <span id="topbarSalaryStatusText"></span>
+        </span>
+        <span id="topbarSalaryAmount"></span>
+    `;
+
+    const tick = () => {
+        const amountEl = document.getElementById("topbarSalaryAmount");
+        if (!amountEl) {
+            clearInterval(intervalId);
+            intervalId = null;
+            return;
+        }
+        const nowTick = new Date();
+        if (nowTick >= period.end) { initTopbarSalaryTicker(); return; }
+        const today0 = new Date(nowTick.getFullYear(), nowTick.getMonth(), nowTick.getDate());
+        const daysLeft = Math.max(1, Math.round((period.end - today0) / 86400000)); // 오늘 포함
+        const daily = Math.max(0, Math.floor(remaining / daysLeft));
+
+        amountEl.innerHTML = remaining >= 0
+            ? `💰 ${remaining.toLocaleString("ko-KR")}원<span class="topbar-balance-daily"> · 하루 ${daily.toLocaleString("ko-KR")}원</span>`
+            : `💸 ${(-remaining).toLocaleString("ko-KR")}원 초과`;
+        document.getElementById("topbarSalaryStatusText").textContent = `D-${daysLeft}`;
+        const statusWrap = document.getElementById("topbarSalaryStatus");
+        const tip = `${label} ${remaining.toLocaleString("ko-KR")}원 · 하루 ${daily.toLocaleString("ko-KR")}원 · ${nextLabel} ${formatPayday(period.end)}`
+            + (usePayday ? "" : " (매달 1일)");
+        statusWrap.title = tip;
+        amountEl.title = tip;
+
+        const gauge = document.getElementById("topbar-gauge");
+        if (gauge) gauge.style.width = `${Math.max(0, Math.min(100, (remaining / total) * 100))}%`;
+        const expenseGauge = document.getElementById("topbar-gauge-expense");
+        if (expenseGauge) expenseGauge.style.width = `${Math.min(100, (expense / total) * 100)}%`;
+    };
+
+    tick();
+    intervalId = setInterval(tick, 60 * 1000);
 }

@@ -144,6 +144,8 @@ public class AuthController {
         dto.setPayAdjust(user.getPayAdjust());
         dto.setSalaryMode(user.getSalaryMode());
         dto.setSalaryAmount(user.getSalaryAmount());
+        dto.setIncomeType(user.getIncomeType());
+        dto.setIncomeCategory(user.getIncomeCategory());
         return dto;
     }
 

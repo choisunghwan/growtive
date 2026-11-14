@@ -551,3 +551,7 @@ body.auth-view .content {
         white-space: normal;
     }
 }
+
+/* 용돈·예산 게이지: 하루 금액은 좁은 화면에서 숨김 (마우스를 올리면 전체 안내) */
+.topbar-balance-daily { font-weight: 600; opacity: .85; }
+@media (max-width: 380px) { .topbar-balance-daily { display: none; } }

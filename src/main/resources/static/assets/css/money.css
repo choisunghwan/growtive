@@ -345,10 +345,11 @@ html.dark .money-stat--remain { --stat-accent: #2dd4bf; }
 .payday-setting { display: grid; gap: 8px; margin: 6px 0 4px; padding-top: 12px; border-top: 1px dashed var(--border); }
 .payday-setting .history-search-label { font-weight: 700; font-size: 13.5px; margin-top: 4px; }
 .payday-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 14px; }
-.payday-row[hidden], #salaryAmount[hidden] { display: none; }
+.payday-row[hidden], #salaryAmount[hidden], .payday-radio[hidden], #workTimeRow[hidden], #workDaysPicker[hidden] { display: none; }
+.payday-label { font-weight: 700; font-size: 13.5px; }
 .payday-row select { width: auto; }
 .payday-preview { margin: 0; font-size: 12.5px; }
-.payday-radio { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; cursor: pointer; }
+.payday-radio, .form .payday-radio { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; cursor: pointer; }
 .payday-radio input { width: auto; margin: 0; }
 .work-days-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0; }
 /* .form label { display:block } 보다 특이성을 높여야 label인 .work-day-chip에 flex가 먹음 */

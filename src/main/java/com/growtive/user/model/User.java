@@ -50,5 +50,8 @@ public class User {
     /** 월급 금액 방식: LEDGER(가계부 최근 '월급' 내역) / FIXED(고정 금액), null이면 LEDGER */
     private String salaryMode;
     private Long salaryAmount;
+    /** 수입 형태: SALARY(월급) / ALLOWANCE(용돈·정기 수입) / BUDGET(예산), null이면 SALARY */
+    private String incomeType;
+    private String incomeCategory;
 
 }
