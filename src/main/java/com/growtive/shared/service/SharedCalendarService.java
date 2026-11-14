@@ -15,6 +15,9 @@ public interface SharedCalendarService {
     /** 내가 참여 중인 공유 캘린더 */
     List<SharedCalendarDto> getMyCalendars(Long userId);
 
+    /** 특정 친구와 함께 쓰는(초대 대기 포함) 공유 캘린더 */
+    List<SharedCalendarDto> getCalendarsWith(Long userId, Long otherUserId);
+
     /** 나에게 온 초대 */
     List<SharedCalendarInvitationDto> getInvitations(Long userId);
 

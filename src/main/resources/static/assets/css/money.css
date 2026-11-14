@@ -1005,6 +1005,16 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
 .shared-header-side { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; }
 .shared-crown { margin-right: 3px; font-size: .95em; }
 .shared-members-modal { width: min(460px, 94vw); }
+
+/* 공유 캘린더 생성 창: 이 친구와 이미 함께 쓰는 캘린더 목록 */
+.shared-create-modal .history-modal-body { max-height: min(62vh, 560px); overflow-y: auto; }
+.shared-with-title { margin: 4px 0 8px; font-size: 13px; font-weight: 700; }
+.shared-with-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.shared-with-list li + li { border-top: 1px solid var(--border); }
+.shared-with-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; color: var(--text); text-decoration: none; font-size: 14px; }
+.shared-with-item:hover { background: var(--bg); }
+.shared-with-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.shared-with-item .hint { flex: none; font-size: 12px; }
 .shared-members-modal .history-modal-body { max-height: min(62vh, 560px); overflow-y: auto; }
 .shared-member-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .shared-member {

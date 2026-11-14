@@ -74,6 +74,15 @@
         ORDER BY c.created_at, c.id
     </select>
 
+    <select id="findCalendarsWithUser" resultType="com.growtive.shared.dto.SharedCalendarDto">
+        SELECT <include refid="calendarColumns"/>, o.status AS other_status
+        FROM shared_calendar c
+        JOIN shared_calendar_member m ON m.calendar_id = c.id AND m.user_id = #{userId} AND m.status = 'ACCEPTED'
+        JOIN shared_calendar_member o ON o.calendar_id = c.id AND o.user_id = #{otherUserId}
+        LEFT JOIN users ou ON ou.id = c.owner_id
+        ORDER BY c.created_at, c.id
+    </select>
+
     <select id="findCalendar" resultType="com.growtive.shared.dto.SharedCalendarDto">
         SELECT <include refid="calendarColumns"/>
         FROM shared_calendar c

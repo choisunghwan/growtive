@@ -43,6 +43,9 @@ public interface SharedCalendarMapper {
     /** 내가 참여 중(ACCEPTED)인 공유 캘린더 목록 */
     List<SharedCalendarDto> findMyCalendars(@Param("userId") Long userId);
 
+    /** 내가 참여 중이고 상대도 참여(또는 초대 대기) 중인 공유 캘린더 */
+    List<SharedCalendarDto> findCalendarsWithUser(@Param("userId") Long userId, @Param("otherUserId") Long otherUserId);
+
     /** 나에게 온 초대(PENDING) */
     List<SharedCalendarInvitationDto> findPendingInvitations(@Param("userId") Long userId);
 

@@ -54,6 +54,11 @@ public class SharedCalendarServiceImpl implements SharedCalendarService {
     }
 
     @Override
+    public List<SharedCalendarDto> getCalendarsWith(Long userId, Long otherUserId) {
+        return mapper.findCalendarsWithUser(userId, otherUserId);
+    }
+
+    @Override
     public List<SharedCalendarInvitationDto> getInvitations(Long userId) {
         return mapper.findPendingInvitations(userId);
     }

@@ -16,4 +16,6 @@ public class SharedCalendarDto {
     /** 참여 중(수락한) 인원 */
     private int memberCount;
     private LocalDateTime createdAt;
+    /** (특정 친구와 함께 쓰는 캘린더 조회 시) 그 친구의 상태: ACCEPTED / PENDING */
+    private String otherStatus;
 }

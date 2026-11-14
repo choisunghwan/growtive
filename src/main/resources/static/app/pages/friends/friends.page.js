@@ -211,12 +211,14 @@ export default function FriendsPage() {
             function openCreateSharedModal(friendUserId, friendName) {
                 const modal = openModal({
                     title: '공유 캘린더 생성',
+                    className: 'shared-create-modal',
                     bodyHtml: `
-                        <p class="history-modal-help"><b>${escapeHtml(friendName)}</b>님과 함께 쓸 가계부·일정을 만들어요.
-                            ${escapeHtml(friendName)}님이 초대를 수락하면 함께 볼 수 있어요.</p>
                         <label class="history-search-label" for="sharedName" style="display:block; margin-bottom:6px;">공유 캘린더 이름</label>
                         <input type="text" id="sharedName" class="history-search-input" maxlength="30" placeholder="예: ss couple" style="width:100%;">
-                        <p class="history-custom-error" id="sharedNameError" role="alert" hidden></p>`,
+                        <p class="history-custom-error" id="sharedNameError" role="alert" hidden></p>
+                        <p class="history-modal-help" style="margin-top:10px;"><b>${escapeHtml(friendName)}</b>님과 함께 쓸 가계부·일정을 만들어요.
+                            ${escapeHtml(friendName)}님이 초대를 수락하면 함께 볼 수 있어요.</p>
+                        <div id="sharedWithList"></div>`,
                     actionsHtml: `
                         <button type="button" class="btn btn-ghost" data-modal-close>닫기</button>
                         <button type="button" class="btn btn-primary" id="createSharedBtn">생성</button>`,
@@ -227,6 +229,21 @@ export default function FriendsPage() {
                 const btn = root.querySelector('#createSharedBtn');
                 input.focus();
                 input.addEventListener('input', () => { errorEl.hidden = true; });
+
+                // 이 친구와 이미 함께 쓰는 공유 캘린더 (없으면 아무것도 안 보임)
+                axios.get(`/api/shared-calendars/with/${friendUserId}`).then(({ data }) => {
+                    const list = data || [];
+                    if (list.length === 0 || !root.isConnected) return;
+                    root.querySelector('#sharedWithList').innerHTML = `
+                        <div class="shared-with-title">${escapeHtml(friendName)}님과 이미 함께 쓰는 캘린더 ${list.length}개</div>
+                        <ul class="shared-with-list">
+                            ${list.map(c => `
+                                <li><a class="shared-with-item" href="#/shared?id=${c.id}">
+                                    <span class="shared-with-name">${c.owner ? '👑 ' : ''}${escapeHtml(c.name)}</span>
+                                    <span class="hint">${c.otherStatus === 'PENDING' ? '수락 대기' : `${c.memberCount}명`}</span>
+                                </a></li>`).join('')}
+                        </ul>`;
+                }).catch(() => { /* 목록을 못 불러와도 생성은 가능 */ });
 
                 const submit = async () => {
                     const name = input.value.trim();

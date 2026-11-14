@@ -42,6 +42,12 @@ public class SharedCalendarController {
         return service.getMyCalendars(getUserId(session));
     }
 
+    /** 이 친구와 이미 함께 쓰는 공유 캘린더 (공유 캘린더 생성 창에서 안내용) */
+    @GetMapping("/with/{otherUserId}")
+    public List<SharedCalendarDto> calendarsWith(@PathVariable Long otherUserId, HttpSession session) {
+        return service.getCalendarsWith(getUserId(session), otherUserId);
+    }
+
     @GetMapping("/invitations")
     public List<SharedCalendarInvitationDto> invitations(HttpSession session) {
         return service.getInvitations(getUserId(session));
