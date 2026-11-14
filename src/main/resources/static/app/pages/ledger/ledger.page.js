@@ -602,7 +602,7 @@ export default function LedgerPage(options = {}) {
                 <div class="settle-bar" id="settleBar" hidden>
                     <div class="settle-bar-text">
                         <b>정산할 날짜를 골라주세요</b>
-                        <span id="settleBarInfo">0일 선택</span>
+                        <span id="settleBarInfo">2초 꾹 누른 채 끌면 여러 날 한 번에</span>
                     </div>
                     <div class="settle-bar-btns">
                         <button type="button" class="btn btn-ghost btn-sm" id="settleCancelBtn">끝내기</button>
@@ -739,7 +739,10 @@ export default function LedgerPage(options = {}) {
                 } else {
                     container.querySelectorAll('[data-date]').forEach(el => {
                         el.addEventListener('click', () => {
-                            if (state.settle.active) toggleSettleDate(el.dataset.date);
+                            if (state.settle.active) {
+                                if (settleDrag.suppressClick) { settleDrag.suppressClick = false; return; }
+                                toggleSettleDate(el.dataset.date);
+                            }
                             else selectDate(el.dataset.date);
                         });
                     });
@@ -762,7 +765,7 @@ export default function LedgerPage(options = {}) {
                 picked.forEach(list => list.forEach(tx => { total += Number(tx.amount) || 0; }));
                 $('settleBarInfo').innerHTML = picked.size
                     ? `${picked.size}일 선택 · 지출 <b class="is-expense">${won(total)}</b>`
-                    : '0일 선택';
+                    : '2초 꾹 누른 채 끌면 여러 날 한 번에';
                 $('settleRunBtn').disabled = picked.size === 0;
             }
 
@@ -773,6 +776,99 @@ export default function LedgerPage(options = {}) {
                 renderCalendar();
                 updateSettleBar();
             }
+
+            /*
+             * 꾹 눌러(2초) 여러 날짜 한 번에 고르기
+             * - 날짜를 2초 이상 누르고 있으면 드래그 모드 → 손가락(마우스)이 지나간 시작~현재 날짜까지 한 번에 선택
+             * - 시작한 날짜가 이미 골라져 있었으면 반대로 그 범위를 해제
+             * - 2초 전에 손을 움직이면 화면 스크롤로 보고 취소, 2초 전에 떼면 평소처럼 한 날짜만 체크
+             */
+            const SETTLE_HOLD_MS = 2000;
+            const settleDrag = { timer: null, pointerId: null, startX: 0, startY: 0, start: null, current: null,
+                                 active: false, removing: false, suppressClick: false };
+
+            function settleRange(a, b) {
+                const lo = a < b ? a : b, hi = a < b ? b : a;
+                return [...$('calendarGrid').querySelectorAll('.ledger-cell[data-date]')]
+                    .map(c => c.dataset.date).filter(d => d >= lo && d <= hi);
+            }
+
+            function paintSettleDrag() {
+                const inRange = new Set(settleRange(settleDrag.start, settleDrag.current));
+                $('calendarGrid').querySelectorAll('.ledger-cell[data-date]').forEach(cell => {
+                    const on = inRange.has(cell.dataset.date);
+                    cell.classList.toggle('ledger-cell--settle-drag', on && !settleDrag.removing);
+                    cell.classList.toggle('ledger-cell--settle-undrag', on && settleDrag.removing);
+                });
+            }
+
+            function cancelSettleHold() {
+                clearTimeout(settleDrag.timer);
+                settleDrag.timer = null;
+                $('calendarGrid').querySelectorAll('.ledger-cell--settle-holding').forEach(c => c.classList.remove('ledger-cell--settle-holding'));
+            }
+
+            function finishSettleDrag(apply) {
+                cancelSettleHold();
+                if (!settleDrag.active) return;
+                settleDrag.active = false;
+                document.body.classList.remove('is-settle-dragging');
+                setTimeout(() => { settleDrag.suppressClick = false; }, 400); // 손 뗀 직후 클릭만 무시
+                if (apply) {
+                    for (const d of settleRange(settleDrag.start, settleDrag.current)) {
+                        if (settleDrag.removing) state.settle.picked.delete(d);
+                        else state.settle.picked.set(d, expensesOn(d));
+                    }
+                }
+                renderCalendar();
+                updateSettleBar();
+            }
+
+            $('calendarGrid').addEventListener('pointerdown', (e) => {
+                if (!state.settle.active || state.viewMode === 'list' || isSchedule()) return;
+                const cell = e.target.closest('.ledger-cell[data-date]');
+                if (!cell) return;
+                cancelSettleHold();
+                Object.assign(settleDrag, { pointerId: e.pointerId, startX: e.clientX, startY: e.clientY,
+                                            start: cell.dataset.date, current: cell.dataset.date });
+                cell.classList.add('ledger-cell--settle-holding'); // 누르고 있는 동안 표시 (2초 차오름)
+                settleDrag.timer = setTimeout(() => {
+                    settleDrag.timer = null;
+                    cell.classList.remove('ledger-cell--settle-holding');
+                    settleDrag.active = true;
+                    settleDrag.removing = state.settle.picked.has(settleDrag.start);
+                    settleDrag.suppressClick = true; // 손 뗄 때 생기는 클릭은 무시
+                    document.body.classList.add('is-settle-dragging');
+                    try { navigator.vibrate?.(30); } catch { /* 진동 미지원 */ }
+                    paintSettleDrag();
+                }, SETTLE_HOLD_MS);
+            });
+
+            $('calendarGrid').addEventListener('pointermove', (e) => {
+                if (e.pointerId !== settleDrag.pointerId) return;
+                if (settleDrag.timer && Math.hypot(e.clientX - settleDrag.startX, e.clientY - settleDrag.startY) > 10) {
+                    cancelSettleHold(); // 2초 전에 움직이면 스크롤
+                    return;
+                }
+                if (!settleDrag.active) return;
+                const d = cellAtPoint(e.clientX, e.clientY);
+                if (d && d !== settleDrag.current) {
+                    settleDrag.current = d;
+                    paintSettleDrag();
+                }
+            });
+
+            document.addEventListener('pointerup', (e) => {
+                if (e.pointerId !== settleDrag.pointerId) return;
+                if (settleDrag.active) finishSettleDrag(true); else cancelSettleHold();
+            });
+            document.addEventListener('pointercancel', (e) => {
+                if (e.pointerId !== settleDrag.pointerId) return;
+                finishSettleDrag(true);
+            });
+            // 드래그 중에는 화면이 같이 스크롤되지 않게
+            $('calendarGrid').addEventListener('touchmove', (e) => { if (settleDrag.active) e.preventDefault(); }, { passive: false });
+            $('calendarGrid').addEventListener('contextmenu', (e) => { if (state.settle.active) e.preventDefault(); });
 
             api.startSettle = startSettle;
 
