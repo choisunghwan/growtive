@@ -555,3 +555,13 @@ body.auth-view .content {
 /* 용돈·예산 게이지: 하루 금액은 좁은 화면에서 숨김 (마우스를 올리면 전체 안내) */
 .topbar-balance-daily { font-weight: 600; opacity: .85; }
 @media (max-width: 380px) { .topbar-balance-daily { display: none; } }
+
+.topbar-notice {
+    position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 200;
+    width: min(520px, calc(100vw - 24px)); display: flex; gap: 10px; align-items: flex-start;
+    padding: 12px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.5;
+    background: var(--bg-elevated); color: var(--text); border: 1px solid #f59e0b; box-shadow: var(--shadow-md);
+    word-break: keep-all;
+}
+.topbar-notice span { flex: 1; }
+.topbar-notice button { border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: 14px; }

@@ -33,19 +33,19 @@ export async function initTopbarSalaryTicker() {
     if (!el || !authStore.isLoggedIn()) return;
 
     const now = new Date();
-    let transactions, schedule;
+    let schedule;
     try {
-        const [txRes, scheduleRes] = await Promise.all([
-            axios.get("/api/money/ledger", { params: { year: now.getFullYear(), month: now.getMonth() + 1 } }),
-            axios.get("/api/auth/work-schedule")
-        ]);
-        transactions = txRes.data;
-        schedule = scheduleRes.data;
+        ({ data: schedule } = await axios.get("/api/auth/work-schedule"));
     } catch (e) {
         return; // 실패하면 조용히 숨김 (topbar를 방해하지 않도록)
     }
 
-    // 📅 게이지 기간: 월급날을 정했으면 '지난 월급날 ~ 다음 월급날', 아니면 이번 달 1일~말일
+    // 💵 금액 방식: FIXED(고정 금액, 시작일마다 자동 기록) / BUDGET(한 달 예산) / 그 외(설정 안 함 = 예전 방식)
+    const mode = ["FIXED", "BUDGET"].includes(schedule.salaryMode) ? schedule.salaryMode : null;
+    // 게이지: 근무 시간에 따라 쌓이게(SALARY) / 남은 돈(BALANCE). 예산은 항상 남은 돈
+    const workGauge = mode === "BUDGET" ? false : schedule.incomeType !== "BALANCE";
+
+    // 📅 게이지 기간: 시작일(월급날)을 정했으면 '지난 시작일 ~ 다음 시작일', 아니면 이번 달 1일~말일
     const usePayday = hasPayRule(schedule);
     const period = usePayday
         ? payPeriod(now, schedule)
@@ -53,48 +53,70 @@ export async function initTopbarSalaryTicker() {
     const fromYmd = ymdOf(period.start);
     const toYmd = ymdOf(new Date(period.end.getFullYear(), period.end.getMonth(), period.end.getDate() - 1));
 
-    const incomeType = schedule.incomeType || "SALARY";
-
-    if (usePayday || incomeType !== "SALARY") {
-        // 기간이 지난달에 걸치거나, 최근 '월급' 내역을 찾으려면 이번 달 밖의 내역도 필요 → 읽기 전용으로 조회
-        const lookback = new Date(period.start.getFullYear(), period.start.getMonth() - 2, 1);
+    // 📝 고정 금액: 이번 기간 시작일에 가계부 자동 기록 (서버가 기간마다 한 번만, 지운 건 다시 안 넣음)
+    let autoTxId = null;
+    if (mode === "FIXED") {
         try {
+            const { data } = await axios.post("/api/money/auto-income/ensure", { periodStart: fromYmd, periodEnd: toYmd });
+            autoTxId = data?.transactionId ?? null;
+            if (data?.created && data.duplicates?.length) {
+                const d = data.duplicates[0];
+                showTopbarNotice(`📝 ${Number(d.amount).toLocaleString("ko-KR")}원 '${d.category}'을 ${Number(fromYmd.slice(5, 7))}월 ${Number(fromYmd.slice(8))}일에 자동으로 기록했어요. `
+                    + `그런데 ${Number(String(d.date).slice(5, 7))}/${Number(String(d.date).slice(8, 10))}에 같은 내역이 이미 있어요. 중복이면 하나를 지워주세요.`);
+            }
+        } catch (e) { /* 자동 기록이 안 돼도 게이지는 그림 */ }
+    }
+
+    let transactions;
+    try {
+        ({ data: transactions } = await axios.get("/api/money/ledger", { params: { year: now.getFullYear(), month: now.getMonth() + 1 } }));
+        // 기간이 지난달에 걸치거나, 최근 '월급' 내역을 찾으려면 이번 달 밖의 내역도 필요 → 읽기 전용으로 조회
+        if (usePayday || mode) {
+            const lookback = new Date(period.start.getFullYear(), period.start.getMonth() - 2, 1);
             const { data } = await axios.get("/api/money/ledger/range", { params: { from: ymdOf(lookback), to: toYmd } });
             const seen = new Set(transactions.map(tx => tx.id));
             transactions = transactions.concat((data || []).filter(tx => !seen.has(tx.id)));
-        } catch (e) {
-            return;
         }
+    } catch (e) {
+        return;
     }
 
-    // 💰 월급 금액: 고정 금액 / 가계부의 '월급' 내역
+    // 💰 기준 금액
     let salaryAmount;
-    if (schedule.salaryMode === "FIXED" && Number(schedule.salaryAmount) > 0) {
-        salaryAmount = Number(schedule.salaryAmount);
+    let excludeIncome = (tx) => tx.category === "월급"; // 게이지 금액 자체인 수입은 '다른 수입'에서 뺌
+    if (mode === "FIXED") {
+        // 자동 기록된 내역이 있으면 그 금액 (사용자가 이번 달 금액을 고쳤으면 고친 금액)
+        const autoTx = transactions.find(tx => tx.id === autoTxId);
+        salaryAmount = autoTx ? Number(autoTx.amount) : Number(schedule.salaryAmount) || 0;
+        const cat = schedule.incomeCategory || "용돈";
+        excludeIncome = (tx) => tx.id === autoTxId || tx.category === cat;
+    } else if (mode === "BUDGET") {
+        salaryAmount = Number(schedule.salaryAmount) || 0;
     } else if (usePayday) {
-        // 오늘까지 등록된 '월급' 중 가장 최근 것 (매달 금액이 달라도 가장 최근 월급 기준)
+        // 오늘까지 등록된 '월급' 중 가장 최근 것
         const todayYmd = ymdOf(now);
         const latest = transactions
             .filter(tx => tx.type === "INCOME" && tx.category === "월급" && tx.date <= todayYmd)
             .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id))[0]
-            // 아직 한 번도 안 받았으면 이번 기간에 미리 적어둔 월급이라도
             || transactions.find(tx => tx.type === "INCOME" && tx.category === "월급");
         salaryAmount = latest ? Number(latest.amount) : 0;
     } else {
         // 예전 방식 그대로: 이번 달 '월급' 내역
-        const salaryTx = transactions.find(tx => tx.type === "INCOME" && tx.category === "월급");
+        const salaryTx = transactions.find(tx => tx.type === "INCOME" && tx.category === "월급" && tx.date >= fromYmd && tx.date <= toYmd);
         salaryAmount = salaryTx ? Number(salaryTx.amount) : 0;
     }
-    if (incomeType !== "SALARY") {
-        renderBalanceGauge(el, { incomeType, schedule, transactions, period, usePayday, now });
+    if (!salaryAmount) return; // 금액을 알 수 없으면 표시 안 함
+
+    if (!workGauge) {
+        renderBalanceGauge({ isBudget: mode === "BUDGET", amount: salaryAmount, category: schedule.incomeCategory || "용돈",
+                             excludeIncome, transactions, period, usePayday, fromYmd, toYmd });
         return;
     }
-    if (!salaryAmount) return; // 월급을 알 수 없으면 표시 안 함
 
     // 월급 외 수입/지출은 시간에 걸쳐 쌓이는 게 아니라 등록하는 즉시 게이지에 반영된다. (게이지 기간 안의 내역만)
     const inPeriod = transactions.filter(tx => tx.date >= fromYmd && tx.date <= toYmd);
     const otherIncomeAmount = inPeriod
-        .filter(tx => tx.type === "INCOME" && tx.category !== "월급")
+        .filter(tx => tx.type === "INCOME" && !excludeIncome(tx))
         .reduce((sum, tx) => sum + Number(tx.amount), 0);
     const expenseAmount = inPeriod
         .filter(tx => tx.type === "EXPENSE")
@@ -215,29 +237,13 @@ export async function initTopbarSalaryTicker() {
  * - 왼쪽(초록) = 남은 비율, 오른쪽(빨강) = 쓴 비율
  * - 글자: 💰 남은 돈 · 하루에 쓸 수 있는 돈 (= 남은 돈 ÷ 다음 받는 날까지 남은 일수), 상태: D-n
  */
-function renderBalanceGauge(el, { incomeType, schedule, transactions, period, usePayday, now }) {
-    const isBudget = incomeType === "BUDGET";
-    const category = schedule.incomeCategory || "용돈";
-    const fromYmd = ymdOf(period.start);
-    const toYmd = ymdOf(new Date(period.end.getFullYear(), period.end.getMonth(), period.end.getDate() - 1));
-    const todayYmd = ymdOf(now);
-
-    let amount = 0;
-    if (isBudget || schedule.salaryMode === "FIXED") {
-        amount = Number(schedule.salaryAmount) || 0;
-    } else {
-        const list = transactions.filter(tx => tx.type === "INCOME" && tx.category === category);
-        const latest = list.filter(tx => tx.date <= todayYmd)
-            .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id))[0] || list[0];
-        amount = latest ? Number(latest.amount) : 0;
-    }
-    if (!amount) return; // 금액을 알 수 없으면 표시 안 함
-
+function renderBalanceGauge({ isBudget, amount, category, excludeIncome, transactions, period, usePayday, fromYmd, toYmd }) {
+    const el = document.getElementById("topbar-salary-ticker");
     const inPeriod = transactions.filter(tx => tx.date >= fromYmd && tx.date <= toYmd);
     const expense = inPeriod.filter(tx => tx.type === "EXPENSE").reduce((sum, tx) => sum + Number(tx.amount), 0);
-    // 용돈 방식: 용돈 외에 기간 안에 들어온 다른 수입은 남은 돈에 더함 (예산 방식은 지출 한도만 봄)
+    // 고정 금액 방식: 그 외에 기간 안에 들어온 다른 수입은 남은 돈에 더함 (예산 방식은 지출 한도만 봄)
     const otherIncome = isBudget ? 0 : inPeriod
-        .filter(tx => tx.type === "INCOME" && tx.category !== category)
+        .filter(tx => tx.type === "INCOME" && !excludeIncome(tx))
         .reduce((sum, tx) => sum + Number(tx.amount), 0);
     const total = amount + otherIncome;
     const remaining = total - expense;
@@ -282,4 +288,17 @@ function renderBalanceGauge(el, { incomeType, schedule, transactions, period, us
 
     tick();
     intervalId = setInterval(tick, 60 * 1000);
+}
+
+/** 상단바 아래 잠깐 뜨는 안내 (자동 기록 중복 알림 등) */
+function showTopbarNotice(text) {
+    document.querySelector(".topbar-notice")?.remove();
+    const box = document.createElement("div");
+    box.className = "topbar-notice";
+    box.setAttribute("role", "status");
+    box.innerHTML = `<span></span><button type="button" aria-label="닫기">✕</button>`;
+    box.querySelector("span").textContent = text;
+    box.querySelector("button").onclick = () => box.remove();
+    document.body.appendChild(box);
+    setTimeout(() => box.remove(), 15000);
 }

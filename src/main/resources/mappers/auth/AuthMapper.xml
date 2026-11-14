@@ -36,7 +36,8 @@
             salary_mode = #{salaryMode},
             salary_amount = #{salaryAmount},
             income_type = #{incomeType},
-            income_category = #{incomeCategory}
+            income_category = #{incomeCategory},
+            auto_income_from = #{autoIncomeFrom}
         WHERE id = #{userId}
     </update>
 

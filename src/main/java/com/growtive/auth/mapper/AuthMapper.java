@@ -28,7 +28,8 @@ public interface AuthMapper {
                              @Param("salaryMode") String salaryMode,
                              @Param("salaryAmount") Long salaryAmount,
                              @Param("incomeType") String incomeType,
-                             @Param("incomeCategory") String incomeCategory);
+                             @Param("incomeCategory") String incomeCategory,
+                             @Param("autoIncomeFrom") java.time.LocalDate autoIncomeFrom);
 
     /*소셜 로그인 - provider + providerId로 기존 회원 조회*/
     User findByProviderAndProviderId(@Param("provider") String provider, @Param("providerId") String providerId);

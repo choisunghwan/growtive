@@ -146,6 +146,7 @@ public class AuthController {
         dto.setSalaryAmount(user.getSalaryAmount());
         dto.setIncomeType(user.getIncomeType());
         dto.setIncomeCategory(user.getIncomeCategory());
+        dto.setAutoIncomeFrom(user.getAutoIncomeFrom());
         return dto;
     }
 

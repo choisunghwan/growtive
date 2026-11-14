@@ -32,8 +32,9 @@ public class UserPaydayColumnInitializer implements ApplicationRunner {
         COLUMNS.put("pay_adjust", "VARCHAR(10) NULL");     // 주말·공휴일이면: BEFORE(전 평일) / AFTER(다음 평일) / KEEP(그대로)
         COLUMNS.put("salary_mode", "VARCHAR(10) NULL");    // LEDGER(가계부 최근 '월급' 내역) / FIXED(고정 금액)
         COLUMNS.put("salary_amount", "BIGINT NULL");       // FIXED일 때 금액 (BUDGET이면 한 달 예산)
-        COLUMNS.put("income_type", "VARCHAR(10) NULL");    // SALARY(월급·근무) / ALLOWANCE(용돈·정기 수입) / BUDGET(수입 없음·예산), NULL = SALARY
-        COLUMNS.put("income_category", "VARCHAR(20) NULL"); // ALLOWANCE + LEDGER일 때 금액을 가져올 수입 카테고리 (기본 '용돈')
+        COLUMNS.put("income_type", "VARCHAR(10) NULL");    // SALARY(근무 시간에 따라 쌓이는 게이지) / BALANCE(남은 돈 게이지), NULL = SALARY
+        COLUMNS.put("income_category", "VARCHAR(20) NULL"); // 고정 금액을 가계부에 자동 기록할 수입 카테고리 (기본 '용돈')
+        COLUMNS.put("auto_income_from", "DATE NULL");      // 이 날짜 이후 시작일부터 고정 금액 자동 기록 (지난 기간은 소급 안 함)
     }
 
     private final JdbcTemplate jdbcTemplate;
@@ -55,6 +56,21 @@ public class UserPaydayColumnInitializer implements ApplicationRunner {
                 log.error("users.{} 컬럼을 추가하지 못했습니다.", name, e);
             }
         });
+        // 자동 기록 이력: 기간(시작일)마다 한 번만 넣고, 사용자가 지운 내역은 다시 넣지 않기 위한 기록
+        String createLog = """
+                CREATE TABLE IF NOT EXISTS auto_income_log (
+                    user_id        BIGINT    NOT NULL,
+                    period_start   DATE      NOT NULL,
+                    transaction_id BIGINT    NULL,
+                    created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, period_start)
+                ) DEFAULT CHARSET = utf8mb4""";
+        try {
+            jdbcTemplate.execute(createLog);
+        } catch (Exception e) {
+            failed.append(createLog).append(";\n");
+            log.error("auto_income_log 테이블을 만들지 못했습니다.", e);
+        }
         if (failed.length() > 0) log.error("아래 SQL을 DB에서 직접 실행해주세요.\n{}", failed);
         else log.info("users 월급날 설정 컬럼 확인 완료");
     }

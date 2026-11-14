@@ -1,5 +1,5 @@
 import authStore from '../../store/authStore.js';
-import { escapeHtml } from '../../ui/modal.js';
+import { escapeHtml, openModal } from '../../ui/modal.js';
 import { renderUserPanel } from '../../ui/topbar-user.js';
 import { renderSharedMenu } from '../../ui/shared-menu.js';
 import { initTopbarSalaryTicker } from '../../ui/salary-ticker.js';
@@ -25,74 +25,79 @@ export default function MyPage() {
                 </div>
 
                 <div class="card" style="margin-top:20px;">
-                    <h3>⏱️ 상단 게이지 설정 (근무 시간·월급날)</h3>
-                    <p class="subtitle" style="margin-top:6px;">상단바 게이지가 이 설정에 맞춰 움직여요. 직장인은 근무 시간에 따라 월급이 쌓이고, 학생·예산 관리는 남은 돈과 하루에 쓸 수 있는 돈을 보여줘요.</p>
-                    <form id="workScheduleForm" class="form" style="margin-top:14px; max-width:420px;">
-                        <label class="history-search-label payday-label" for="incomeType">🧾 수입 형태</label>
-                        <select id="incomeType">
-                            <option value="SALARY">월급 (근무 시간에 따라 쌓여요)</option>
-                            <option value="ALLOWANCE">용돈·정기 수입 (학생, 장학금, 연금 등)</option>
-                            <option value="BUDGET">수입 없음·불규칙 (한 달 예산으로 관리)</option>
+                    <h3>⏱️ 상단 게이지 설정</h3>
+                    <p class="subtitle" style="margin-top:6px;">상단바 게이지가 이 설정에 맞춰 움직여요. 월급·용돈처럼 받는 돈이나 한 달 예산을 정하면, 시작일마다 새로 시작해요.</p>
+                    <form id="workScheduleForm" class="form gauge-setting" style="margin-top:14px; max-width:440px;">
+                        <label class="history-search-label payday-label" for="payRule">📅 시작일 <span class="hint">(월급날·용돈 받는 날·예산 시작일)</span></label>
+                        <select id="payRule">
+                            <option value="">매달 1일</option>
+                            <option value="DAY">매달 정해진 날짜</option>
+                            <option value="LAST_DAY">매달 말일</option>
+                            <option value="NTH_WEEKDAY">매달 몇째 주 무슨 요일</option>
                         </select>
-                        <p class="hint payday-preview" id="incomeTypeHint"></p>
-                        <div class="ledger-daterange" id="workTimeRow">
-                            <input type="time" id="workStartTime" required>
-                            <span class="hint">~</span>
-                            <input type="time" id="workEndTime" required>
+                        <div class="payday-row" id="payDayRow" hidden>
+                            매달 <select id="payDay">${Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}">${i + 1}일</option>`).join('')}</select>
                         </div>
-                        <div class="work-days-picker" id="workDaysPicker">
-                            ${['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((d, i) => `
-                                <label class="work-day-chip">
-                                    <input type="checkbox" value="${d}">
-                                    <span>${['월', '화', '수', '목', '금', '토', '일'][i]}</span>
-                                </label>
-                            `).join('')}
-                        </div>
-
-                        <div class="payday-setting">
-                            <label class="history-search-label" for="payRule" id="payRuleLabel">💰 월급날</label>
-                            <select id="payRule">
-                                <option value="">설정 안 함 (매달 1일~말일 기준)</option>
-                                <option value="DAY">매달 정해진 날짜</option>
-                                <option value="LAST_DAY">매달 말일</option>
-                                <option value="NTH_WEEKDAY">매달 몇째 주 무슨 요일</option>
+                        <div class="payday-row" id="payWeekRow" hidden>
+                            매달
+                            <select id="payWeek">
+                                <option value="1">첫째</option><option value="2">둘째</option><option value="3">셋째</option>
+                                <option value="4">넷째</option><option value="-1">마지막</option>
+                            </select> 주
+                            <select id="payWeekday">
+                                ${['일', '월', '화', '수', '목', '금', '토'].map((d, i) => `<option value="${i}"${i === 5 ? ' selected' : ''}>${d}요일</option>`).join('')}
                             </select>
-                            <div class="payday-row" id="payDayRow" hidden>
-                                매달 <select id="payDay">${Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}">${i + 1}일</option>`).join('')}</select>
-                            </div>
-                            <div class="payday-row" id="payWeekRow" hidden>
-                                매달
-                                <select id="payWeek">
-                                    <option value="1">첫째</option><option value="2">둘째</option><option value="3">셋째</option>
-                                    <option value="4">넷째</option><option value="-1">마지막</option>
-                                </select> 주
-                                <select id="payWeekday">
-                                    ${['일', '월', '화', '수', '목', '금', '토'].map((d, i) => `<option value="${i}"${i === 5 ? ' selected' : ''}>${d}요일</option>`).join('')}
-                                </select>
-                            </div>
-                            <div class="payday-row" id="payAdjustRow" hidden>
-                                주말·공휴일이면
-                                <select id="payAdjust">
-                                    <option value="BEFORE">전 평일에 받아요</option>
-                                    <option value="AFTER">다음 평일에 받아요</option>
-                                    <option value="KEEP">그날 그대로</option>
-                                </select>
-                            </div>
-                            <p class="hint payday-preview" id="paydayPreview"></p>
-
-                            <span class="history-search-label" id="amountLabel">💵 월급 금액</span>
-                            <label class="payday-radio" id="ledgerModeRow"><input type="radio" name="salaryMode" value="LEDGER" checked>
-                                <span>가계부의 '<span id="ledgerCatText">월급</span>' 내역 금액 (매달 다를 때)</span></label>
-                            <div class="payday-row" id="incomeCategoryRow" hidden>
-                                가져올 수입 카테고리
-                                <select id="incomeCategory">
-                                    ${['용돈', '부수입', '이자/배당', '월급', '기타'].map(c => `<option value="${c}">${c}</option>`).join('')}
-                                </select>
-                            </div>
-                            <label class="payday-radio" id="fixedModeRow"><input type="radio" name="salaryMode" value="FIXED">
-                                고정 금액</label>
-                            <input type="text" id="salaryAmount" inputmode="numeric" placeholder="예: 3,000,000" hidden>
                         </div>
+                        <div class="payday-row" id="payAdjustRow" hidden>
+                            주말·공휴일이면
+                            <select id="payAdjust">
+                                <option value="BEFORE">전 평일</option>
+                                <option value="AFTER">다음 평일</option>
+                                <option value="KEEP">그날 그대로</option>
+                            </select>
+                        </div>
+                        <p class="hint payday-preview" id="paydayPreview"></p>
+
+                        <span class="history-search-label payday-label">💵 금액</span>
+                        <label class="payday-radio"><input type="radio" name="salaryMode" value="" checked>
+                            <span>설정 안 함 <span class="hint">(가계부의 이번 달 '월급' 내역으로 표시)</span></span></label>
+                        <label class="payday-radio"><input type="radio" name="salaryMode" value="FIXED">
+                            <span>고정 금액 <span class="hint">(월급·용돈처럼 매달 받는 돈)</span></span></label>
+                        <label class="payday-radio"><input type="radio" name="salaryMode" value="BUDGET">
+                            <span>한 달 예산 <span class="hint">(이번 기간에 쓸 한도)</span></span></label>
+                        <input type="text" id="salaryAmount" inputmode="numeric" placeholder="예: 300,000" hidden>
+
+                        <div class="gauge-auto" id="autoRecordRow" hidden>
+                            <div class="payday-row">
+                                📝 시작일마다 가계부에
+                                <select id="incomeCategory">
+                                    ${['용돈', '월급', '부수입', '이자/배당', '기타'].map(c => `<option value="${c}">${c}</option>`).join('')}
+                                </select>
+                                수입으로 자동 기록
+                            </div>
+                            <p class="hint payday-preview">설정한 뒤 다가오는 시작일부터 기록돼요. 지난 기간은 넣지 않아요. 그달 금액이 다르면 기록된 내역을 고치면 게이지도 따라가요.</p>
+                            <p class="hint payday-preview gauge-dup" id="dupNotice" hidden></p>
+                        </div>
+
+                        <label class="payday-radio" id="workGaugeRow" hidden><input type="checkbox" id="workGauge">
+                            <span>근무 시간에 따라 쌓이게 보기 <span class="hint">(직장인)</span></span></label>
+                        <div class="gauge-work" id="workBlock">
+                            <span class="history-search-label payday-label">⏱️ 근무 시간</span>
+                            <div class="ledger-daterange" id="workTimeRow">
+                                <input type="time" id="workStartTime" required>
+                                <span class="hint">~</span>
+                                <input type="time" id="workEndTime" required>
+                            </div>
+                            <div class="work-days-picker" id="workDaysPicker">
+                                ${['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((d, i) => `
+                                    <label class="work-day-chip">
+                                        <input type="checkbox" value="${d}">
+                                        <span>${['월', '화', '수', '목', '금', '토', '일'][i]}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <p class="hint payday-preview" id="gaugeKindHint"></p>
 
                         <button type="submit" class="btn btn-primary">저장</button>
                     </form>
@@ -179,7 +184,12 @@ export default function MyPage() {
                     : `<a href="/api/auth/link/kakao" class="kakao-login-btn" style="max-width:260px; height:40px; font-size:14px;">💬 카카오 계정 연결하기</a>`;
             }
 
-            /* ---------- 💰 월급날 / 월급 금액 ---------- */
+            /* ---------- ⏱️ 상단 게이지 설정 ---------- */
+            let savedMode = '';           // 저장된 금액 방식 (자동 기록을 끌 때 물어보기 위해)
+            let categoryTouched = false;  // 카테고리를 직접 고르면 근무 체크에 따라 자동으로 바꾸지 않음
+
+            const modeValue = () => document.querySelector('input[name="salaryMode"]:checked')?.value || '';
+
             function readPayRule() {
                 return {
                     payRule: $('payRule').value || null,
@@ -190,49 +200,37 @@ export default function MyPage() {
                 };
             }
 
-            const INCOME_TYPE_TEXT = {
-                SALARY: { hint: '근무 요일·시간에만 월급이 초 단위로 쌓여요.', rule: '💰 월급날', amount: '💵 월급 금액', next: '다음 월급날', cat: '월급' },
-                ALLOWANCE: { hint: '받은 돈에서 쓴 만큼 줄어들고, 다음 받는 날까지 하루에 쓸 수 있는 돈을 보여줘요.', rule: '💰 받는 날', amount: '💵 받는 금액', next: '다음 받는 날', cat: null },
-                BUDGET: { hint: '한 달 예산을 정하면 남은 예산과 하루에 쓸 수 있는 돈을 보여줘요.', rule: '📅 예산 시작일', amount: '💵 한 달 예산', next: '새 예산 시작', cat: null },
-            };
-            const incomeType = () => $('incomeType').value || 'SALARY';
-
             function updatePaydayForm() {
-                const type = incomeType();
-                const text = INCOME_TYPE_TEXT[type];
-                $('incomeTypeHint').textContent = text.hint;
-                $('workTimeRow').hidden = type !== 'SALARY';
-                $('workDaysPicker').hidden = type !== 'SALARY';
-                $('payRuleLabel').textContent = text.rule;
-                $('amountLabel').textContent = text.amount;
-                $('payRule').options[0].textContent = type === 'SALARY' ? '설정 안 함 (매달 1일~말일 기준)' : '설정 안 함 (매달 1일)';
-                $('ledgerCatText').textContent = text.cat || $('incomeCategory').value;
-                // 예산 방식은 금액을 직접 입력만
-                $('ledgerModeRow').hidden = type === 'BUDGET';
-                $('fixedModeRow').hidden = type === 'BUDGET';
-                if (type === 'BUDGET') document.querySelector('input[name="salaryMode"][value="FIXED"]').checked = true;
                 const rule = $('payRule').value;
+                const mode = modeValue();
                 $('payDayRow').hidden = rule !== 'DAY';
                 $('payWeekRow').hidden = rule !== 'NTH_WEEKDAY';
                 $('payAdjustRow').hidden = !rule;
                 const r = readPayRule();
-                if (hasPayRule(r)) {
-                    const { start, end } = payPeriod(new Date(), r);
-                    const lastDay = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 1);
-                    $('paydayPreview').textContent = `${text.next} ${formatPayday(end)} · 지금 게이지 기간 ${start.getMonth() + 1}/${start.getDate()} ~ ${lastDay.getMonth() + 1}/${lastDay.getDate()}`;
-                } else {
-                    $('paydayPreview').textContent = '상단 게이지가 매달 1일에 새로 시작해요.';
-                }
-                const fixed = document.querySelector('input[name="salaryMode"]:checked')?.value === 'FIXED';
-                $('salaryAmount').hidden = !fixed;
-                $('salaryAmount').placeholder = type === 'BUDGET' ? '예: 500,000' : '예: 3,000,000';
-                $('incomeCategoryRow').hidden = !(type === 'ALLOWANCE' && !fixed);
+                const { start, end } = hasPayRule(r)
+                    ? payPeriod(new Date(), r)
+                    : (() => { const n = new Date(); return { start: new Date(n.getFullYear(), n.getMonth(), 1), end: new Date(n.getFullYear(), n.getMonth() + 1, 1) }; })();
+                const lastDay = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 1);
+                $('paydayPreview').textContent = `다음 시작일 ${formatPayday(end)} · 지금 기간 ${start.getMonth() + 1}/${start.getDate()} ~ ${lastDay.getMonth() + 1}/${lastDay.getDate()}`;
+
+                $('salaryAmount').hidden = !mode;
+                $('salaryAmount').placeholder = mode === 'BUDGET' ? '한 달 예산 (예: 500,000)' : '매달 받는 금액 (예: 300,000)';
+                $('autoRecordRow').hidden = mode !== 'FIXED';
+                $('workGaugeRow').hidden = mode !== 'FIXED';
+                // 근무 시간: 설정 안 함(예전 방식)이거나, 고정 금액 + '근무 시간에 따라 쌓이게' 체크일 때
+                const work = mode === '' || (mode === 'FIXED' && $('workGauge').checked);
+                $('workBlock').hidden = !work;
+                if (mode === 'FIXED' && !categoryTouched) $('incomeCategory').value = $('workGauge').checked ? '월급' : '용돈';
+                $('gaugeKindHint').textContent = work
+                    ? '상단바: 근무 요일·시간에만 번 돈이 초 단위로 쌓여요.'
+                    : '상단바: 남은 돈과 다음 시작일까지 하루에 쓸 수 있는 돈(D-day)을 보여줘요.';
             }
 
-            ['incomeType', 'incomeCategory', 'payRule', 'payDay', 'payWeek', 'payWeekday', 'payAdjust'].forEach(id => $(id).addEventListener('change', updatePaydayForm));
+            ['payRule', 'payDay', 'payWeek', 'payWeekday', 'payAdjust', 'workGauge'].forEach(id => $(id).addEventListener('change', updatePaydayForm));
+            $('incomeCategory').addEventListener('change', () => { categoryTouched = true; });
             document.querySelectorAll('input[name="salaryMode"]').forEach(r => r.addEventListener('change', () => {
                 updatePaydayForm();
-                if (r.value === 'FIXED' && r.checked) $('salaryAmount').focus();
+                if (r.checked && r.value) $('salaryAmount').focus();
             }));
             $('salaryAmount').addEventListener('input', () => {
                 const digits = $('salaryAmount').value.replace(/[^0-9]/g, '');
@@ -240,57 +238,103 @@ export default function MyPage() {
             });
 
             async function loadWorkSchedule() {
-                const res = await axios.get('/api/auth/work-schedule');
-                const { workStartTime, workEndTime, workDays } = res.data;
-                const d = res.data;
-                $('incomeType').value = d.incomeType || 'SALARY';
-                $('incomeCategory').value = d.incomeCategory || '용돈';
-                if (!$('incomeCategory').value) $('incomeCategory').value = '용돈';
+                const { data: d } = await axios.get('/api/auth/work-schedule');
+                $('workStartTime').value = (d.workStartTime || '09:00:00').slice(0, 5);
+                $('workEndTime').value = (d.workEndTime || '18:00:00').slice(0, 5);
+                const days = (d.workDays || 'MON,TUE,WED,THU,FRI').split(',');
+                $('workDaysPicker').querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = days.includes(cb.value); });
                 $('payRule').value = d.payRule || '';
                 if (d.payDay) $('payDay').value = String(d.payDay);
                 if (d.payWeek) $('payWeek').value = String(d.payWeek);
                 if (d.payWeekday != null) $('payWeekday').value = String(d.payWeekday);
                 $('payAdjust').value = d.payAdjust || 'BEFORE';
-                const mode = d.salaryMode === 'FIXED' ? 'FIXED' : 'LEDGER';
-                document.querySelector(`input[name="salaryMode"][value="${mode}"]`).checked = true;
+                savedMode = ['FIXED', 'BUDGET'].includes(d.salaryMode) ? d.salaryMode : '';
+                document.querySelector(`input[name="salaryMode"][value="${savedMode}"]`).checked = true;
                 $('salaryAmount').value = d.salaryAmount ? Number(d.salaryAmount).toLocaleString('ko-KR') : '';
+                $('workGauge').checked = d.incomeType !== 'BALANCE';
+                if (d.incomeCategory) { $('incomeCategory').value = d.incomeCategory; categoryTouched = true; }
                 updatePaydayForm();
-                $('workStartTime').value = (workStartTime || '09:00:00').slice(0, 5);
-                $('workEndTime').value = (workEndTime || '18:00:00').slice(0, 5);
-                const days = (workDays || 'MON,TUE,WED,THU,FRI').split(',');
-                $('workDaysPicker').querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                    cb.checked = days.includes(cb.value);
+            }
+
+            /** 고정 금액과 같은 카테고리·금액 수입이 이미 있으면 알려줌 (예: 이미 '매달 반복'으로 넣어둔 월급) */
+            async function checkDuplicate(category, amount) {
+                $('dupNotice').hidden = true;
+                try {
+                    const to = new Date();
+                    const from = new Date(to.getFullYear(), to.getMonth() - 2, 1);
+                    const ymd = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+                    const { data } = await axios.get('/api/money/ledger/range', { params: { from: ymd(from), to: ymd(new Date(to.getFullYear(), to.getMonth() + 1, 0)) } });
+                    const same = (data || []).filter(tx => tx.type === 'INCOME' && tx.category === category && Number(tx.amount) === amount && tx.memo !== '자동 기록');
+                    if (!same.length) return;
+                    const recurring = same.some(tx => tx.recurring || tx.recurringOriginId);
+                    const d = same[same.length - 1];
+                    $('dupNotice').textContent = `⚠️ 이미 '${category} ${amount.toLocaleString('ko-KR')}원' 내역이 있어요 (${Number(d.date.slice(5, 7))}/${Number(d.date.slice(8))}${recurring ? ', 매달 반복' : ''}). `
+                        + '자동 기록과 겹치면 같은 돈이 두 번 들어갈 수 있으니, 필요하면 하나를 정리해주세요.';
+                    $('dupNotice').hidden = false;
+                } catch { /* 확인 못 해도 저장에는 지장 없음 */ }
+            }
+
+            /** 고정 금액(자동 기록)을 끌 때: 이미 자동으로 들어간 내역을 남길지/지울지 사용자가 고름 */
+            async function askAutoEntries() {
+                let count = 0;
+                try { ({ data: { count } } = await axios.get('/api/money/auto-income/entries/count')); } catch { return 'keep'; }
+                if (!count) return 'keep';
+                return new Promise((resolve) => {
+                    let decided = false;
+                    const modal = openModal({
+                        title: '자동 기록을 끌게요',
+                        bodyHtml: `<p class="history-modal-help">지금까지 가계부에 자동으로 들어간 수입 내역이 <b>${count}건</b> 있어요. 어떻게 할까요?</p>`,
+                        actionsHtml: `
+                            <button type="button" class="btn btn-ghost" data-pick="cancel">취소</button>
+                            <button type="button" class="btn btn-danger" data-pick="delete">모두 지우기</button>
+                            <button type="button" class="btn btn-primary" data-pick="keep">남겨두기</button>`,
+                        onClose: () => { if (!decided) resolve('cancel'); },
+                    });
+                    modal.el.querySelectorAll('[data-pick]').forEach(btn => btn.addEventListener('click', () => {
+                        decided = true;
+                        resolve(btn.dataset.pick);
+                        modal.close();
+                    }));
                 });
             }
 
             $('workScheduleForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const mode = modeValue();
+                const work = mode === '' || (mode === 'FIXED' && $('workGauge').checked);
                 const workDays = [...$('workDaysPicker').querySelectorAll('input[type="checkbox"]:checked')]
                     .map(cb => cb.value).join(',');
-                if (!workDays && incomeType() === 'SALARY') {
+                if (work && !workDays) {
                     alert('근무 요일을 최소 하루는 선택해주세요.');
                     return;
                 }
-                const salaryMode = document.querySelector('input[name="salaryMode"]:checked')?.value || 'LEDGER';
                 const salaryAmount = Number($('salaryAmount').value.replace(/[^0-9]/g, '')) || null;
-                if (salaryMode === 'FIXED' && !salaryAmount) {
-                    alert(incomeType() === 'BUDGET' ? '한 달 예산을 입력해주세요.' : '금액을 입력해주세요.');
+                if (mode && !salaryAmount) {
+                    alert(mode === 'BUDGET' ? '한 달 예산을 입력해주세요.' : '매달 받는 금액을 입력해주세요.');
                     $('salaryAmount').focus();
                     return;
+                }
+                let pick = 'keep';
+                if (savedMode === 'FIXED' && mode !== 'FIXED') {
+                    pick = await askAutoEntries();
+                    if (pick === 'cancel') return;
                 }
                 try {
                     await axios.put('/api/auth/work-schedule', {
                         workStartTime: $('workStartTime').value,
                         workEndTime: $('workEndTime').value,
-                        workDays,
+                        workDays: workDays || 'MON,TUE,WED,THU,FRI',
                         ...readPayRule(),
-                        salaryMode,
-                        salaryAmount: salaryMode === 'FIXED' ? salaryAmount : null,
-                        incomeType: incomeType(),
+                        salaryMode: mode || null,
+                        salaryAmount: mode ? salaryAmount : null,
+                        incomeType: work ? 'SALARY' : 'BALANCE',
                         incomeCategory: $('incomeCategory').value,
                     });
-                    $('workScheduleStatus').textContent = '저장했습니다.';
-                    initTopbarSalaryTicker(); // 상단 게이지에 바로 반영
+                    if (pick === 'delete') await axios.delete('/api/money/auto-income/entries');
+                    savedMode = mode;
+                    $('workScheduleStatus').textContent = pick === 'delete' ? '저장했고, 자동 기록된 내역을 지웠어요.' : '저장했습니다.';
+                    if (mode === 'FIXED') await checkDuplicate($('incomeCategory').value, salaryAmount);
+                    initTopbarSalaryTicker(); // 상단 게이지에 바로 반영 (고정 금액이면 이번 기간 자동 기록도)
                 } catch (err) {
                     alert(err.response?.data?.message || '저장에 실패했습니다.');
                 }

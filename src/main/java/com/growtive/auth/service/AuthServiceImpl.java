@@ -187,23 +187,30 @@ public class AuthServiceImpl implements AuthService {
         String adjust = rule == null ? null
                 : (java.util.Set.of("BEFORE", "AFTER", "KEEP").contains(String.valueOf(s.getPayAdjust())) ? s.getPayAdjust() : "BEFORE");
 
-        String incomeType = java.util.Set.of("SALARY", "ALLOWANCE", "BUDGET").contains(String.valueOf(s.getIncomeType()))
-                ? s.getIncomeType() : "SALARY";
-        String incomeCategory = null;
-        if ("ALLOWANCE".equals(incomeType)) {
-            incomeCategory = s.getIncomeCategory() == null || s.getIncomeCategory().isBlank() ? "용돈" : s.getIncomeCategory().trim();
-            if (incomeCategory.length() > 20) throw new BadRequestException("수입 카테고리 이름이 너무 깁니다.");
-        }
-        // 예산 방식은 금액을 직접 입력 (가계부 내역에서 가져올 수입이 없음)
-        String mode = "BUDGET".equals(incomeType) || "FIXED".equals(s.getSalaryMode()) ? "FIXED" : "LEDGER";
+        // 💵 금액 방식: FIXED(고정 금액, 시작일마다 가계부에 자동 기록) / BUDGET(한 달 예산, 기록 안 함) / null(설정 안 함 = 예전 방식)
+        String mode = java.util.Set.of("FIXED", "BUDGET").contains(String.valueOf(s.getSalaryMode())) ? s.getSalaryMode() : null;
         Long amount = null;
-        if ("FIXED".equals(mode)) {
+        if (mode != null) {
             amount = s.getSalaryAmount();
             if (amount == null || amount <= 0 || amount > 10_000_000_000L) {
-                throw new BadRequestException("BUDGET".equals(incomeType) ? "한 달 예산을 입력해주세요." : "금액을 입력해주세요.");
+                throw new BadRequestException("BUDGET".equals(mode) ? "한 달 예산을 입력해주세요." : "금액을 입력해주세요.");
             }
         }
+        // 게이지: 근무 시간에 따라 쌓이게 보기(SALARY)는 고정 금액(번 돈)일 때만, 예산은 항상 남은 돈(BALANCE)
+        String incomeType = "BUDGET".equals(mode) ? "BALANCE"
+                : ("BALANCE".equals(s.getIncomeType()) ? "BALANCE" : "SALARY");
+        String incomeCategory = null;
+        java.time.LocalDate autoFrom = null;
+        if ("FIXED".equals(mode)) {
+            incomeCategory = s.getIncomeCategory() == null || s.getIncomeCategory().isBlank() ? "용돈" : s.getIncomeCategory().trim();
+            if (incomeCategory.length() > 20) throw new BadRequestException("수입 카테고리 이름이 너무 깁니다.");
+            // 자동 기록 시작 기준일: 처음 고정 금액으로 바꾼 날 (이미 켜져 있었으면 유지 → 지난 기간 소급 안 함)
+            User before = authMapper.findById(userId);
+            autoFrom = before != null && "FIXED".equals(before.getSalaryMode()) && before.getAutoIncomeFrom() != null
+                    ? before.getAutoIncomeFrom()
+                    : java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+        }
         authMapper.updateWorkSchedule(userId, s.getWorkStartTime(), s.getWorkEndTime(), s.getWorkDays(),
-                rule, payDay, payWeek, payWeekday, adjust, mode, amount, incomeType, incomeCategory);
+                rule, payDay, payWeek, payWeekday, adjust, mode, amount, incomeType, incomeCategory, autoFrom);
     }
 }

@@ -53,5 +53,6 @@ public class User {
     /** 수입 형태: SALARY(월급) / ALLOWANCE(용돈·정기 수입) / BUDGET(예산), null이면 SALARY */
     private String incomeType;
     private String incomeCategory;
+    private java.time.LocalDate autoIncomeFrom;
 
 }
