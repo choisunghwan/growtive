@@ -1051,17 +1051,12 @@ body.is-settle-selecting .ledger-page { padding-bottom: 80px; }
 .ledger-cell--settle-picked::after {
     content: '✔'; position: absolute; top: 3px; right: 4px; font-size: 11px; font-weight: 800; color: #16a34a;
 }
-/* 꾹 누르는 중: 2초 동안 아래에서 초록이 차오름 → 다 차면 드래그로 여러 날짜 선택 */
-body.is-settle-selecting .ledger-cell { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-.ledger-cell--settle-holding { position: relative; }
-.ledger-cell--settle-holding::before {
-    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 0;
-    background: rgba(22, 163, 74, .25); animation: settle-hold 2s linear forwards; pointer-events: none;
+/* 정산 날짜 선택 중: 일정 캘린더처럼 달력 칸 위에서는 스크롤 대신 드래그 */
+body.is-settle-selecting .ledger-grid .ledger-cell:not(.ledger-cell--empty) {
+    touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
-@keyframes settle-hold { to { height: 100%; } }
 .ledger-cell--settle-drag { background: rgba(22, 163, 74, .2) !important; border-color: #16a34a !important; }
 .ledger-cell--settle-undrag { background: var(--bg) !important; border-style: dashed !important; opacity: .6; }
-body.is-settle-dragging { overscroll-behavior: none; }
 html.dark .ledger-cell--settle-picked, html.dark .ledger-list-group.is-settle-picked { background: rgba(22, 163, 74, .22); }
 .settle-dates { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg); font-size: 13.5px; word-break: keep-all; }
 .settle-dates .hint { font-size: 12px; }
