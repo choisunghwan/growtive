@@ -1051,8 +1051,18 @@ body.is-settle-selecting .ledger-page { padding-bottom: 80px; }
 .ledger-cell--settle-picked::after {
     content: '✔'; position: absolute; top: 3px; right: 4px; font-size: 11px; font-weight: 800; color: #16a34a;
 }
-.ledger-drag-hint { margin: 0 0 10px; text-align: center; font-size: 12.5px; }
+.ledger-drag-hint {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    margin: 0 0 12px; padding: 8px 8px 8px 14px; border-radius: var(--radius-sm);
+    background: #eef4ff; border: 1px solid #bfd3fe; color: #1d4ed8; font-size: 12.5px; font-weight: 600; word-break: keep-all;
+}
 .ledger-drag-hint[hidden] { display: none; }
+.ledger-drag-hint-close {
+    flex: none; width: 26px; height: 26px; border: none; border-radius: 50%;
+    background: transparent; color: inherit; cursor: pointer; font-size: 13px;
+}
+.ledger-drag-hint-close:hover { background: rgba(37, 99, 235, .12); }
+html.dark .ledger-drag-hint { background: rgba(59, 130, 246, .14); border-color: rgba(96, 165, 250, .45); color: #93c5fd; }
 
 /* 정산 날짜 선택 중: 일정 캘린더처럼 달력 칸 위에서는 스크롤 대신 드래그 */
 body.is-settle-selecting .ledger-grid .ledger-cell:not(.ledger-cell--empty) {

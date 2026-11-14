@@ -138,6 +138,15 @@ export default function LedgerPage(options = {}) {
 
     function isSchedule() { return state.mode === 'schedule'; }
 
+    // 👆 일정 달력 드래그 안내: [✕]로 닫으면 이 기기에서는 다시 안 보여줌
+    const DRAG_HINT_KEY = 'growtive-schedule-drag-hint-closed';
+    function dragHintClosed() {
+        try { return localStorage.getItem(DRAG_HINT_KEY) === '1'; } catch { return false; }
+    }
+    function showDragHint() {
+        return isSchedule() && state.viewMode !== 'list' && !dragHintClosed();
+    }
+
     function gridContainerClass() {
         if (state.viewMode === 'list') return 'ledger-list-wrap';
         return isSchedule() ? 'ledger-grid ledger-grid--schedule' : 'ledger-grid';
@@ -591,7 +600,10 @@ export default function LedgerPage(options = {}) {
                         </div>
                     </div>
                     <div class="ledger-summary" id="monthSummary" style="${isSchedule() ? 'display:none;' : ''}"></div>
-                    <p class="hint ledger-drag-hint" id="scheduleDragHint"${isSchedule() && state.viewMode !== 'list' ? '' : ' hidden'}>날짜를 선택한 채 드래그하면 한번에 입력 가능</p>
+                    <div class="ledger-drag-hint" id="scheduleDragHint" role="note"${showDragHint() ? '' : ' hidden'}>
+                        <span>👆 날짜를 선택한 채 드래그하면 한번에 입력 가능</span>
+                        <button type="button" class="ledger-drag-hint-close" id="scheduleDragHintClose" aria-label="안내 닫기">✕</button>
+                    </div>
                     <div class="${gridContainerClass()}" id="calendarGrid">${renderMainView()}</div>
                 </div>
 
@@ -688,7 +700,7 @@ export default function LedgerPage(options = {}) {
             function renderCalendar() {
                 const container = $('calendarGrid');
                 // 일정 달력에서만 드래그 안내 (여러 날 일정을 한 번에)
-                $('scheduleDragHint').hidden = !(isSchedule() && state.viewMode !== 'list');
+                $('scheduleDragHint').hidden = !showDragHint();
                 container.className = gridContainerClass();
                 container.innerHTML = renderMainView();
 
@@ -1342,6 +1354,11 @@ export default function LedgerPage(options = {}) {
                 renderCalendar();
                 renderDayPanel();
             }
+
+            $('scheduleDragHintClose').addEventListener('click', () => {
+                try { localStorage.setItem(DRAG_HINT_KEY, '1'); } catch { /* 저장 못 하면 이번 화면에서만 닫힘 */ }
+                $('scheduleDragHint').hidden = true;
+            });
 
             $('prevMonth').addEventListener('click', async () => {
                 state.month--;

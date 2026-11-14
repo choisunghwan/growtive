@@ -33,7 +33,7 @@ export default function AboutPage() {
           <div class="card about-feature">
             <div class="about-feature-text">
               <h3>🗓️ 일정 캘린더</h3>
-              <p>같은 캘린더에서 [가계부] / [일정] 전환만으로 일정도 관리할 수 있습니다. 하루짜리 일정은 물론 여러 날에 걸친 일정, 시간, 색상까지 자유롭게 지정하고, 달력·목록 두 가지로 볼 수 있어요.</p>
+              <p>같은 캘린더에서 [가계부] / [일정] 전환만으로 일정도 관리할 수 있습니다. 하루짜리 일정은 물론 여러 날에 걸친 일정, 시간, 색상까지 자유롭게 지정하고, 달력·목록 두 가지로 볼 수 있어요. 날짜를 선택한 채 드래그하면 여러 날에 걸친 일정을 한 번에 입력할 수 있어요.</p>
             </div>
             <img src="/assets/img/intro/intro-schedule.png?v=2" alt="일정 캘린더 화면" class="about-feature-img">
           </div>
