@@ -66,13 +66,18 @@ export default function SharedCalendarPage() {
                             </li>`).join('')}
                         ${pending.length ? `<li class="shared-member-chip shared-member-chip--pending" title="${escapeHtml(pending.map(m => m.displayName).join(', '))}">초대 대기 ${pending.length}명</li>` : ''}
                     </ul>
+                    <div class="shared-header-btns">
+                    <button type="button" class="btn btn-sm btn-pill shared-manage-btn" id="settleStartBtn">💸 정산</button>
                     <button type="button" class="btn btn-sm btn-pill shared-manage-btn" id="openMembersBtn">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
                         멤버 관리
                     </button>
+                    </div>
                 </div>
             </div>`;
         document.getElementById('openMembersBtn').onclick = openMembersModal;
+        // 정산 날짜 선택은 아래 캘린더(LedgerPage)가 맡음
+        document.getElementById('settleStartBtn').onclick = () => ledger.startSettle();
     }
 
     /* ---------------- 💸 정산 ---------------- */

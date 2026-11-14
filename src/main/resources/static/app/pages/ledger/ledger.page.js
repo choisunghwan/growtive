@@ -590,16 +590,15 @@ export default function LedgerPage(options = {}) {
             </form>`;
     }
 
-    return {
+    // 바깥(공유 캘린더 상단 카드)에서 부를 수 있는 동작 — onMounted 후 채워짐
+    const api = {
         title: isShared ? '공유 캘린더' : '가계부',
+        startSettle() {},
 
         render() {
             return `
             <section class="ledger-page">
                 ${isShared ? `
-                <div class="settle-start-row">
-                    <button type="button" class="btn btn-sm btn-pill" id="settleStartBtn">💸 정산</button>
-                </div>
                 <div class="settle-bar" id="settleBar" hidden>
                     <div class="settle-bar-text">
                         <b>정산할 날짜를 골라주세요</b>
@@ -755,7 +754,8 @@ export default function LedgerPage(options = {}) {
                 if (!isShared) return;
                 const { active, picked } = state.settle;
                 $('settleBar').hidden = !active;
-                $('settleStartBtn').hidden = active;
+                const startBtn = document.getElementById('settleStartBtn'); // 공유 캘린더 상단 카드의 버튼
+                if (startBtn) startBtn.disabled = active;
                 document.body.classList.toggle('is-settle-selecting', active);
                 if (!active) return;
                 let total = 0;
@@ -774,7 +774,10 @@ export default function LedgerPage(options = {}) {
                 updateSettleBar();
             }
 
+            api.startSettle = startSettle;
+
             function startSettle() {
+                if (state.settle.active) return;
                 // 정산은 가계부 기준 → 일정 보기였으면 가계부로
                 if (isSchedule()) $('modeSwitch').querySelector('button[data-mode="money"]').click();
                 state.settle.active = true;
@@ -791,7 +794,6 @@ export default function LedgerPage(options = {}) {
             }
 
             if (isShared) {
-                $('settleStartBtn').addEventListener('click', startSettle);
                 $('settleCancelBtn').addEventListener('click', endSettle);
                 $('settleRunBtn').addEventListener('click', () => {
                     const dates = [...state.settle.picked.keys()].sort();
@@ -1377,4 +1379,5 @@ export default function LedgerPage(options = {}) {
             }
         }
     };
+    return api;
 }
