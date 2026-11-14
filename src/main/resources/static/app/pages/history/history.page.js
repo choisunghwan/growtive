@@ -356,10 +356,62 @@ export default function HistoryPage() {
             </li>`;
     }
 
-    function listHtml() {
-        const txs = state.filter === 'ALL'
+    /** 지금 목록에 보이는 내역 (전체/수입/지출 선택 반영) */
+    function visibleTxs() {
+        return state.filter === 'ALL'
             ? state.transactions
             : state.transactions.filter(tx => tx.type === state.filter);
+    }
+
+    /**
+     * 📥 엑셀(CSV) 내보내기 — 지금 화면에 보이는 내역 그대로 (기간·검색 조건·전체/수입/지출)
+     * - 엑셀에서 한글이 깨지지 않게 UTF-8 BOM, 날짜 오래된 순
+     * - 메모 등 글자가 =, +, -, @ 로 시작하면 엑셀이 수식으로 실행하지 않게 앞에 ' 를 붙임
+     */
+    function exportCsv() {
+        const txs = [...visibleTxs()].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.id - b.id));
+        if (txs.length === 0) return;
+        const text = (v) => {
+            let t = String(v ?? '');
+            if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+            return /[",\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+        };
+        const rows = [['날짜', '요일', '구분', '카테고리', '금액', '메모', '반복'].join(',')];
+        let income = 0, expense = 0;
+        for (const tx of txs) {
+            const amount = Number(tx.amount) || 0;
+            if (tx.type === 'INCOME') income += amount; else expense += amount;
+            const dow = WEEKDAYS[new Date(tx.date + 'T00:00:00').getDay()];
+            rows.push([
+                tx.date, dow, tx.type === 'INCOME' ? '수입' : '지출', text(tx.category),
+                tx.type === 'INCOME' ? amount : -amount, text(tx.memo),
+                (tx.recurring || tx.recurringOriginId) ? '매달 반복' : '',
+            ].join(','));
+        }
+        rows.push('');
+        if (state.filter !== 'EXPENSE') rows.push(['', '', '수입 합계', '', income].join(','));
+        if (state.filter !== 'INCOME') rows.push(['', '', '지출 합계', '', -expense].join(','));
+        if (state.filter === 'ALL') rows.push(['', '', '합계', '', income - expense].join(','));
+
+        const { from, to } = periodRange();
+        // 파일 이름은 영문·숫자로 (한글 파일 이름은 일부 브라우저에서 'download'로 바뀌어 저장됨)
+        const range = from && to ? `${from}_${to}` : `all_${txs[0].date}_${txs[txs.length - 1].date}`;
+        const kind = state.filter === 'INCOME' ? '_income' : state.filter === 'EXPENSE' ? '_expense' : '';
+        const name = `GrowTive_${range}${kind}${hasSearchCondition() ? '_search' : ''}.csv`;
+
+        const blob = new Blob(['\uFEFF' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function listHtml() {
+        const txs = visibleTxs();
 
         if (txs.length === 0) {
             const what = state.filter === 'EXPENSE' ? '지출 내역' : state.filter === 'INCOME' ? '수입 내역' : '내역';
@@ -391,7 +443,12 @@ export default function HistoryPage() {
         }).join('');
 
         // 검색 결과 합계는 목록 맨 위에
-        return resultTotalHtml(txs) + daysHtml;
+        const toolbar = `
+            <div class="history-export-row">
+                <span class="hint">${txs.length.toLocaleString('ko-KR')}건</span>
+                <button type="button" class="btn btn-sm btn-pill" id="exportCsvBtn">📥 엑셀로 저장</button>
+            </div>`;
+        return toolbar + resultTotalHtml(txs) + daysHtml;
     }
 
     /**
@@ -819,6 +876,7 @@ export default function HistoryPage() {
 
             const txOf = (el) => state.transactions.find(t => t.id === Number(el.dataset.tx));
             $('historyList').addEventListener('click', (e) => {
+                if (e.target.closest('#exportCsvBtn')) { exportCsv(); return; }
                 const row = e.target.closest('[data-tx]');
                 const tx = row && txOf(row);
                 if (tx) openTxModal(tx);

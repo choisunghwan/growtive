@@ -912,6 +912,10 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
     .history-header h2#periodLabel { font-size: clamp(14px, 4.2vw, 16px); }
 }
 
+/* ----- 자산 내역: 📥 엑셀로 저장 ----- */
+.history-export-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.history-export-row .hint { font-size: 12.5px; }
+
 /* ----- 내역: 기간 선택 📌 핀 ----- */
 .history-option-row { position: relative; }
 .history-option-row .history-option { padding-right: 52px; }
