@@ -10,6 +10,9 @@
  * - 👑 관리자만: 이름 변경, 관리자 넘기기, 다른 사람이 보낸 초대 취소, 캘린더 삭제
  * - 관리자가 나가면 남은 참여자 중 한 명에게 관리자를 넘김 (기본: 가장 먼저 참여한 사람)
  * - 참여자가 0명이 되면 캘린더 자동 삭제
+ *
+ * [💸 정산] 그 달 지출을 작성자(낸 사람)별로 모아 똑같이 나눴을 때 누가 누구에게 얼마 보내면 되는지 계산
+ * - 지출만 계산 (수입은 제외), 기존 내역으로 계산만 하고 아무것도 저장하지 않음
  */
 
 import { escapeHtml, openModal } from '../../ui/modal.js';
@@ -62,13 +65,141 @@ export default function SharedCalendarPage() {
                             </li>`).join('')}
                         ${pending.length ? `<li class="shared-member-chip shared-member-chip--pending" title="${escapeHtml(pending.map(m => m.displayName).join(', '))}">초대 대기 ${pending.length}명</li>` : ''}
                     </ul>
+                    <div class="shared-header-btns">
+                    <button type="button" class="btn btn-sm btn-pill shared-manage-btn" id="openSettleBtn">💸 정산</button>
                     <button type="button" class="btn btn-sm btn-pill shared-manage-btn" id="openMembersBtn">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
                         멤버 관리
                     </button>
+                    </div>
                 </div>
             </div>`;
         document.getElementById('openMembersBtn').onclick = openMembersModal;
+        document.getElementById('openSettleBtn').onclick = openSettleModal;
+    }
+
+    /* ---------------- 💸 정산 ---------------- */
+
+    const won = (n) => `${Math.round(n).toLocaleString('ko-KR')}원`;
+
+    /**
+     * 그 달 지출로 정산 계산
+     * - 나누는 사람: 지금 참여 중인 멤버 + 그 달 지출을 쓴 사람(나간 사람 포함)
+     * - 탈퇴 등으로 작성자를 알 수 없는 지출은 나누지 않고 따로 안내
+     * @returns {{ total, unknown, share, people: [{id, name, left, paid, diff}], transfers: [{from, to, amount}] }}
+     */
+    function calcSettlement(transactions) {
+        const people = new Map();
+        const add = (id, name, left) => {
+            if (!people.has(id)) people.set(id, { id, name, left, paid: 0, diff: 0 });
+            return people.get(id);
+        };
+        detail.members.filter(m => m.status === 'ACCEPTED').forEach(m => add(m.userId, m.displayName, false));
+
+        let unknown = 0;
+        for (const tx of transactions) {
+            if (tx.type !== 'EXPENSE') continue;
+            if (tx.authorId == null) { unknown += Number(tx.amount) || 0; continue; }
+            add(tx.authorId, tx.authorDisplayName || '알 수 없음', true).paid += Number(tx.amount) || 0;
+        }
+
+        const list = [...people.values()];
+        const total = list.reduce((sum, p) => sum + p.paid, 0);
+        const share = list.length ? total / list.length : 0;
+        // 원 단위로 반올림한 뒤 합이 0이 되게 맞춤 (남는 1~2원은 가장 많이 낸 사람 쪽에서 조정)
+        list.forEach(p => { p.diff = Math.round(p.paid - share); });
+        const drift = list.reduce((sum, p) => sum + p.diff, 0);
+        if (drift && list.length) list.reduce((a, b) => (b.paid > a.paid ? b : a)).diff -= drift;
+
+        // 받을 사람(+)과 보낼 사람(-)을 큰 금액부터 짝지음 → 보내는 횟수 최소화
+        const creditors = list.filter(p => p.diff > 0).map(p => ({ p, left: p.diff })).sort((a, b) => b.left - a.left);
+        const debtors = list.filter(p => p.diff < 0).map(p => ({ p, left: -p.diff })).sort((a, b) => b.left - a.left);
+        const transfers = [];
+        let i = 0, j = 0;
+        while (i < debtors.length && j < creditors.length) {
+            const amount = Math.min(debtors[i].left, creditors[j].left);
+            if (amount > 0) transfers.push({ from: debtors[i].p, to: creditors[j].p, amount });
+            debtors[i].left -= amount;
+            creditors[j].left -= amount;
+            if (debtors[i].left === 0) i++;
+            if (creditors[j].left === 0) j++;
+        }
+        list.sort((a, b) => b.paid - a.paid);
+        return { total, unknown, share, people: list, transfers };
+    }
+
+    function settleBodyHtml(year, month, result) {
+        const { total, unknown, share, people, transfers } = result;
+        const nameOf = (p) => `${escapeHtml(p.name)}${p.id === meId() ? ' <span class="shared-me">나</span>' : ''}${p.left && !detail.members.some(m => m.userId === p.id && m.status === 'ACCEPTED') ? ' <span class="hint">(나감)</span>' : ''}`;
+        const nav = `
+            <div class="settle-nav">
+                <button type="button" class="ledger-nav-btn" data-settle-move="-1" aria-label="이전 달">◀</button>
+                <b>${year}년 ${month}월</b>
+                <button type="button" class="ledger-nav-btn" data-settle-move="1" aria-label="다음 달">▶</button>
+            </div>`;
+        if (total === 0) {
+            return nav + `<div class="hint settle-empty">이 달에는 정산할 지출이 없어요.</div>`
+                + (unknown ? `<p class="hint">작성자를 알 수 없는 지출 ${won(unknown)}은 계산에서 뺐어요.</p>` : '');
+        }
+        return nav + `
+            <div class="settle-summary">
+                <div><span class="hint">총 지출</span><b class="is-expense">${won(total)}</b></div>
+                <div><span class="hint">${people.length}명이 나누면 1인당</span><b>${won(share)}</b></div>
+            </div>
+            <ul class="settle-people">
+                ${people.map(p => `
+                    <li>
+                        <span class="settle-name">${nameOf(p)}</span>
+                        <span class="settle-paid">낸 돈 ${won(p.paid)}</span>
+                        <span class="settle-diff ${p.diff > 0 ? 'is-income' : p.diff < 0 ? 'is-expense' : ''}">${p.diff > 0 ? `+${won(p.diff)} 받기` : p.diff < 0 ? `${won(-p.diff)} 보내기` : '딱 맞아요'}</span>
+                    </li>`).join('')}
+            </ul>
+            <div class="settle-title">이렇게 보내면 끝나요</div>
+            ${transfers.length ? `<ul class="settle-transfers">
+                ${transfers.map(t => `
+                    <li><b>${escapeHtml(t.from.name)}</b> → <b>${escapeHtml(t.to.name)}</b><span class="settle-amount">${won(t.amount)}</span></li>`).join('')}
+            </ul>` : '<div class="hint">보낼 돈이 없어요. 모두 똑같이 냈어요 🎉</div>'}
+            <p class="hint settle-note">공유 가계부의 <b>지출</b>을 작성자가 낸 돈으로 보고 똑같이 나눈 금액이에요. 수입은 빼고 계산해요.${unknown ? ` 작성자를 알 수 없는 지출 ${won(unknown)}은 뺐어요.` : ''}</p>`;
+    }
+
+    function openSettleModal() {
+        // 기본: 아래 캘린더에서 보고 있는 달
+        const label = document.getElementById('monthLabel')?.textContent || '';
+        const m = label.match(/(\d{4})년\s*(\d{1,2})월/);
+        const now = new Date();
+        let year = m ? Number(m[1]) : now.getFullYear();
+        let month = m ? Number(m[2]) : now.getMonth() + 1;
+
+        const modal = openModal({
+            title: '💸 정산',
+            className: 'shared-settle-modal',
+            bodyHtml: '<div class="hint">계산하는 중…</div>',
+            actionsHtml: '<button type="button" class="btn btn-ghost" data-modal-close>닫기</button>',
+        });
+        const body = modal.el.querySelector('.history-modal-body');
+        let seq = 0;
+
+        async function draw() {
+            const mySeq = ++seq;
+            try {
+                const { data } = await axios.get(api('/ledger'), { params: { year, month } });
+                if (mySeq !== seq) return; // 달을 빨리 넘긴 경우 마지막 것만 그림
+                body.innerHTML = settleBodyHtml(year, month, calcSettlement(data || []));
+            } catch (err) {
+                if (mySeq !== seq) return;
+                body.innerHTML = `<div class="hint">${escapeHtml(errMsg(err, '정산 내역을 불러오지 못했어요.'))}</div>`;
+            }
+        }
+
+        body.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-settle-move]');
+            if (!btn) return;
+            month += Number(btn.dataset.settleMove);
+            if (month < 1) { month = 12; year--; }
+            if (month > 12) { month = 1; year++; }
+            draw();
+        });
+        draw();
     }
 
     /** 변경 후: 상세 다시 불러와 헤더/사이드바/열린 모달 갱신 */
