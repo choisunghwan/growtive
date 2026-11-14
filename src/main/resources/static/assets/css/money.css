@@ -915,6 +915,11 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
 /* ----- 자산 내역: 📥 엑셀로 저장 ----- */
 .history-export-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .history-export-row .hint { font-size: 12.5px; }
+.history-export-actions { display: flex; align-items: center; gap: 6px; }
+.history-export-format {
+    width: auto; height: 32px; padding: 0 28px 0 10px; font-size: 13px;
+    border-radius: 999px; border: 1px solid var(--border); background-color: var(--bg-elevated); color: var(--text);
+}
 
 /* ----- 내역: 기간 선택 📌 핀 ----- */
 .history-option-row { position: relative; }

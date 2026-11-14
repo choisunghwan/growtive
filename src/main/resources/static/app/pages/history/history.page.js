@@ -363,43 +363,27 @@ export default function HistoryPage() {
             : state.transactions.filter(tx => tx.type === state.filter);
     }
 
-    /**
-     * 📥 엑셀(CSV) 내보내기 — 지금 화면에 보이는 내역 그대로 (기간·검색 조건·전체/수입/지출)
-     * - 엑셀에서 한글이 깨지지 않게 UTF-8 BOM, 날짜 오래된 순
-     * - 메모 등 글자가 =, +, -, @ 로 시작하면 엑셀이 수식으로 실행하지 않게 앞에 ' 를 붙임
-     */
-    function exportCsv() {
-        const txs = [...visibleTxs()].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.id - b.id));
-        if (txs.length === 0) return;
-        const text = (v) => {
-            let t = String(v ?? '');
-            if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
-            return /[",\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
-        };
-        const rows = [['날짜', '요일', '구분', '카테고리', '금액', '메모', '반복'].join(',')];
-        let income = 0, expense = 0;
-        for (const tx of txs) {
-            const amount = Number(tx.amount) || 0;
-            if (tx.type === 'INCOME') income += amount; else expense += amount;
-            const dow = WEEKDAYS[new Date(tx.date + 'T00:00:00').getDay()];
-            rows.push([
-                tx.date, dow, tx.type === 'INCOME' ? '수입' : '지출', text(tx.category),
-                tx.type === 'INCOME' ? amount : -amount, text(tx.memo),
-                (tx.recurring || tx.recurringOriginId) ? '매달 반복' : '',
-            ].join(','));
-        }
-        rows.push('');
-        if (state.filter !== 'EXPENSE') rows.push(['', '', '수입 합계', '', income].join(','));
-        if (state.filter !== 'INCOME') rows.push(['', '', '지출 합계', '', -expense].join(','));
-        if (state.filter === 'ALL') rows.push(['', '', '합계', '', income - expense].join(','));
+    /** 저장 형식 (이 기기에서 마지막에 고른 것 기억) */
+    const EXPORT_FORMAT_KEY = 'growtive-history-export-format';
+    function exportFormat() {
+        try { return localStorage.getItem(EXPORT_FORMAT_KEY) === 'csv' ? 'csv' : 'xlsx'; } catch { return 'xlsx'; }
+    }
 
-        const { from, to } = periodRange();
-        // 파일 이름은 영문·숫자로 (한글 파일 이름은 일부 브라우저에서 'download'로 바뀌어 저장됨)
-        const range = from && to ? `${from}_${to}` : `all_${txs[0].date}_${txs[txs.length - 1].date}`;
-        const kind = state.filter === 'INCOME' ? '_income' : state.filter === 'EXPENSE' ? '_expense' : '';
-        const name = `GrowTive_${range}${kind}${hasSearchCondition() ? '_search' : ''}.csv`;
+    /** 엑셀 파일 만드는 라이브러리(ExcelJS) — [엑셀로 저장]을 처음 누를 때만 불러옴 */
+    let excelJsPromise = null;
+    function loadExcelJs() {
+        if (window.ExcelJS) return Promise.resolve(window.ExcelJS);
+        excelJsPromise ||= new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+            script.onload = () => (window.ExcelJS ? resolve(window.ExcelJS) : reject(new Error('ExcelJS 없음')));
+            script.onerror = () => { excelJsPromise = null; reject(new Error('ExcelJS 불러오기 실패')); };
+            document.head.appendChild(script);
+        });
+        return excelJsPromise;
+    }
 
-        const blob = new Blob(['\uFEFF' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    function downloadBlob(blob, name) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -408,6 +392,112 @@ export default function HistoryPage() {
         a.click();
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    /**
+     * 📥 엑셀로 저장 — 지금 화면에 보이는 내역 그대로 (기간·검색 조건·전체/수입/지출), 날짜 오래된 순 + 합계
+     * - .xlsx: 수입 금액은 초록, 지출 금액은 빨강, 천 단위 쉼표, 제목 줄 고정·필터
+     * - 라이브러리를 못 불러오면 CSV로 대신 저장 (색 없음)
+     * - 파일 이름은 영문·숫자 (한글 파일 이름은 일부 브라우저에서 'download'로 바뀌어 저장됨)
+     */
+    async function exportExcel(btn) {
+        const txs = [...visibleTxs()].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.id - b.id));
+        if (txs.length === 0) return;
+        const { from, to } = periodRange();
+        const range = from && to ? `${from}_${to}` : `all_${txs[0].date}_${txs[txs.length - 1].date}`;
+        const kind = state.filter === 'INCOME' ? '_income' : state.filter === 'EXPENSE' ? '_expense' : '';
+        const baseName = `GrowTive_${range}${kind}${hasSearchCondition() ? '_search' : ''}`;
+
+        const rowsData = txs.map(tx => {
+            const amount = Number(tx.amount) || 0;
+            const income = tx.type === 'INCOME';
+            return {
+                date: tx.date,
+                dow: WEEKDAYS[new Date(tx.date + 'T00:00:00').getDay()],
+                kind: income ? '수입' : '지출',
+                income,
+                category: tx.category || '',
+                amount: income ? amount : -amount,
+                memo: tx.memo || '',
+                repeat: (tx.recurring || tx.recurringOriginId) ? '매달 반복' : '',
+            };
+        });
+        const income = rowsData.filter(r => r.income).reduce((s, r) => s + r.amount, 0);
+        const expense = rowsData.filter(r => !r.income).reduce((s, r) => s + r.amount, 0); // 음수
+        const totals = [];
+        if (state.filter !== 'EXPENSE') totals.push(['수입 합계', income]);
+        if (state.filter !== 'INCOME') totals.push(['지출 합계', expense]);
+        if (state.filter === 'ALL') totals.push(['합계', income + expense]);
+
+        if (exportFormat() === 'csv') {
+            exportCsvFallback(rowsData, totals, baseName);
+            return;
+        }
+
+        const label = btn?.textContent;
+        if (btn) { btn.disabled = true; btn.textContent = '만드는 중…'; }
+        try {
+            const ExcelJS = await loadExcelJs();
+            const GREEN = 'FF16A34A', RED = 'FFDC2626';
+            const wb = new ExcelJS.Workbook();
+            wb.creator = 'GrowTive';
+            const ws = wb.addWorksheet('자산 내역', { views: [{ state: 'frozen', ySplit: 1 }] });
+            ws.columns = [
+                { header: '날짜', key: 'date', width: 12 },
+                { header: '요일', key: 'dow', width: 6 },
+                { header: '구분', key: 'kind', width: 7 },
+                { header: '카테고리', key: 'category', width: 12 },
+                { header: '금액', key: 'amount', width: 14 },
+                { header: '메모', key: 'memo', width: 32 },
+                { header: '반복', key: 'repeat', width: 10 },
+            ];
+            const head = ws.getRow(1);
+            head.font = { bold: true };
+            head.alignment = { vertical: 'middle', horizontal: 'center' };
+            head.eachCell(c => {
+                c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEF2F7' } };
+                c.border = { bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+            });
+            for (const r of rowsData) {
+                const row = ws.addRow(r);
+                const color = { argb: r.income ? GREEN : RED };
+                row.getCell('amount').numFmt = '#,##0;-#,##0';
+                row.getCell('amount').font = { color, bold: true };
+                row.getCell('kind').font = { color };
+                row.getCell('dow').alignment = { horizontal: 'center' };
+                row.getCell('kind').alignment = { horizontal: 'center' };
+            }
+            ws.autoFilter = { from: 'A1', to: `G${rowsData.length + 1}` };
+            ws.addRow([]);
+            for (const [name, value] of totals) {
+                const row = ws.addRow({ category: name, amount: value });
+                row.font = { bold: true };
+                row.getCell('amount').numFmt = '#,##0;-#,##0';
+                row.getCell('amount').font = { bold: true, color: { argb: value >= 0 ? GREEN : RED } };
+                row.getCell('category').alignment = { horizontal: 'right' };
+            }
+            const buf = await wb.xlsx.writeBuffer();
+            downloadBlob(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `${baseName}.xlsx`);
+        } catch (err) {
+            console.warn('엑셀 파일을 만들지 못해 CSV로 저장합니다.', err);
+            exportCsvFallback(rowsData, totals, baseName);
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = label; }
+        }
+    }
+
+    /** 예비: CSV (UTF-8 BOM, 수식 실행 방지) */
+    function exportCsvFallback(rowsData, totals, baseName) {
+        const text = (v) => {
+            let t = String(v ?? '');
+            if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+            return /[",\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+        };
+        const lines = [['날짜', '요일', '구분', '카테고리', '금액', '메모', '반복'].join(',')];
+        for (const r of rowsData) lines.push([r.date, r.dow, r.kind, text(r.category), r.amount, text(r.memo), r.repeat].join(','));
+        lines.push('');
+        for (const [name, value] of totals) lines.push(['', '', '', name, value].join(','));
+        downloadBlob(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), `${baseName}.csv`);
     }
 
     function listHtml() {
@@ -446,7 +536,13 @@ export default function HistoryPage() {
         const toolbar = `
             <div class="history-export-row">
                 <span class="hint">${txs.length.toLocaleString('ko-KR')}건</span>
-                <button type="button" class="btn btn-sm btn-pill" id="exportCsvBtn">📥 엑셀로 저장</button>
+                <span class="history-export-actions">
+                    <select id="exportFormat" class="history-export-format" aria-label="저장 형식">
+                        <option value="xlsx"${exportFormat() === 'xlsx' ? ' selected' : ''}>엑셀 (.xlsx)</option>
+                        <option value="csv"${exportFormat() === 'csv' ? ' selected' : ''}>CSV (.csv)</option>
+                    </select>
+                    <button type="button" class="btn btn-sm btn-pill" id="exportCsvBtn">📥 저장</button>
+                </span>
             </div>`;
         return toolbar + resultTotalHtml(txs) + daysHtml;
     }
@@ -876,10 +972,16 @@ export default function HistoryPage() {
 
             const txOf = (el) => state.transactions.find(t => t.id === Number(el.dataset.tx));
             $('historyList').addEventListener('click', (e) => {
-                if (e.target.closest('#exportCsvBtn')) { exportCsv(); return; }
+                if (e.target.closest('#exportFormat')) return;
+                const exportBtn = e.target.closest('#exportCsvBtn');
+                if (exportBtn) { exportExcel(exportBtn); return; }
                 const row = e.target.closest('[data-tx]');
                 const tx = row && txOf(row);
                 if (tx) openTxModal(tx);
+            });
+            $('historyList').addEventListener('change', (e) => {
+                if (e.target.id !== 'exportFormat') return;
+                try { localStorage.setItem(EXPORT_FORMAT_KEY, e.target.value); } catch { /* 기억 못 해도 이번엔 고른 형식으로 */ }
             });
             $('historyList').addEventListener('keydown', (e) => {
                 if (e.key !== 'Enter' && e.key !== ' ') return;
