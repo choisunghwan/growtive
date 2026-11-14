@@ -28,7 +28,7 @@ export default function MyPage() {
                     <h3>⏱️ 상단 게이지 설정</h3>
                     <p class="subtitle" style="margin-top:6px;">상단바 게이지가 이 설정에 맞춰 움직여요. 월급·용돈처럼 받는 돈이나 한 달 예산을 정하면, 시작일마다 새로 시작해요.</p>
                     <form id="workScheduleForm" class="form gauge-setting" style="margin-top:14px; max-width:440px;">
-                        <label class="history-search-label payday-label" for="payRule">📅 시작일 <span class="hint">(월급날·용돈 받는 날·예산 시작일)</span></label>
+                        <label class="history-search-label payday-label" for="payRule">📅 시작일</label>
                         <select id="payRule">
                             <option value="">매달 1일</option>
                             <option value="DAY">매달 정해진 날짜</option>

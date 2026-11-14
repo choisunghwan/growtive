@@ -565,7 +565,7 @@ export default function LedgerPage(options = {}) {
                 <div class="settle-bar" id="settleBar" hidden>
                     <div class="settle-bar-text">
                         <b>정산할 날짜를 골라주세요</b>
-                        <span id="settleBarInfo">날짜를 누른 채 끌면 여러 날 한 번에</span>
+                        <span id="settleBarInfo">날짜를 선택한 채 드래그하면 한번에 입력 가능</span>
                     </div>
                     <div class="settle-bar-btns">
                         <button type="button" class="btn btn-ghost btn-sm" id="settleCancelBtn">끝내기</button>
@@ -591,6 +591,7 @@ export default function LedgerPage(options = {}) {
                         </div>
                     </div>
                     <div class="ledger-summary" id="monthSummary" style="${isSchedule() ? 'display:none;' : ''}"></div>
+                    <p class="hint ledger-drag-hint" id="scheduleDragHint"${isSchedule() && state.viewMode !== 'list' ? '' : ' hidden'}>날짜를 선택한 채 드래그하면 한번에 입력 가능</p>
                     <div class="${gridContainerClass()}" id="calendarGrid">${renderMainView()}</div>
                 </div>
 
@@ -686,6 +687,8 @@ export default function LedgerPage(options = {}) {
 
             function renderCalendar() {
                 const container = $('calendarGrid');
+                // 일정 달력에서만 드래그 안내 (여러 날 일정을 한 번에)
+                $('scheduleDragHint').hidden = !(isSchedule() && state.viewMode !== 'list');
                 container.className = gridContainerClass();
                 container.innerHTML = renderMainView();
 
@@ -728,7 +731,7 @@ export default function LedgerPage(options = {}) {
                 picked.forEach(list => list.forEach(tx => { total += Number(tx.amount) || 0; }));
                 $('settleBarInfo').innerHTML = picked.size
                     ? `${picked.size}일 선택 · 지출 <b class="is-expense">${won(total)}</b>`
-                    : '날짜를 누른 채 끌면 여러 날 한 번에';
+                    : '날짜를 선택한 채 드래그하면 한번에 입력 가능';
                 $('settleRunBtn').disabled = picked.size === 0;
             }
 

@@ -1051,6 +1051,9 @@ body.is-settle-selecting .ledger-page { padding-bottom: 80px; }
 .ledger-cell--settle-picked::after {
     content: '✔'; position: absolute; top: 3px; right: 4px; font-size: 11px; font-weight: 800; color: #16a34a;
 }
+.ledger-drag-hint { margin: 0 0 10px; text-align: center; font-size: 12.5px; }
+.ledger-drag-hint[hidden] { display: none; }
+
 /* 정산 날짜 선택 중: 일정 캘린더처럼 달력 칸 위에서는 스크롤 대신 드래그 */
 body.is-settle-selecting .ledger-grid .ledger-cell:not(.ledger-cell--empty) {
     touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
