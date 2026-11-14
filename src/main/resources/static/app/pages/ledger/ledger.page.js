@@ -570,6 +570,7 @@ export default function LedgerPage(options = {}) {
         render() {
             return `
             <section class="ledger-page">
+                ${isShared ? '' : '<div class="sms-inbox-banner" id="smsInboxBanner" role="status" hidden></div>'}
                 ${isShared ? `
                 <div class="settle-bar" id="settleBar" hidden>
                     <div class="settle-bar-text">
@@ -621,6 +622,7 @@ export default function LedgerPage(options = {}) {
                         <div id="entryFormWrap" style="display:none;">
                             <div id="entryFormArea">${isSchedule() ? eventFormHtml() : moneyFormHtml()}</div>
                         </div>
+                        ${isShared ? '' : `<button type="button" class="sms-paste-link" id="smsPasteBtn"${isSchedule() ? ' hidden' : ''}>📋 카드 문자 붙여넣기</button>`}
                     </div>
                 </div>
             </section>`;
@@ -1332,6 +1334,7 @@ export default function LedgerPage(options = {}) {
 
             function renderFormArea() {
                 $('entryFormArea').innerHTML = isSchedule() ? eventFormHtml() : moneyFormHtml();
+                if ($('smsPasteBtn')) $('smsPasteBtn').hidden = isSchedule();
                 if (isSchedule()) {
                     bindEventForm();
                     resetEventForm();
@@ -1425,6 +1428,156 @@ export default function LedgerPage(options = {}) {
             }
 
             await refresh();
+
+            /* ---------------- 📩 카드 문자 확인 대기함 (내 캘린더만) ---------------- */
+            if (!isShared) {
+                const smsWon = (n) => `${Number(n || 0).toLocaleString('ko-KR')}원`;
+                const mdOf = (d) => d ? `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}` : '';
+
+                async function loadSmsBanner() {
+                    let count = 0;
+                    try { ({ data: { count } } = await axios.get('/api/sms/inbox/count')); } catch { return; }
+                    const el = $('smsInboxBanner');
+                    if (!el) return;
+                    el.hidden = !count;
+                    el.innerHTML = count ? `<span>📩 확인할 카드 결제 <b>${count}건</b></span><button type="button" class="btn btn-sm btn-primary" id="smsInboxOpenBtn">확인하기</button>` : '';
+                    $('smsInboxOpenBtn')?.addEventListener('click', () => openSmsInbox(false));
+                }
+
+                function itemHtml(it) {
+                    const head = `💳 ${esc(it.cardName || '카드')} · ${mdOf(it.txDate)}${it.txTime ? ' ' + it.txTime.slice(0, 5) : ''}${it.installment ? ' · ' + esc(it.installment) : ''}`;
+                    if (it.cancel) {
+                        return `
+                        <li class="sms-item sms-item--cancel" data-sms="${it.id}">
+                            <div class="sms-item-head">↩ 승인취소 · ${head}</div>
+                            <div class="sms-item-main"><b>${esc(it.merchant || '가맹점 모름')}</b> <b class="is-expense">${smsWon(it.amount)}</b></div>
+                            ${it.matchTransactionId
+                                ? `<div class="hint">원래 내역: ${mdOf(it.matchDate)} ${esc(it.matchMemo || '')} -${smsWon(it.amount)}</div>
+                                   <div class="sms-item-actions">
+                                       <button type="button" class="btn btn-ghost btn-sm" data-sms-act="dismiss">버리기</button>
+                                       <button type="button" class="btn btn-danger btn-sm" data-sms-act="delete-original" data-tx="${it.matchTransactionId}">원래 내역 지우기</button>
+                                   </div>`
+                                : `<div class="hint">같은 금액의 지출 내역을 찾지 못했어요.</div>
+                                   <div class="sms-item-actions"><button type="button" class="btn btn-ghost btn-sm" data-sms-act="dismiss">버리기</button></div>`}
+                        </li>`;
+                    }
+                    const cats = EXPENSE_CATEGORIES.includes(it.category) ? EXPENSE_CATEGORIES : [it.category, ...EXPENSE_CATEGORIES];
+                    const memo = [it.merchant, it.cardName].filter(Boolean).join(' · ');
+                    return `
+                    <li class="sms-item" data-sms="${it.id}">
+                        <div class="sms-item-head">${head}</div>
+                        <div class="sms-item-grid">
+                            <input type="date" data-f="date" value="${esc(it.txDate || '')}" aria-label="날짜">
+                            <select data-f="category" aria-label="카테고리">${cats.map(c => `<option value="${esc(c)}"${c === it.category ? ' selected' : ''}>${categoryIcon(c)} ${esc(c)}</option>`).join('')}</select>
+                            <input type="text" data-f="amount" inputmode="numeric" value="${Number(it.amount || 0).toLocaleString('ko-KR')}" aria-label="금액">
+                            <input type="text" data-f="memo" maxlength="255" value="${esc(memo)}" aria-label="메모">
+                        </div>
+                        <div class="sms-item-actions">
+                            <button type="button" class="btn btn-ghost btn-sm" data-sms-act="dismiss">버리기</button>
+                            <button type="button" class="btn btn-primary btn-sm" data-sms-act="save">저장</button>
+                        </div>
+                    </li>`;
+                }
+
+                async function openSmsInbox(pasteFirst) {
+                    const modal = openModal({
+                        title: '📩 카드 문자 확인 대기함',
+                        className: 'sms-inbox-modal',
+                        bodyHtml: `
+                            <details class="sms-paste"${pasteFirst ? ' open' : ''}>
+                                <summary>📋 카드 문자 붙여넣기</summary>
+                                <textarea id="smsPasteText" rows="4" placeholder="카드 결제 문자를 길게 눌러 복사한 뒤 여기에 붙여넣으세요. 여러 개도 한 번에 돼요."></textarea>
+                                <div class="sms-paste-row"><span class="hint" id="smsPasteMsg"></span><button type="button" class="btn btn-primary btn-sm" id="smsPasteRun">읽기</button></div>
+                            </details>
+                            <ul class="sms-list" id="smsList"><li class="hint">불러오는 중…</li></ul>`,
+                        actionsHtml: `
+                            <button type="button" class="btn btn-ghost" data-modal-close>닫기</button>
+                            <button type="button" class="btn btn-primary" id="smsSaveAll">모두 저장</button>`,
+                        onClose: () => { loadSmsBanner(); },
+                    });
+                    const root = modal.el;
+
+                    async function loadList() {
+                        let list = [];
+                        try { ({ data: list } = await axios.get('/api/sms/inbox')); } catch { /* 아래에서 빈 목록 */ }
+                        root.querySelector('#smsList').innerHTML = list.length
+                            ? list.map(itemHtml).join('')
+                            : '<li class="hint sms-empty">확인할 카드 문자가 없어요.</li>';
+                        root.querySelector('#smsSaveAll').hidden = !list.some(it => !it.cancel);
+                        root.querySelectorAll('input[data-f="amount"]').forEach(el => el.addEventListener('input', () => formatAmountInput(el)));
+                    }
+
+                    async function saveItem(li) {
+                        const f = (k) => li.querySelector(`[data-f="${k}"]`);
+                        const amount = Number(f('amount').value.replace(/[^0-9]/g, ''));
+                        if (!amount) { alert('금액을 확인해주세요.'); f('amount').focus(); return false; }
+                        await axios.post(`/api/sms/inbox/${li.dataset.sms}/save`, {
+                            date: f('date').value || null, category: f('category').value, amount, memo: f('memo').value,
+                        });
+                        return true;
+                    }
+
+                    async function afterChange() {
+                        await loadList();
+                        await refresh();
+                        refreshPersonalTicker();
+                    }
+
+                    root.addEventListener('click', async (e) => {
+                        const btn = e.target.closest('[data-sms-act]');
+                        if (!btn) return;
+                        const li = btn.closest('[data-sms]');
+                        const act = btn.dataset.smsAct;
+                        btn.disabled = true;
+                        try {
+                            if (act === 'save') { if (!(await saveItem(li))) { btn.disabled = false; return; } }
+                            else if (act === 'dismiss') await axios.post(`/api/sms/inbox/${li.dataset.sms}/dismiss`);
+                            else if (act === 'delete-original') {
+                                if (!confirm('승인취소된 원래 내역을 가계부에서 지울까요?')) { btn.disabled = false; return; }
+                                await axios.post(`/api/sms/inbox/${li.dataset.sms}/delete-original`, null, { params: { transactionId: btn.dataset.tx } });
+                            }
+                            await afterChange();
+                        } catch (err) {
+                            btn.disabled = false;
+                            alert(err.response?.data?.message || '처리하지 못했어요.');
+                        }
+                    });
+
+                    root.querySelector('#smsSaveAll').addEventListener('click', async (e) => {
+                        const btn = e.currentTarget;
+                        const items = [...root.querySelectorAll('.sms-item:not(.sms-item--cancel)')];
+                        if (!items.length) return;
+                        btn.disabled = true;
+                        try {
+                            for (const li of items) { if (!(await saveItem(li))) break; }
+                        } catch (err) {
+                            alert(err.response?.data?.message || '일부를 저장하지 못했어요.');
+                        }
+                        btn.disabled = false;
+                        await afterChange();
+                    });
+
+                    root.querySelector('#smsPasteRun').addEventListener('click', async () => {
+                        const text = root.querySelector('#smsPasteText').value;
+                        const msg = root.querySelector('#smsPasteMsg');
+                        if (!text.trim()) { msg.textContent = '문자를 붙여넣어주세요.'; return; }
+                        try {
+                            const { data: r } = await axios.post('/api/sms/inbox/paste', { text });
+                            msg.textContent = r.pending
+                                ? `${r.pending}건을 읽었어요. 아래에서 확인하고 저장하세요.${r.duplicate ? ` (이미 받은 문자 ${r.duplicate}건)` : ''}`
+                                : r.duplicate ? '이미 받은 문자예요.' : '카드 결제 문자를 찾지 못했어요.';
+                            if (r.pending) { root.querySelector('#smsPasteText').value = ''; await loadList(); }
+                        } catch (err) {
+                            msg.textContent = err.response?.data?.message || '읽지 못했어요.';
+                        }
+                    });
+
+                    await loadList();
+                }
+
+                $('smsPasteBtn')?.addEventListener('click', () => openSmsInbox(true));
+                loadSmsBanner();
+            }
 
             if (linkEditId && !isSchedule()) {
                 startEdit(linkEditId);

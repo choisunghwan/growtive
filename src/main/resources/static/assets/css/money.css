@@ -1173,3 +1173,46 @@ html.dark .ledger-cell--settle-picked, html.dark .ledger-list-group.is-settle-pi
 @media (max-width: 340px) {
     .ledger-switch-btn svg { display: none; }
 }
+
+/* ----- 📲 카드 문자 자동 입력 (마이페이지) ----- */
+.sms-link { display: grid; gap: 10px; }
+.sms-key-box { padding: 12px; border-radius: var(--radius-sm); background: #fffbeb; border: 1px solid #fcd34d; display: grid; gap: 6px; }
+html.dark .sms-key-box { background: rgba(245, 158, 11, .12); border-color: rgba(252, 211, 77, .5); }
+.sms-key-row { display: flex; gap: 6px; }
+.sms-key-row input { flex: 1; min-width: 0; font-size: 12.5px; font-family: ui-monospace, monospace; }
+.sms-status { font-weight: 700; font-size: 14px; }
+.sms-status .hint { font-weight: 400; font-size: 12.5px; }
+.sms-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.sms-guide { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+.sms-guide summary { cursor: pointer; font-weight: 700; font-size: 14px; }
+.sms-guide ol { margin: 10px 0 2px; padding-left: 20px; display: grid; gap: 6px; font-size: 13.5px; line-height: 1.55; word-break: keep-all; }
+.sms-note { margin: 0; font-size: 12.5px; line-height: 1.6; }
+
+/* ----- 📩 카드 문자 확인 대기함 (캘린더) ----- */
+.sms-inbox-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 12px 10px 16px; border-radius: var(--radius-md);
+    background: #eef4ff; border: 1px solid #bfd3fe; color: #1e3a8a; font-size: 14px;
+}
+.sms-inbox-banner[hidden] { display: none; }
+html.dark .sms-inbox-banner { background: rgba(59, 130, 246, .14); border-color: rgba(96, 165, 250, .45); color: #bfdbfe; }
+.sms-paste-link { display: block; margin: 10px auto 0; border: none; background: none; color: var(--brand); font-size: 13px; font-weight: 600; cursor: pointer; }
+.sms-paste-link[hidden] { display: none; }
+.sms-inbox-modal { width: min(520px, 94vw); }
+.sms-inbox-modal .history-modal-body { max-height: min(66vh, 620px); overflow-y: auto; display: grid; gap: 12px; }
+.sms-paste { border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+.sms-paste summary { cursor: pointer; font-weight: 700; font-size: 14px; }
+.sms-paste textarea { width: 100%; margin-top: 8px; font-size: 13px; resize: vertical; }
+.sms-paste-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.sms-paste-row .hint { font-size: 12.5px; }
+.sms-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.sms-empty { text-align: center; padding: 18px 0; }
+.sms-item { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; display: grid; gap: 8px; }
+.sms-item--cancel { border-color: #fca5a5; background: rgba(220, 38, 38, .04); }
+.sms-item-head { font-size: 12.5px; color: var(--text-muted); font-weight: 600; }
+.sms-item-main { display: flex; justify-content: space-between; gap: 8px; }
+.sms-item-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.sms-item-grid input, .sms-item-grid select { width: 100%; min-width: 0; font-size: 13.5px; height: 36px; }
+.sms-item-grid [data-f="memo"] { grid-column: 1 / -1; }
+.sms-item-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.sms-item .hint { font-size: 12.5px; }

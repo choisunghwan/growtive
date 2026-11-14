@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.growtive.sms.SmsMapper">
+
+    <select id="findLinkByUser" resultType="java.util.HashMap">
+        SELECT user_id, auto_save, created_at, last_used_at FROM sms_link_key WHERE user_id = #{userId}
+    </select>
+
+    <select id="findLinkByHash" resultType="java.util.HashMap">
+        SELECT user_id, auto_save FROM sms_link_key WHERE key_hash = #{keyHash}
+    </select>
+
+    <insert id="upsertLink">
+        INSERT INTO sms_link_key (user_id, key_hash) VALUES (#{userId}, #{keyHash})
+        ON DUPLICATE KEY UPDATE key_hash = VALUES(key_hash), created_at = CURRENT_TIMESTAMP, last_used_at = NULL
+    </insert>
+
+    <update id="updateAutoSave">
+        UPDATE sms_link_key SET auto_save = #{autoSave} WHERE user_id = #{userId}
+    </update>
+
+    <update id="touchLink">
+        UPDATE sms_link_key SET last_used_at = CURRENT_TIMESTAMP WHERE user_id = #{userId}
+    </update>
+
+    <delete id="deleteLink">
+        DELETE FROM sms_link_key WHERE user_id = #{userId}
+    </delete>
+
+    <insert id="insertIgnore">
+        INSERT IGNORE INTO sms_inbox (user_id, text_hash, raw_text, is_cancel, amount, merchant, card_name, installment,
+                                      tx_date, tx_time, category, status)
+        VALUES (#{userId}, #{textHash}, #{rawText}, #{p.cancel}, #{p.amount}, #{p.merchant}, #{p.cardName}, #{p.installment},
+                #{p.date}, #{p.time}, #{p.category}, #{status})
+    </insert>
+
+    <select id="findIdByHash" resultType="java.lang.Long">
+        SELECT id FROM sms_inbox WHERE user_id = #{userId} AND text_hash = #{textHash}
+    </select>
+
+    <sql id="itemColumns">
+        id, raw_text, is_cancel AS cancel, amount, merchant, card_name, installment, tx_date, tx_time, category,
+        status, transaction_id, created_at
+    </sql>
+
+    <select id="findItem" resultType="com.growtive.sms.SmsInboxItem">
+        SELECT <include refid="itemColumns"/> FROM sms_inbox WHERE user_id = #{userId} AND id = #{id}
+    </select>
+
+    <select id="findPending" resultType="com.growtive.sms.SmsInboxItem">
+        SELECT <include refid="itemColumns"/> FROM sms_inbox
+        WHERE user_id = #{userId} AND status = 'PENDING' AND created_at &gt;= #{since}
+        ORDER BY tx_date DESC, tx_time DESC, id DESC
+    </select>
+
+    <select id="countPending" resultType="int">
+        SELECT COUNT(*) FROM sms_inbox WHERE user_id = #{userId} AND status = 'PENDING' AND created_at &gt;= #{since}
+    </select>
+
+    <update id="markDone">
+        UPDATE sms_inbox SET status = #{status}, transaction_id = #{transactionId}
+        WHERE user_id = #{userId} AND id = #{id} AND status = 'PENDING'
+    </update>
+
+    <select id="findCancelMatch" resultType="java.util.HashMap">
+        SELECT id, transaction_date AS date, memo FROM daily_transaction
+        WHERE user_id = #{userId} AND type = 'EXPENSE' AND amount = #{amount}
+          AND transaction_date &gt;= #{from} AND transaction_date &lt;= #{to}
+        ORDER BY (memo IS NOT NULL AND #{merchant} IS NOT NULL AND memo LIKE CONCAT('%', #{merchant}, '%')) DESC,
+                 transaction_date DESC, id DESC
+        LIMIT 1
+    </select>
+
+</mapper>

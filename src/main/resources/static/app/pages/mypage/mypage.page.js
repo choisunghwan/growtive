@@ -103,6 +103,12 @@ export default function MyPage() {
                     </form>
                     <div id="workScheduleStatus" style="margin-top:8px; font-size:13px; color:var(--text-muted);"></div>
                 </div>
+
+                <div class="card" style="margin-top:20px;">
+                    <h3>📲 카드 문자 자동 입력</h3>
+                    <p class="subtitle" style="margin-top:6px;">카드 결제 문자를 받으면 내 가계부에 자동으로 넣어요. 아이폰은 '단축어', 안드로이드는 'MacroDroid' 앱에서 한 번만 설정하면 돼요.</p>
+                    <div id="smsLinkArea" class="sms-link" style="margin-top:14px; max-width:520px;"><div class="hint">불러오는 중…</div></div>
+                </div>
             </section>`;
         },
 
@@ -298,6 +304,91 @@ export default function MyPage() {
                 });
             }
 
+            /* ---------- 📲 카드 문자 자동 입력 ---------- */
+            const smsUrl = (key) => `${location.origin}/api/sms/in?key=${encodeURIComponent(key)}`;
+            const fmtTime = (v) => {
+                if (!v) return '아직 없음';
+                const d = new Date(String(v).replace(' ', 'T'));
+                return isNaN(d) ? String(v) : `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            };
+
+            const SMS_GUIDE = `
+                <details class="sms-guide">
+                    <summary>🍎 아이폰 설정 방법 (iOS 17 이상)</summary>
+                    <ol>
+                        <li><b>단축어</b> 앱 → 아래 <b>[자동화]</b> → 오른쪽 위 <b>[+]</b> → <b>[메시지]</b></li>
+                        <li><b>메시지 포함</b>에 <b>승인</b> 입력 (보낸 사람에 카드사 번호를 골라도 돼요)</li>
+                        <li><b>[즉시 실행]</b> 선택 → <b>[다음]</b> → <b>[새로운 빈 단축어]</b></li>
+                        <li>동작 검색에서 <b>[URL 내용 가져오기]</b> 추가 → URL 칸에 위 주소 붙여넣기</li>
+                        <li>▶ 펼치기 → 방법 <b>POST</b> → 요청 본문 <b>JSON</b> → [+ 새로운 필드] <b>텍스트</b>: 키 <b>text</b>, 값은 변수 <b>[단축어 입력]</b>(메시지 내용)</li>
+                        <li>오른쪽 위 <b>[완료]</b> — 이제 카드 결제 문자가 오면 자동으로 GrowTive로 가요</li>
+                    </ol>
+                </details>
+                <details class="sms-guide">
+                    <summary>🤖 안드로이드 설정 방법 (MacroDroid)</summary>
+                    <ol>
+                        <li>Play 스토어에서 <b>MacroDroid</b> 설치 → <b>[매크로 추가]</b></li>
+                        <li>트리거: <b>[전화/SMS] → [SMS 수신]</b> → 내용 포함 <b>승인</b> (권한 허용)</li>
+                        <li>동작: <b>[웹 상호작용] → [HTTP 요청]</b> → 방법 <b>POST</b>, URL에 위 주소 붙여넣기</li>
+                        <li>본문(Body): 콘텐츠 유형 <b>text/plain</b> → 내용에 마법 텍스트 <b>[SMS 메시지 내용]</b>(sms_message) 넣기</li>
+                        <li>매크로 이름 정하고 저장 — 배터리 최적화에서 MacroDroid는 '제한 없음'으로 두면 더 잘 돼요</li>
+                    </ol>
+                </details>
+                <p class="hint sms-note">• 카드사 <b>문자(SMS)</b> 알림만 읽을 수 있어요. 카드사 앱 알림·카카오톡 알림톡은 문자 알림으로 바꿔주세요.<br>
+                • 서버가 쉬고 있으면 첫 문자는 늦게 들어가거나 빠질 수 있어요. 빠진 건 캘린더의 [📋 카드 문자 붙여넣기]로 넣을 수 있어요.</p>`;
+
+            async function renderSmsLink(freshKey = null) {
+                let info;
+                try { ({ data: info } = await axios.get('/api/sms/link')); } catch { $('smsLinkArea').innerHTML = '<div class="hint">불러오지 못했어요.</div>'; return; }
+                if (!info.exists) {
+                    $('smsLinkArea').innerHTML = `
+                        <button type="button" class="btn btn-primary" id="smsCreateBtn">🔑 내 전송 주소 만들기</button>
+                        ${SMS_GUIDE}`;
+                    $('smsCreateBtn').onclick = () => createKey(false);
+                    return;
+                }
+                $('smsLinkArea').innerHTML = `
+                    ${freshKey ? `
+                        <div class="sms-key-box">
+                            <label class="history-search-label payday-label">내 전송 주소 <span class="hint">— 지금 한 번만 보여요. 다른 사람에게 알려주지 마세요.</span></label>
+                            <div class="sms-key-row">
+                                <input type="text" id="smsUrl" readonly value="${escapeHtml(smsUrl(freshKey))}">
+                                <button type="button" class="btn btn-primary btn-sm" id="smsCopyBtn">복사</button>
+                            </div>
+                        </div>` : ''}
+                    <div class="sms-status">✅ 연결됨 <span class="hint">· 주소 만든 때 ${fmtTime(info.createdAt)} · 마지막으로 받은 때 ${fmtTime(info.lastUsedAt)}</span></div>
+                    <span class="history-search-label payday-label">받은 문자를</span>
+                    <label class="payday-radio"><input type="radio" name="smsMode" value="review"${info.autoSave ? '' : ' checked'}> <span>확인 후 저장 <span class="hint">— 캘린더의 📩 확인 대기함에서 확인</span></span></label>
+                    <label class="payday-radio"><input type="radio" name="smsMode" value="auto"${info.autoSave ? ' checked' : ''}> <span>바로 가계부에 저장 <span class="hint">— 승인취소는 항상 확인 대기</span></span></label>
+                    <div class="sms-actions">
+                        <button type="button" class="btn btn-ghost btn-sm" id="smsRecreateBtn">주소 다시 만들기</button>
+                        <button type="button" class="btn btn-danger btn-sm" id="smsUnlinkBtn">연결 끊기</button>
+                    </div>
+                    ${SMS_GUIDE}`;
+                $('smsCopyBtn')?.addEventListener('click', async () => {
+                    try { await navigator.clipboard.writeText($('smsUrl').value); $('smsCopyBtn').textContent = '복사됨'; }
+                    catch { $('smsUrl').select(); document.execCommand?.('copy'); $('smsCopyBtn').textContent = '복사됨'; }
+                });
+                document.querySelectorAll('input[name="smsMode"]').forEach(r => r.addEventListener('change', async () => {
+                    try { await axios.put('/api/sms/link/settings', { autoSave: r.value === 'auto' }); }
+                    catch (err) { alert(err.response?.data?.message || '저장하지 못했어요.'); }
+                }));
+                $('smsRecreateBtn').onclick = () => createKey(true);
+                $('smsUnlinkBtn').onclick = async () => {
+                    if (!confirm('연결을 끊을까요? 지금 주소로는 더 이상 문자가 들어오지 않아요. (이미 받은 문자와 가계부 내역은 그대로예요)')) return;
+                    await axios.delete('/api/sms/link');
+                    renderSmsLink();
+                };
+            }
+
+            async function createKey(again) {
+                if (again && !confirm('새 주소를 만들까요? 예전 주소는 바로 막혀서, 단축어/MacroDroid에 새 주소를 다시 넣어야 해요.')) return;
+                try {
+                    const { data } = await axios.post('/api/sms/link');
+                    await renderSmsLink(data.key);
+                } catch (err) { alert(err.response?.data?.message || '주소를 만들지 못했어요.'); }
+            }
+
             $('workScheduleForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const mode = modeValue();
@@ -343,6 +434,7 @@ export default function MyPage() {
             renderInfo();
             renderAccountLink();
             await loadWorkSchedule();
+            await renderSmsLink();
 
             const hashParams = new URLSearchParams(location.hash.split('?')[1] || '');
             if (hashParams.get('linked') === '1') {
