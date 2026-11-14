@@ -1007,9 +1007,17 @@ html.dark .ledger-list-date--saturday { color: #93c5fd; }
 .shared-members-modal { width: min(460px, 94vw); }
 
 /* 💸 정산 */
-/* [💸 정산]을 [멤버 관리] 바로 위에 */
-.shared-header-btns { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
-.shared-header-btns .btn { justify-content: center; }
+/* 상단 카드: 1줄 이름 + [💸 정산](오른쪽 끝), 2줄 멤버 칩 + [멤버 관리](오른쪽 끝) */
+.shared-header-main, .shared-header-side { flex: 1 1 100%; }
+.shared-header-side { justify-content: space-between; flex-wrap: nowrap; align-items: flex-start; }
+.shared-header-side .shared-member-chips { flex: 1; min-width: 0; }
+.shared-header-side > .btn { flex: none; }
+.shared-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.shared-title-row .shared-title {
+    min-width: 0; word-break: keep-all;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; /* 길면 두 줄까지 */
+}
+.shared-title-row .btn { flex: none; }
 .settle-bar {
     position: fixed; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translateX(-50%);
     z-index: 60; width: min(560px, calc(100vw - 24px));
