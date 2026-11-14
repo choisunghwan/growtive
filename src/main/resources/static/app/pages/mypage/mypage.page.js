@@ -312,30 +312,49 @@ export default function MyPage() {
                 return isNaN(d) ? String(v) : `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
             };
 
-            const SMS_GUIDE = `
-                <details class="sms-guide">
-                    <summary>🍎 아이폰 설정 방법 (iOS 17 이상)</summary>
+            // 📲 설정 안내: 쓰는 휴대폰에 맞는 안내를 먼저 펼쳐서 보여줌
+            //  - 아이폰 '단축어 설치' 링크가 준비되면 IOS_SHORTCUT_URL에 넣기 (iCloud 공유 링크, 설치할 때 전송 주소를 묻도록 만든 단축어)
+            const IOS_SHORTCUT_URL = '';
+            const ua = navigator.userAgent || '';
+            const isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isAndroid = /Android/i.test(ua);
+
+            const IOS_GUIDE = (open) => `
+                <details class="sms-guide"${open ? ' open' : ''}>
+                    <summary>🍎 아이폰 자동 입력 설정 (iOS 17 이상)</summary>
+                    ${IOS_SHORTCUT_URL ? `
                     <ol>
-                        <li><b>단축어</b> 앱 → 아래 <b>[자동화]</b> → 오른쪽 위 <b>[+]</b> → <b>[메시지]</b></li>
-                        <li><b>메시지 포함</b>에 <b>승인</b> 입력 (보낸 사람에 카드사 번호를 골라도 돼요)</li>
-                        <li><b>[즉시 실행]</b> 선택 → <b>[다음]</b> → <b>[새로운 빈 단축어]</b></li>
-                        <li>동작 검색에서 <b>[URL 내용 가져오기]</b> 추가 → URL 칸에 위 주소 붙여넣기</li>
-                        <li>▶ 펼치기 → 방법 <b>POST</b> → 요청 본문 <b>JSON</b> → [+ 새로운 필드] <b>텍스트</b>: 키 <b>text</b>, 값은 변수 <b>[단축어 입력]</b>(메시지 내용)</li>
-                        <li>오른쪽 위 <b>[완료]</b> — 이제 카드 결제 문자가 오면 자동으로 GrowTive로 가요</li>
-                    </ol>
-                </details>
-                <details class="sms-guide">
-                    <summary>🤖 안드로이드 설정 방법 (MacroDroid)</summary>
+                        <li>위 <b>전송 주소를 복사</b>한 뒤 <a class="btn btn-primary btn-sm" href="${IOS_SHORTCUT_URL}" target="_blank" rel="noopener">📲 단축어 설치</a> → <b>[단축어 추가]</b> → 주소 붙여넣기</li>
+                        <li>단축어 앱 → <b>[자동화]</b> → <b>[+]</b> → <b>[메시지]</b> → 메시지 포함 <b>승인</b> → <b>[즉시 실행]</b> → <b>[다음]</b></li>
+                        <li><b>'GrowTive 카드 문자'</b> 단축어 선택 → <b>[완료]</b></li>
+                    </ol>` : `
                     <ol>
-                        <li>Play 스토어에서 <b>MacroDroid</b> 설치 → <b>[매크로 추가]</b></li>
-                        <li>트리거: <b>[전화/SMS] → [SMS 수신]</b> → 내용 포함 <b>승인</b> (권한 허용)</li>
-                        <li>동작: <b>[웹 상호작용] → [HTTP 요청]</b> → 방법 <b>POST</b>, URL에 위 주소 붙여넣기</li>
-                        <li>본문(Body): 콘텐츠 유형 <b>text/plain</b> → 내용에 마법 텍스트 <b>[SMS 메시지 내용]</b>(sms_message) 넣기</li>
-                        <li>매크로 이름 정하고 저장 — 배터리 최적화에서 MacroDroid는 '제한 없음'으로 두면 더 잘 돼요</li>
+                        <li><b>단축어</b> 앱 → <b>[자동화]</b> → <b>[+]</b> → <b>[메시지]</b> → 메시지 포함 <b>승인</b> → <b>[즉시 실행]</b> → <b>[다음]</b> → <b>[새로운 빈 단축어]</b></li>
+                        <li><b>[URL 내용 가져오기]</b> 추가 → URL에 위 <b>전송 주소</b> 붙여넣기</li>
+                        <li>▶ 펼치기 → 방법 <b>POST</b> → 요청 본문 <b>JSON</b> → 필드 <b>텍스트</b>: 키 <b>text</b>, 값 <b>[단축어 입력]</b> → <b>[완료]</b></li>
+                    </ol>`}
+                    <p class="hint sms-note">아이폰은 카드사 <b>문자(SMS)</b>만 읽을 수 있어요. 카드사 앱 알림·카카오톡 알림톡을 쓰고 있다면 문자 알림으로 바꿔주세요.</p>
+                </details>`;
+
+            const ANDROID_GUIDE = (open) => `
+                <details class="sms-guide"${open ? ' open' : ''}>
+                    <summary>🤖 안드로이드 설정</summary>
+                    <p class="sms-guide-lead"><b>① 설정 없이 바로</b> — 홈 화면에 GrowTive 앱을 설치했다면, 카드 문자를 길게 눌러 <b>[공유] → GrowTive</b>만 누르면 확인 대기함으로 들어와요.</p>
+                    <p class="sms-guide-lead"><b>② 완전 자동</b> — <b>MacroDroid</b> 앱(무료)으로 한 번만 설정</p>
+                    <ol>
+                        <li>MacroDroid 설치 → <b>[매크로 추가]</b></li>
+                        <li>트리거: <b>[알림] → [알림 수신]</b> → 앱: <b>메시지 앱</b> → 내용 포함 <b>승인</b> (알림 접근 허용)</li>
+                        <li>동작: <b>[웹 상호작용] → [HTTP 요청]</b> → <b>POST</b> → URL에 위 <b>전송 주소</b> 붙여넣기 → 본문 <b>text/plain</b>, 내용은 마법 텍스트 <b>[알림 텍스트]</b> → 저장</li>
                     </ol>
-                </details>
-                <p class="hint sms-note">• 카드사 <b>문자(SMS)</b> 알림만 읽을 수 있어요. 카드사 앱 알림·카카오톡 알림톡은 문자 알림으로 바꿔주세요.<br>
-                • 서버가 쉬고 있으면 첫 문자는 늦게 들어가거나 빠질 수 있어요. 빠진 건 캘린더의 [📋 카드 문자 붙여넣기]로 넣을 수 있어요.</p>`;
+                    <p class="hint sms-note">• 2번에서 앱만 카드사 앱·카카오톡으로 바꿔 하나 더 만들면 앱 알림·알림톡도 받을 수 있어요.<br>• 설정 › 배터리에서 MacroDroid를 '제한 없음'으로 두면 화면이 꺼져 있어도 놓치지 않아요.</p>
+                </details>`;
+
+            const SMS_GUIDE_HTML = () => {
+                const mine = isIOS ? IOS_GUIDE(true) : isAndroid ? ANDROID_GUIDE(true) : IOS_GUIDE(false) + ANDROID_GUIDE(false);
+                const other = isIOS ? ANDROID_GUIDE(false) : isAndroid ? IOS_GUIDE(false) : '';
+                return `${mine}${other ? `<details class="sms-guide sms-guide--other"><summary>다른 휴대폰 안내</summary>${other}</details>` : ''}
+                    <p class="hint sms-note">서버가 쉬고 있으면 첫 문자가 늦게 들어가거나 빠질 수 있어요. 빠진 건 캘린더의 [📋 카드 문자 붙여넣기]로 넣을 수 있어요.</p>`;
+            };
 
             async function renderSmsLink(freshKey = null) {
                 let info;
@@ -343,7 +362,7 @@ export default function MyPage() {
                 if (!info.exists) {
                     $('smsLinkArea').innerHTML = `
                         <button type="button" class="btn btn-primary" id="smsCreateBtn">🔑 내 전송 주소 만들기</button>
-                        ${SMS_GUIDE}`;
+                        ${SMS_GUIDE_HTML()}`;
                     $('smsCreateBtn').onclick = () => createKey(false);
                     return;
                 }
@@ -364,7 +383,7 @@ export default function MyPage() {
                         <button type="button" class="btn btn-ghost btn-sm" id="smsRecreateBtn">주소 다시 만들기</button>
                         <button type="button" class="btn btn-danger btn-sm" id="smsUnlinkBtn">연결 끊기</button>
                     </div>
-                    ${SMS_GUIDE}`;
+                    ${SMS_GUIDE_HTML()}`;
                 $('smsCopyBtn')?.addEventListener('click', async () => {
                     try { await navigator.clipboard.writeText($('smsUrl').value); $('smsCopyBtn').textContent = '복사됨'; }
                     catch { $('smsUrl').select(); document.execCommand?.('copy'); $('smsCopyBtn').textContent = '복사됨'; }

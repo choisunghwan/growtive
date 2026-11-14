@@ -26,6 +26,9 @@ import AboutPage from '../pages/about/about.page.js';
 /*마이페이지*/
 import MyPage from '../pages/mypage/mypage.page.js';
 
+/*📤 안드로이드 공유하기로 받은 카드 문자*/
+import SmsSharePage from '../pages/sms/sms-share.page.js';
+
 /*공유 캘린더 (친구와 함께 쓰는 가계부/일정) - #/shared?id=3*/
 import SharedCalendarPage from '../pages/shared/shared.page.js';
 
@@ -33,6 +36,7 @@ const routes = {
     /*홈 = 가계부(캘린더)*/
     '#/': LedgerPage,
     '#/calendar': LedgerPage,
+    '#/sms-share': SmsSharePage,
     '#/money/flow': DashboardPage,
     '#/money/history': HistoryPage,
     /*예전 이름(캐시된 옛날 JS/북마크/공유링크 대비 하위호환용) - 새 코드는 위 이름을 쓴다*/
@@ -59,6 +63,7 @@ const routes = {
  */
 const authRequiredRoutes = [
     '#/calendar',
+    '#/sms-share',
     '#/money/flow',
     '#/money/history',
     '#/dashboard',

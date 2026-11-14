@@ -127,6 +127,8 @@ export default function LedgerPage(options = {}) {
     const linkParams = new URLSearchParams(isShared ? '' : (location.hash.split('?')[1] || ''));
     const linkDate = linkParams.get('date');
     const linkEditId = Number(linkParams.get('edit')) || null;
+    // 📤 공유하기로 카드 문자를 받은 뒤 '#/calendar?inbox=1'로 오면 확인 대기함을 바로 연다
+    const openInboxOnLoad = linkParams.get('inbox') === '1';
     if (linkDate && /^\d{4}-\d{2}-\d{2}$/.test(linkDate)) {
         state.year = Number(linkDate.slice(0, 4));
         state.month = Number(linkDate.slice(5, 7));
@@ -1577,6 +1579,10 @@ export default function LedgerPage(options = {}) {
 
                 $('smsPasteBtn')?.addEventListener('click', () => openSmsInbox(true));
                 loadSmsBanner();
+                if (openInboxOnLoad) {
+                    history.replaceState(null, '', '#/calendar');
+                    openSmsInbox(false);
+                }
             }
 
             if (linkEditId && !isSchedule()) {
