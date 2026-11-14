@@ -46,8 +46,8 @@ export default function AboutPage() {
               <p>만든 사람은 👑 관리자로 멤버 초대·캘린더 이름 변경·삭제를 맡고, 관리자 권한을 다른 멤버에게 넘길 수도 있어요. 누구나 언제든 나갈 수 있고, 내 개인 가계부 통계와는 따로 계산됩니다.</p>
             </div>
             <div class="about-feature-imgs">
-              <img src="/assets/img/intro/intro-shared.png" alt="공유 캘린더 화면" class="about-feature-img">
-              <img src="/assets/img/intro/intro-settle.png" alt="공유 캘린더 정산" class="about-feature-img">
+              <img src="/assets/img/intro/intro-shared.png?v=2" alt="공유 캘린더 화면" class="about-feature-img">
+              <img src="/assets/img/intro/intro-settle.png?v=2" alt="공유 캘린더 정산" class="about-feature-img">
             </div>
           </div>
 
