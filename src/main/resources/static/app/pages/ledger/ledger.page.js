@@ -523,6 +523,11 @@ export default function LedgerPage(options = {}) {
     function moneyFormHtml() {
         return `
             <form id="txForm" class="form">
+                <div class="receipt-row">
+                    <button type="button" class="btn btn-ghost btn-sm" id="txReceiptBtn">📷 영수증으로 채우기</button>
+                    <input type="file" id="txReceiptInput" accept="image/*" hidden>
+                    <span class="hint receipt-msg" id="txReceiptMsg" role="status"></span>
+                </div>
                 <div class="btn-row">
                     <label><input type="radio" name="txType" value="EXPENSE" checked> 지출</label>
                     <label><input type="radio" name="txType" value="INCOME"> 수입</label>
@@ -1215,6 +1220,56 @@ export default function LedgerPage(options = {}) {
                 });
 
                 $('txAmount').addEventListener('input', () => formatAmountInput($('txAmount')));
+
+                // 📷 영수증으로 채우기 — 휴대폰 안에서만 읽고 사진은 바로 버림 (서버로 보내지 않음)
+                $('txReceiptBtn').addEventListener('click', () => $('txReceiptInput').click());
+                $('txReceiptInput').addEventListener('change', async () => {
+                    const input = $('txReceiptInput');
+                    const file = input.files?.[0];
+                    input.value = ''; // 고른 사진을 붙잡아 두지 않음
+                    if (!file) return;
+                    const btn = $('txReceiptBtn');
+                    const msg = (t) => { if ($('txReceiptMsg')) $('txReceiptMsg').textContent = t; };
+                    btn.disabled = true;
+                    msg('사진을 읽는 중…');
+                    try {
+                        const { readReceipt } = await import('../../core/receipt-ocr.js');
+                        const r = await readReceipt(file, (pct, stage) => msg(`${stage}…${pct ? ` ${pct}%` : ''}`));
+                        if (!r.amount && !r.merchant) {
+                            msg('영수증 글자를 읽지 못했어요. 밝은 곳에서 영수증이 꽉 차게 다시 찍어주세요.');
+                            return;
+                        }
+                        // 날짜: 영수증 날짜가 지금 고른 날과 다르면 그 날짜로 이동 (말이 안 되는 날짜는 무시)
+                        let note = '';
+                        const today = todayYmd();
+                        const yearAgo = `${Number(today.slice(0, 4)) - 1}${today.slice(4)}`;
+                        if (r.date && r.date !== state.selectedDate && r.date <= today && r.date >= yearAgo) {
+                            const [y, m] = r.date.split('-').map(Number);
+                            if (y !== state.year || m !== state.month) {
+                                state.year = y;
+                                state.month = m;
+                                $('monthLabel').textContent = `${y}년 ${m}월`;
+                                await refresh();
+                            }
+                            selectDate(r.date);
+                            note = ` 날짜를 ${m}/${Number(r.date.slice(8))}로 바꿨어요.`;
+                        }
+                        setFormOpen(true);
+                        const expense = document.querySelector('input[name="txType"][value="EXPENSE"]');
+                        if (!expense.checked) { expense.checked = true; expense.dispatchEvent(new Event('change')); }
+                        if ([...$('txCategory').options].some(o => o.value === r.category)) $('txCategory').value = r.category;
+                        if (r.amount) { $('txAmount').value = String(r.amount); formatAmountInput($('txAmount')); }
+                        if (r.merchant) $('txMemo').value = r.merchant;
+                        const filled = [r.amount && '금액', r.merchant && '가맹점', r.date && '날짜'].filter(Boolean).join('·');
+                        msg(`${filled} 칸을 채웠어요.${note} 확인하고 [추가]를 눌러주세요.`);
+                        $('txAmount').focus();
+                    } catch (err) {
+                        console.warn('영수증 읽기 실패', err);
+                        msg(err?.message?.includes('불러오지') ? '읽기 프로그램을 받지 못했어요. 인터넷 연결을 확인해주세요.' : '영수증을 읽지 못했어요. 다시 시도해주세요.');
+                    } finally {
+                        btn.disabled = false;
+                    }
+                });
                 $('txCancelBtn').addEventListener('click', () => { resetForm(); setFormOpen(false); });
 
                 $('txForm').addEventListener('submit', async (e) => {

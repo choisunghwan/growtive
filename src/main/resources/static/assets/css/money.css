@@ -1220,3 +1220,7 @@ html.dark .sms-inbox-banner { background: rgba(59, 130, 246, .14); border-color:
 .sms-guide .sms-note { margin-top: 8px; }
 .sms-guide--other > .sms-guide { margin-top: 8px; }
 .sms-guide ol .btn { display: inline-flex; vertical-align: middle; text-decoration: none; }
+
+/* ----- 📷 영수증으로 채우기 ----- */
+.receipt-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
+.receipt-msg { font-size: 12.5px; flex: 1 1 160px; word-break: keep-all; }
